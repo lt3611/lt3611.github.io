@@ -162,7 +162,22 @@
                     "1905"]
             }
         },
-            
+            {
+            "name" : "parwix",
+            "type" : 0,
+            "url" : "https://jx.parwix.com:4433/player/?url="
+        }],
+    "flags" : [
+        "youku",
+        "qq",
+        "iqiyi",
+        "qiyi",
+        "letv",
+        "sohu",
+        "tudou",
+        "pptv",
+        "mgtv",
+        "wasu"],
     "ijk" : [
             {
             "group" : "软解码",
