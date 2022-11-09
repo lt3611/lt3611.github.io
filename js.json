@@ -1,5 +1,5 @@
 {
-    "spider": "http://45.125.46.61/xpg.jar;md5;a242cdd71961fa91fc12c335218440eb",
+    "spider": "https://ghproxy.com/https://raw.githubusercontent.com/lt3611/lt3611.github.io/main/w.jar;md5;74a24673cc1587fa87ec2d1f43bfa4cb",
     "sites" : [
             {
             "key" : "drpy_js_豆瓣",
