@@ -3,42 +3,42 @@
     "sites" : [           
             {
             "key" : "drpy_js_360影视",
-            "name" : "官源|360[DRPY]",
+            "name" : "官源|360",
             "type" : 3,
            "api" : "https://gitcode.net/qq_32394351/dr_py/-/raw/master/libs/drpy.min.js",
             "ext" : "https://lt3611.github.io/js/360影视.js"
         },
             {
             "key" : "drpy_js_奇珍异兽",
-            "name" : "官源|爱奇艺[DRPY]",
+            "name" : "官源|爱奇艺",
             "type" : 3,
            "api" : "https://gitcode.net/qq_32394351/dr_py/-/raw/master/libs/drpy.min.js",
             "ext" : "https://lt3611.github.io/js/奇珍异兽.js"
         },
             {
             "key" : "drpy_js_优酷",
-            "name" : "官源|优酷[DRPY]",
+            "name" : "官源|优酷",
             "type" : 3,
            "api" : "https://gitcode.net/qq_32394351/dr_py/-/raw/master/libs/drpy.min.js",
             "ext" : "https://lt3611.github.io/js/优酷.js"
         },
             {
             "key" : "drpy_js_腾云驾雾",
-            "name" : "官源|腾讯[DRPY]",
+            "name" : "官源|腾讯",
             "type" : 3,
            "api" : "https://gitcode.net/qq_32394351/dr_py/-/raw/master/libs/drpy.min.js",
             "ext" : "https://lt3611.github.io/js/腾云驾雾.js"
         },
             {
             "key" : "drpy_js_百忙无果",
-            "name" : "官源|芒果[DRPY]",
+            "name" : "官源|芒果",
             "type" : 3,
            "api" : "https://gitcode.net/qq_32394351/dr_py/-/raw/master/libs/drpy.min.js",
             "ext" : "https://lt3611.github.io/js/百忙无果.js"
         },
             {
             "key" : "drpy_js_菜狗",
-            "name" : "官源|搜狗[DRPY]",
+            "name" : "官源|搜狗",
             "type" : 3,
            "api" : "https://gitcode.net/qq_32394351/dr_py/-/raw/master/libs/drpy.min.js",
             "ext" : "https://lt3611.github.io/js/菜狗.js"
