@@ -1,5 +1,5 @@
 {
-    "spider" : "./w.jar",
+    "spider" : "https://ghproxy.com/https://raw.githubusercontent.com/lt3611/lt3611.github.io/main/w.jar",
     "sites" : [
             {
             "key" : "drpy_js_豆瓣",
