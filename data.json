@@ -33,7 +33,7 @@
   ],
 
 //直播
-"lives":[{"group":"redirect","channels":[{"name":"live","urls":["proxy://do=live&type=txt&ext=aHR0cDovL3R2Lmx1cGYueHl6Ojg2NjgvaGxqeWQudHh0="]}]}],
+"lives":[{"group":"redirect","channels":[{"name":"live","urls":["proxy://do=live&type=txt&ext=aHR0cHM6Ly9naXRsYWIuY29tL2R1b212L2R1by8tL3Jhdy9tYWluL3R4dC92LnR4dA=="]}]}],
 //壁纸
 "wallpaper": "https://tool.weetai.cn/api",
   "parses": [
