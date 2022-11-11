@@ -33,9 +33,7 @@
   ],
 
 //直播
-"lives":[{"group":"redirect","channels":[{"name":"redirect","urls":[
-"proxy://do=live&type=txt&ext=aHR0cHM6Ly9yYXcuaXFpcS5pby9sdDM2MTEvbHQzNjExLmdpdGh1Yi5pby9tYWluL2RzLnR4dA=="
-]}]}],
+"lives":[{"group":"redirect","channels":[{"name":"live","urls":["proxy://do=live&type=txt&ext=aHR0cHM6Ly9jZG4uanNkZWxpdnIubmV0L2doL0N5cmlsMDU2My9sYW5qaW5nX2xpdmVAbWFpbi9UVmJveF9GcmVlL0xJVkUvRnJlZS90dmJveF9saXZlLnR4dA=="]}]}],
 //壁纸
 "wallpaper": "https://tool.weetai.cn/api",
   "parses": [
