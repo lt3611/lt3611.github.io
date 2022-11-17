@@ -4,6 +4,8 @@ TVB华丽台,http://23.237.10.66:16410
 翡翠台[1920*1080][1920*1080],http://113.64.147.20:808/hls/67/index.m3u8
 翡翠台[1920*1080][1920*1080],http://113.64.147.69:808/hls/67/index.m3u8
 翡翠台[1920*1080][1920*1080],http://113.64.147.82:808/hls/67/index.m3u8
+翡翠台,http://113.117.74.8:808/hls/25/index.m3u8
+明珠台,http://113.117.74.8:808/hls/26/index.m3u8
 有线新闻台,http://61.10.2.140:80/live_freedirect/freehd209_h.live/chunklist_w135209556.m3u8
 香港有线直播新闻台,https://api.leonardpark.dev/live/icable/110
 香港有线财经资讯台,https://api.leonardpark.dev/live/icable/108
@@ -22,32 +24,30 @@ RTHK32,https://rthktv32-live.akamaized.net/hls/live/2036819/RTHKTV32/master.m3u8
 天映频道,http://51.79.82.208:16024
 香港卫视HKS,http://hw-play.lezhibo.com/live/bd2d26fd492b403d8ec69de1859bdb31.m3u8
 央视频道,#genre#
-凤凰资讯,http://222.76.119.198:9901/tsfile/live/1012_1.m3u8
-凤凰中文,http://222.76.119.198:9901/tsfile/live/1013_1.m3u8
 凤凰资讯,https://playtv-live.ifeng.com/live/06OLEEWQKN4_tv1.m3u8
 凤凰资讯,https://playtv-live.ifeng.com/live/06OLEEWQKN4_tv2.m3u8
 凤凰资讯,https://playtv-live.ifeng.com/live/06OLEEWQKN4.m3u8
 凤凰中文,https://playtv-live.ifeng.com/live/06OLEGEGM4G.m3u8
 凤凰中文,https://playtv-live.ifeng.com/live/06OLEGEGM4G_tv1.m3u8
 凤凰中文,https://playtv-live.ifeng.com/live/06OLEGEGM4G_tv2.m3u8
-CCTV-1综合,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226706/index.m3u8
-CCTV-2财经,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226306/index.m3u8
-CCTV-3综艺,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226614/index.m3u8
-CCTV-4中文国际,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226303/index.m3u8
-CCTV-5体育,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226487/index.m3u8
-CCTV-5+体育赛事,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226609/index.m3u8
-CCTV-6电影,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226485/index.m3u8
-CCTV-7国防军事,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226678/index.m3u8
-CCTV-8电视剧,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226687/index.m3u8
-CCTV-9纪录,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226726/index.m3u8
-CCTV-10科教,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226528/index.m3u8
-CCTV-11戏曲,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226546/index.m3u8
-CCTV-12社会与法,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226560/index.m3u8
-CCTV-13新闻,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226480/index.m3u8
-CCTV-14少儿,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226572/index.m3u8
-CCTV-15音乐,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226478/index.m3u8
-CCTV奥林匹克频道,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226597/index.m3u8
-CCTV-17农村农业,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226473/index.m3u8
+CCTV-1,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226706/index.m3u8
+CCTV-2,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226306/index.m3u8
+CCTV-3,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226614/index.m3u8
+CCTV-4,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226303/index.m3u8
+CCTV-5,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226487/index.m3u8
+CCTV-5+,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226609/index.m3u8
+CCTV-6,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226485/index.m3u8
+CCTV-7,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226678/index.m3u8
+CCTV-8,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226687/index.m3u8
+CCTV-9,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226726/index.m3u8
+CCTV-10,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226528/index.m3u8
+CCTV-11,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226546/index.m3u8
+CCTV-12,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226560/index.m3u8
+CCTV-13,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226480/index.m3u8
+CCTV-14,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226572/index.m3u8
+CCTV-15,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226478/index.m3u8
+CCTV-16,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226597/index.m3u8
+CCTV-17,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226473/index.m3u8
 CCTV奥林匹克频道,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221227060/index.m3u8
 CGTN,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226476/index.m3u8
 河南卫视,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226463/index.m3u8
@@ -83,7 +83,7 @@ CGTN,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226476/index.m3u8
 青海卫视,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226414/index.m3u8
 西藏卫视,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226669/index.m3u8
 金鹰卡通,http://iptv.cdn.ha.chinamobile.com/PLTV/88888888/224/3221226624/index.m3u8
-💽｜吴中联通,#genre#
+#吴中联通
 CCTV1-综合,http://153.34.17.54:85/tsfile/live/0001_1.m3u8?key=txiptv&playlive=0&authid=0
 CCTV2-财经,http://153.34.17.54:85/tsfile/live/0002_1.m3u8?key=txiptv&playlive=0&authid=0
 CCTV3-综艺,http://153.34.17.54:85/tsfile/live/0003_1.m3u8?key=txiptv&playlive=0&authid=0
@@ -129,8 +129,7 @@ CCTV-13,http://153.34.17.54:85/tsfile/live/0013_1.m3u8?key=txiptv&playlive=0&aut
 辽宁卫视,http://153.34.17.54:85/tsfile/live/0121_1.m3u8?key=txiptv&playlive=0&authid=0
 陕西卫视,http://153.34.17.54:85/tsfile/live/0136_1.m3u8?key=txiptv&playlive=0&authid=0
 南方卫视,http://153.34.17.54:85/tsfile/live/1010_1.m3u8?key=txiptv&playlive=0&authid=0
-
-📌｜阜宁电信,#genre#
+#阜宁电信
 CCTV1-综合,http://222.188.112.68:10000/tsfile/live/0001_1.m3u8?key=txiptv&playlive=1&authid=0
 CCTV2-财经,http://222.188.112.68:10000/tsfile/live/0002_1.m3u8?key=txiptv&playlive=1&authid=0
 CCTV3-综艺,http://222.188.112.68:10000/tsfile/live/0003_1.m3u8?key=txiptv&playlive=1&authid=0
@@ -170,7 +169,7 @@ CCTV15-音乐,http://222.188.112.68:10000/tsfile/live/0015_1.m3u8?key=txiptv&pla
 安徽卫视,http://222.188.112.68:10000/tsfile/live/0130_1.m3u8?key=txiptv&playlive=1&authid=0
 河南卫视,http://222.188.112.68:10000/tsfile/live/0139_1.m3u8?key=txiptv&playlive=1&authid=0
 
-📈｜封丘联通,#genre#
+#封丘联通
 CCTV1,http://218.29.55.44:808/hls/1/index.m3u8
 CCTV2,http://218.29.55.44:808/hls/2/index.m3u8
 CCTV3,http://218.29.55.44:808/hls/3/index.m3u8
@@ -233,7 +232,7 @@ CCTV14,http://218.29.55.44:808/hls/14/index.m3u8
 名校课堂高二,http://218.29.55.44:808/hls/811/index.m3u8
 名校课堂高三,http://218.29.55.44:808/hls/812/index.m3u8
 
-💖｜揭阳电信,#genre#
+#揭阳电信
 CCTV-1高清,http://113.117.74.8:808/hls/138/index.m3u8
 CCTV-2高清,http://113.117.74.8:808/hls/2/index.m3u8
 CCTV-3高清,http://113.117.74.8:808/hls/3/index.m3u8
@@ -258,8 +257,6 @@ CCTV-17,http://113.117.74.8:808/hls/17/index.m3u8
 揭阳综合,http://113.117.74.8:808/hls/21/index.m3u8
 潮州综合,http://113.117.74.8:808/hls/23/index.m3u8
 汕头台,http://113.117.74.8:808/hls/24/index.m3u8
-翡翠台,http://113.117.74.8:808/hls/25/index.m3u8
-明珠台,http://113.117.74.8:808/hls/26/index.m3u8
 广东公共,http://113.117.74.8:808/hls/27/index.m3u8
 广东体育高清,http://113.117.74.8:808/hls/1/index.m3u8
 广东新闻,http://113.117.74.8:808/hls/28/index.m3u8
@@ -363,7 +360,7 @@ CCTV-4,http://113.117.74.8:808/hls/131/index.m3u8
 CCTV-10,http://113.117.74.8:808/hls/133/index.m3u8
 CCTV-12,http://113.117.74.8:808/hls/134/index.m3u8
 
-河南联通,#genre#
+#河南联通
 CCTV-1,http://125.40.191.58:9901/tsfile/live/0001_1.m3u8?blog.ntnas.top
 CCTV-2,http://125.40.191.58:9901/tsfile/live/0002_1.m3u8?blog.ntnas.top
 CCTV-3,http://125.40.191.58:9901/tsfile/live/0009_1.m3u8?blog.ntnas.top
