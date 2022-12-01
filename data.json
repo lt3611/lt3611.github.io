@@ -12,6 +12,30 @@
 "sites":[
 {"key": "douban","name": "开始观看","type": 4,"api":"http://t4.ganggang.live:3812/vod?sites=all&ali_token=x&timeout=8","searchable":1,"quickSearch":1,"filterable": 1},
 {
+      "key": "360",
+      "name": "360",
+      "type": 3,
+      "api": "csp_SP360",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 1
+    },
+{
+      "key": "csp_xb_lez",
+      "name": "乐猪(XBiu)",
+      "type": 3,
+      "api": "csp_XBiu",
+      "searchable": 1,
+      "quickSearch": 1,
+      "filterable": 0,
+      "ext": {
+        "homeUrl": "http://www.lezhutv.com/type/{cateId}-{datePg}.html",
+        "playlist":{
+          "sort":1
+        }
+      }
+    },
+{
             "key" : "小仙女网盘",
             "name" : "Alist[DRPY]",
             "type" : 3,
