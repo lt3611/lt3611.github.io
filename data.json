@@ -5,7 +5,7 @@
 		"group": "redirect",
 		"channels": [{
 			"name": "live",
-			"urls": ["proxy://do=live&type=txt&ext=aHR0cHM6Ly9naHByb3h5LmNvbS9odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbHQzNjExL2x0MzYxMS5naXRodWIuaW8vbWFpbi9kcy50eHQ=="]
+			"urls": ["proxy://do=live&type=txt&ext=https://ghproxy.com/https://raw.githubusercontent.com/lt3611/lt3611.github.io/main/ds.txt="]
 		}]
 	}],
 
