@@ -83,7 +83,13 @@
     }
   ],
   "sites": [
-  {"key":"csp_Auete","name":"奥特影视","type": 3,"api":"csp_Auete","searchable":1,"quickSearch":1,"filterable":1,"jar":"https://see.moemew.com/ext/xc.jar"},
+{"key":"csp_Voflix","name":"沃菲影视","type":3,"api":"csp_Voflix","searchable":1,"quickSearch":1,"filterable":1,"jar":"https://see.moemew.com/ext/xc.jar"},
+{"key":"csp_jihuang","name":"剧荒在线","type":3,"api":"csp_Juhuang","searchable":1,"quickSearch":1,"filterable":1,"jar":"https://see.moemew.com/ext/xc.jar"},
+{"key":"csp_GitCafe","name":"小小纸条","type":3,"api":"csp_Gitcafe","playerType":1,"searchable":1,"quickSearch":1,"filterable":1,"ext":"http://ali.饭太硬.ml/tok"},
+{"key":"csp_zxzj","name":"在线之家","type":3,"api":"csp_Zxzj","searchable":1,"quickSearch":1,"filterable":1,"jar":"https://see.moemew.com/ext/xc.jar"},
+{"key":"Zjdr","name":"追剧达人","type":3,"api":"csp_Zjdr","searchable":1,"quickSearch":1,"filterable":1,"jar":"https://see.moemew.com/ext/xc.jar"},
+{"key":"快看","name":"快看影视","type":3,"api":"csp_Kuaikan","searchable":1,"quickSearch":1,"filterable":1,"jar":"https://see.moemew.com/ext/xc.jar"},
+{"key":"csp_Auete","name":"奥特影视","type": 3,"api":"csp_Auete","searchable":1,"quickSearch":1,"filterable":1,"jar":"https://see.moemew.com/ext/xc.jar"},
 {"key":"小苹果","name":"苹果影视","type":3,"api":"csp_LiteApple","searchable":1,"quickSearch":1,"filterable":1,"jar":"http://45.125.46.61/xpg.jar"},
 
     {
