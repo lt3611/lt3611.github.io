@@ -111,15 +111,7 @@
         }
       }
     },
-    {
-            "key" : "小仙女网盘",
-            "name" : "Alist[DRPY]",
-            "type" : 3,
-            "api" : "https://tv.lupf.xyz/JS/lib/alist.min.js",
-            "ext" : "https://tv.lupf.xyz/JS/js/alist.json",
-			"jar": "https://tv.lupf.xyz/cat/w.jar;md5;74a24673cc1587fa87ec2d1f43bfa4cb"
-        },
-		
+    
 {"key": "csp_XYQ_lu1","name": "️电视直播","type": 3,"api": "csp_XYQHiker","searchable": 1,"quickSearch": 1,"filterable": 0,"ext": "https://codeberg.org/zqk219/baip/raw/branch/main/xyq/ningmeng.json","jar":"https://see.moemew.com/ext/ys.jar"},
 {
       "key": "csp_Alist",
@@ -134,16 +126,6 @@
         "💢小雅":"http://alistxy.ganggang.live:5678",
         "💦讯维云盘": "https://pan.xwbeta.com"
       }
-    },
-    {
-      "key": "csp_xb_cokemv",
-      "name": "cokemv(XBiu)",
-      "type": 3,
-      "api": "csp_XBiu",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 0,
-      "ext": "https://cokemv.me/vodshow/{cateId}--------{catePg}---.html"
     },
     {
       "key": "push_agent",
