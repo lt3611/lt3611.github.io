@@ -55,7 +55,8 @@
 {"key":"百影视频","name":"🍳百影视频","type":3,"api":"csp_MianHua","searchable":1,"playerType":2,"quickSearch":1,"filterable":0,"ext":"http://47.104.99.175","jar":"http://cdn.qiaoji8.com/cznk1203.jar;md5;ac4ab2ac15ac3fc72e03ca2ffef7f041"},
 
 {"key": "csp_Lgyy","name": "🧿蓝光","type": 3,"api": "csp_Lgyy","searchable": 1,"quickSearch": 1,"filterable": 1,"jar":""},
-
+{"key":"drpy_js_Alist","name":"💾Alist┃网盘（支持搜索）","type" : 3,"api" : "https://agit.ai/outyshz/out/raw/branch/master/TVBox/JS/js/M.js","ext" : "https://agit.ai/outyshz/out/raw/branch/master/TVBox/JS/js/alist.json"},
+{"key":"Gitcafe","name":"📜小纸条","type":3,"api":"csp_Gitcafe","searchable":1,"quickSearch":1,"filterable":1,"ext":"https://notabug.org/wlcmc1972/test/raw/master/jar/token.txt"},
 {"key":"csp_Yiso","name":"易搜（仅搜索）","type":3,"api":"csp_Yiso","searchable":1,"quickSearch":1,"filterable":0,"ext":"3a49cf29cf20410997247c6eb4509be9"}
 ],
   "parses": [
