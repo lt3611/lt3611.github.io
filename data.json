@@ -49,7 +49,25 @@
 
 {"key":"百影视频","name":"🍳百影视频","type":3,"api":"csp_MianHua","searchable":1,"playerType":2,"quickSearch":1,"filterable":0,"ext":"http://47.104.99.175","jar":"http://cdn.qiaoji8.com/cznk1203.jar;md5;ac4ab2ac15ac3fc72e03ca2ffef7f041"},
 
-{"key": "csp_Lgyy","name": "🧿蓝光","type": 3,"api": "csp_Lgyy","searchable": 1,"quickSearch": 1,"filterable": 1,"jar":""},
+{
+         "key":"阿里盘搜",
+         "name":"🏷️阿里盘搜",
+         "type":3,
+         "api":"csp_AliPanSou",
+         "searchable":1,
+         "quickSearch":1,
+         "filterable":1,
+         "ext":"cf2032be551843fd9a18a27c5cb06d8a",
+         "jar":"http://tv.51cube.com/TVBox/bdyl/yuanhua.jar"
+      },
+
+//{"key": "T4","name": "T4搜索","type": 4,"api": "https://service-59u7dsoa-1308372858.gz.apigw.tencentcs.com/release/vod","searchable": 1,"quickSearch": 1,"filterable": 1,"jar":"http://tv.51cube.com/TVBox/bdyl/t4.jar"},
+//{"key":"csp_Zhaozy","name":"🔍找资源原画","type":3,"api":"csp_Zhaozy","searchable":1,"quickSearch":1,"filterable":0,"ext":"4acb3ad2f2254ba1b566279f7cd98ba3","jar":"http://tv.51cube.com/TVBox/bdyl/yuanhua.jar"},
+//{"key":"csp_AliPS","name":"📀盘搜原画","type":3,"api":"csp_AliPS","searchable":1,"quickSearch":1,"filterable":0,"ext":"4acb3ad2f2254ba1b566279f7cd98ba3","jar":"http://tv.51cube.com/TVBox/bdyl/yuanhua.jar"},
+//{"key":"csp_Yisou","name":"🔎易搜原画","type":3,"api":"csp_Yisou","searchable":1,"quickSearch":1,"filterable":0,"ext":"4acb3ad2f2254ba1b566279f7cd98ba3","jar":"http://tv.51cube.com/TVBox/bdyl/yuanhua.jar"},
+//{"key":"Yisou","name":"😺易搜+原画(搜索)","type":3,"api":"csp_Yisou","searchable":1,"quickSearch":1,"filterable":0,"ext": "4acb3ad2f2254ba1b566279f7cd98ba3"},
+//{"key":"Zhaozy","name":"😺找资源+原画(搜索)","type":3,"api":"csp_Zhaozy","searchable":1,"quickSearch":1,"filterable":0,"ext": "4acb3ad2f2254ba1b566279f7cd98ba3"},
+//{"key":"csp_Alips","name":"🐱喵搜(搜索)","type":3,"api":"csp_AliPanSou","searchable":1,"quickSearch":1,"filterable":0,"ext": "4acb3ad2f2254ba1b566279f7cd98ba3"},
 {"key":"Gitcafe","name":"📜小纸条","type":3,"api":"csp_Gitcafe","searchable":1,"quickSearch":1,"filterable":1,"ext":"https://notabug.org/wlcmc1972/test/raw/master/jar/token.txt"}
 ],
   "parses": [
