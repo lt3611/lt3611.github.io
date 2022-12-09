@@ -61,6 +61,22 @@
          "jar":"http://tv.51cube.com/TVBox/bdyl/yuanhua.jar"
       },
 
+  {
+            "key" : "drpy_js_Alist",
+            "name" : "♻️Alist（支持搜索）",
+            "type" : 3,
+            "api" : "https://agit.ai/66666/XC/raw/branch/master/js/M.js",
+            "ext" : "https://agit.ai/66666/XC/raw/branch/master/js/J.json"
+        },
+        {
+      "key": "AList",
+      "name": "✅AList(可搜索)",
+      "type": 3,
+      "api": "csp_AList",
+      "searchable": 1,
+      "filterable": 1,
+      "ext": "https://ghproxy.com/https://raw.githubusercontent.com/FongMi/CatVodSpider/main/json/alist.json","jar":"https://ghproxy.com/https://raw.githubusercontent.com/FongMi/CatVodSpider/main/jar/custom_spider.jar;md5;906b337d4b4baef13292d004e5fd8f9b"
+    },
 //{"key": "T4","name": "T4搜索","type": 4,"api": "https://service-59u7dsoa-1308372858.gz.apigw.tencentcs.com/release/vod","searchable": 1,"quickSearch": 1,"filterable": 1,"jar":"http://tv.51cube.com/TVBox/bdyl/t4.jar"},
 //{"key":"csp_Zhaozy","name":"🔍找资源原画","type":3,"api":"csp_Zhaozy","searchable":1,"quickSearch":1,"filterable":0,"ext":"4acb3ad2f2254ba1b566279f7cd98ba3","jar":"http://tv.51cube.com/TVBox/bdyl/yuanhua.jar"},
 //{"key":"csp_AliPS","name":"📀盘搜原画","type":3,"api":"csp_AliPS","searchable":1,"quickSearch":1,"filterable":0,"ext":"4acb3ad2f2254ba1b566279f7cd98ba3","jar":"http://tv.51cube.com/TVBox/bdyl/yuanhua.jar"},
