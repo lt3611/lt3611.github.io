@@ -1,0 +1,50 @@
+        {
+    "urls":[
+    {
+            "url": "https://lt3611.netlify.app/dy.json",
+            "name": "自己"
+        },
+        {
+            "url": "http://饭太硬.ga/tv",
+            "name": "饭太硬"
+        },
+	{
+            "url": "https://www.agit.ai/relax/adcc/raw/branch/master/tvbox.json",
+            "name": "巧技"
+        },
+	{
+            "url": "https://pastebin.com/raw/5NHaxyGR",
+            "name": "道长"
+        },
+        {
+            "url": "http://我不是.肥猫.love:63/接口禁止贩卖",
+            "name": "肥猫"
+        },
+        {
+            "url": "http://drpy.site/js1",
+            "name": "小雅js"
+        },
+        {
+            "url": "https://tvbox.cainisi.cf",
+            "name": "菜妮丝xBPQ"
+        },    
+        {
+            "url": "https://神器每日推送.tk/pz.json",
+            "name": "神器每日推送"
+        },
+        {
+            "url": "http://itvbox.cc/tvbox/云星日记/1.m3u8",
+            "name": "云星日记"
+        },	
+        {
+            "url": "https://ghproxy.com/raw.githubusercontent.com/FongMi/CatVodSpider/main/json/config.json",
+            "name": "FongMi"
+        },
+       {
+            "url": "https://gitee.com/chenluning/ds1/raw/master/js.json",
+            "name": "Grtee"
+        }
+
+
+    ]
+}
