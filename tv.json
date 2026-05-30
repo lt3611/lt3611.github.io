@@ -3,7 +3,7 @@
     {
       "key": "feimao",
       "name": "肥猫影视",
-      "api": "http://肥猫.live",
+      "api": "https://raw.giteeusercontent.com/sunyeen/tv/raw/master/ysc.json?metadata=eyJyIjoibWFzdGVyIiwiZnAiOiJ5c2MuanNvbiIsInVpZCI6ODY5NzU2NiwicGlkIjozODU2MDMyMSwic3RvIjoiZ2l0LXNoYXJkaW5nLXN0by0xMHQtMDY4IiwicnAiOiJyZXBvcy9hZC9kZi9hZGRmYmE1YjQ4MTkzOWU2Mzg1MThlOTgzZDJmODRhMWJiMjc4YjU2ZWY1MWQ1OTcwZjAwMWU5OTRkOGY5MGU1LmdpdCIsImlzcCI6dHJ1ZSwiZXhwaXJlX2F0IjoxNzgwMTA0MDAwfQ&signature=jDHgsgjsxrMqNrKXkg_SPYcfq7Za76BA6XJGLgk77AM",
       "searchable": 1
     },
     {
