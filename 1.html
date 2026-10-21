@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>复制指定链接 · 按钮</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(145deg, #f8faff 0%, #eef2f9 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 25px 40px -12px rgba(0, 20, 60, 0.25),
+                  inset 0 1px 2px rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      max-width: 560px;
+      width: 100%;
+    }
+
+    .title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #1f2a4a;
+      text-align: center;
+    }
+
+    .title span {
+      background: linear-gradient(135deg, #3b5bdb, #8b5cf6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      padding: 0 0.2rem;
+    }
+
+    .sub {
+      font-size: 0.95rem;
+      color: #4b587c;
+      text-align: center;
+      max-width: 400px;
+      line-height: 1.5;
+      margin-top: -0.5rem;
+    }
+
+    /* 链接展示框 - 显示指定链接 */
+    .url-display {
+      width: 100%;
+      background: #ffffffcc;
+      border-radius: 60px;
+      padding: 0.9rem 1.6rem;
+      font-size: 0.95rem;
+      color: #1e2b4f;
+      border: 1px solid #d9e2f0;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      word-break: break-all;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+
+    .url-display:hover {
+      border-color: #b6c8e3;
+      box-shadow: 0 2px 8px rgba(59, 91, 219, 0.08);
+    }
+
+    .url-text {
+      font-weight: 500;
+      opacity: 0.9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: left;
+      flex: 1;
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      font-size: 0.9rem;
+      letter-spacing: 0.01em;
+    }
+
+    /* 图标装饰 */
+    .url-display svg {
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
+    /* 核心复制按钮 */
+    .copy-btn {
+      border: none;
+      outline: none;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 0.85rem 2.2rem;
+      border-radius: 60px;
+
+      background: #1a2b4c;
+      color: white;
+      font-weight: 500;
+      font-size: 1rem;
+      letter-spacing: 0.01em;
+
+      box-shadow: 0 8px 18px -6px rgba(26, 43, 76, 0.4),
+                  0 2px 6px rgba(26, 43, 76, 0.1),
+                  inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      transition: background 0.25s ease, transform 0.15s ease, box-shadow 0.25s ease;
+
+      user-select: none;
+      -webkit-user-select: none;
+      white-space: nowrap;
+
+      min-width: 150px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .copy-btn:hover {
+      background: #233a62;
+      box-shadow: 0 12px 24px -8px rgba(26, 43, 76, 0.5),
+                  0 4px 10px rgba(26, 43, 76, 0.15),
+                  inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .copy-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 12px -4px rgba(26, 43, 76, 0.4),
+                  inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      background: #16233d;
+    }
+
+    .copy-btn svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 0.2s;
+    }
+
+    .copy-btn:focus-visible {
+      outline: 2px solid #8b5cf6;
+      outline-offset: 3px;
+    }
+
+    /* 复制成功状态 */
+    .copy-btn.copied {
+      background: #2b6e4f;
+      box-shadow: 0 8px 18px -6px rgba(43, 110, 79, 0.5);
+    }
+
+    .copy-btn.copied:hover {
+      background: #2f7a58;
+    }
+
+    /* Toast 提示 */
+    .toast-message {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(1rem);
+      background: #1e293b;
+      color: #f1f5f9;
+      padding: 0.8rem 2rem;
+      border-radius: 60px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1);
+      pointer-events: none;
+      z-index: 9999;
+      white-space: nowrap;
+      border: 1px solid #ffffff30;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .toast-message.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* 移动端适配 */
+    @media (max-width: 480px) {
+      .card {
+        padding: 2rem 1.5rem;
+        gap: 1.25rem;
+      }
+
+      .url-display {
+        padding: 0.7rem 1.2rem;
+        font-size: 0.8rem;
+      }
+
+      .url-text {
+        font-size: 0.8rem;
+      }
+
+      .copy-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.95rem;
+        min-width: 130px;
+        gap: 0.4rem;
+      }
+
+      .copy-btn svg {
+        width: 1.1rem;
+        height: 1.1rem;
+      }
+
+      .title {
+        font-size: 1.3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- 标题 -->
+    <div class="title">
+      <span>复制链接</span> 按钮
+    </div>
+    <p class="sub">点击按钮复制指定网址</p>
+
+    <!-- 显示要复制的固定链接 -->
+    <div class="url-display" id="urlDisplay">
+      <span class="url-text" id="urlText">http://lt3611.ccwu.cc/</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7b9e" stroke-width="2">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+      </svg>
+    </div>
+
+    <!-- 复制按钮 -->
+    <button class="copy-btn" id="copyLinkBtn" aria-label="复制链接 http://lt3611.ccwu.cc/">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      <span id="btnText">复制链接</span>
+    </button>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div class="toast-message" id="toast">✅ 链接已复制到剪贴板</div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // ===== 固定要复制的链接 =====
+      const TARGET_URL = 'http://lt3611.ccwu.cc/';
+
+      // ===== DOM 元素 =====
+      const copyBtn = document.getElementById('copyLinkBtn');
+      const btnText = document.getElementById('btnText');
+      const toastEl = document.getElementById('toast');
+      const urlTextEl = document.getElementById('urlText');
+
+      // 显示完整链接（如果过长可以缩短显示，但此链接不长，直接显示）
+      // 也设置 title 属性方便悬停查看
+      urlTextEl.textContent = TARGET_URL;
+      urlTextEl.title = TARGET_URL;
+
+      // 为防止链接过长撑破布局，如果链接长度超过50就截断显示（此处链接长度约28，不会截断）
+      // 但为了通用性，保留这个逻辑
+      if (TARGET_URL.length > 50) {
+        urlTextEl.textContent = TARGET_URL.slice(0, 47) + '...';
+      } else {
+        urlTextEl.textContent = TARGET_URL;
+      }
+
+      // ===== Toast 控制 =====
+      let toastTimer = null;
+
+      function showToast(message, duration = 2000) {
+        if (toastTimer) {
+          clearTimeout(toastTimer);
+          toastTimer = null;
+        }
+        toastEl.textContent = message;
+        toastEl.classList.add('show');
+        toastTimer = setTimeout(() => {
+          toastEl.classList.remove('show');
+          toastTimer = null;
+        }, duration);
+      }
+
+      // ===== 复制核心逻辑（优先 Clipboard API，降级 execCommand） =====
+      async function copyTargetLink() {
+        // 1. 尝试现代 Clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(TARGET_URL);
+            return true;
+          } catch (err) {
+            console.warn('Clipboard API 失败，尝试降级方案:', err);
+            return fallbackCopy(TARGET_URL);
+          }
+        } else {
+          // 2. 降级方案
+          return fallbackCopy(TARGET_URL);
+        }
+      }
+
+      // 降级方案：创建临时 textarea 并使用 execCommand
+      function fallbackCopy(text) {
+        return new Promise((resolve) => {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+
+          // 样式隐藏，避免页面跳动
+          textarea.style.position = 'fixed';
+          textarea.style.top = '-9999px';
+          textarea.style.left = '-9999px';
+          textarea.style.width = '1px';
+          textarea.style.height = '1px';
+          textarea.style.opacity = '0';
+          textarea.setAttribute('readonly', '');
+
+          document.body.appendChild(textarea);
+
+          // 选中并复制
+          textarea.select();
+          textarea.setSelectionRange(0, textarea.value.length);
+
+          let success = false;
+          try {
+            success = document.execCommand('copy');
+          } catch (err) {
+            console.error('execCommand 复制失败:', err);
+            success = false;
+          }
+
+          document.body.removeChild(textarea);
+          resolve(success);
+        });
+      }
+
+      // ===== 按钮点击处理 =====
+      async function handleCopyClick() {
+        // 防止连续点击
+        copyBtn.disabled = true;
+        copyBtn.style.opacity = '0.8';
+        copyBtn.style.cursor = 'default';
+
+        try {
+          const success = await copyTargetLink();
+
+          if (success) {
+            // 成功：改变按钮样式和文字
+            copyBtn.classList.add('copied');
+            btnText.textContent = '已复制!';
+            showToast('✅ 链接已复制到剪贴板', 2000);
+
+            // 2秒后恢复按钮文字和样式（使用全局定时器避免冲突）
+            if (window._copyBtnTextTimer) {
+              clearTimeout(window._copyBtnTextTimer);
+            }
+            window._copyBtnTextTimer = setTimeout(() => {
+              btnText.textContent = '复制链接';
+              copyBtn.classList.remove('copied');
+            }, 2000);
+          } else {
+            // 失败
+            showToast('❌ 复制失败，请手动复制', 2500);
+            // 短暂显示失败文字
+            btnText.textContent = '复制失败';
+            if (window._copyFailTimer) {
+              clearTimeout(window._copyFailTimer);
+            }
+            window._copyFailTimer = setTimeout(() => {
+              btnText.textContent = '复制链接';
+            }, 2000);
+          }
+        } catch (err) {
+          console.error('复制异常:', err);
+          showToast('❌ 复制失败，请稍后重试', 2000);
+          btnText.textContent = '复制链接';
+        } finally {
+          // 重新启用按钮
+          copyBtn.disabled = false;
+          copyBtn.style.opacity = '1';
+          copyBtn.style.cursor = 'pointer';
+        }
+      }
+
+      // 绑定事件
+      copyBtn.addEventListener('click', handleCopyClick);
+
+      // 可选：点击链接显示区域也触发复制（提升体验）
+      // 但如果用户想选中文字，则不应干扰。这里不做自动复制，保持简洁。
+      // 如果希望点击链接显示区域也能复制，可以取消下面的注释：
+      // document.getElementById('urlDisplay').addEventListener('click', handleCopyClick);
+
+      // 页面加载时无需额外操作
+    })();
+  </script>
+</body>
+</html>
