@@ -103,7 +103,7 @@
   /* ===== 左右两栏容器 ===== */
   .two-columns {
     display: flex;
-    gap: 20px;
+    gap: 16px;
     width: 100%;
     align-items: flex-start;
     margin-top: 8px;
@@ -126,15 +126,14 @@
     min-width: 0;
   }
 
-  /* ===== 左右按钮统一尺寸：高 54px，圆角 60px ===== */
-  /* 左栏网址按钮 */
+  /* ===== 左栏网址按钮：固定 54×54，圆形 ===== */
   .link-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 54px;
     height: 54px;
-    border-radius: 60px;
+    border-radius: 50%;
     background: linear-gradient(135deg, #3b5bdb, #8b5cf6);
     color: #fff;
     text-decoration: none;
@@ -174,7 +173,7 @@
     outline-offset: 3px;
   }
 
-  /* 右栏复制按钮 —— 与左侧同高、同圆角 */
+  /* ===== 右栏复制按钮：高度 54px，圆角 27px（与左栏圆形视觉高度一致） ===== */
   .copy-btn {
     border: none;
     outline: none;
@@ -186,7 +185,7 @@
     gap: 9px;
     height: 54px;
     padding: 0 20px;
-    border-radius: 60px;
+    border-radius: 27px;          /* 54px 高度的一半，形成半圆形端部 */
     background: #1a2b4c;
     color: #fff;
     font-weight: 500;
@@ -217,7 +216,8 @@
   .copy-btn svg {
     width: 17px; height: 17px; flex-shrink: 0;
     fill: none; stroke: currentColor; stroke-width: 2;
-    stroke-linecap: round; stroke-linejoin: round;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   .copy-btn.copied {
@@ -256,11 +256,12 @@
     .card { padding: 28px 20px; gap: 20px; max-width: 440px; }
     .home-btn { padding: 13px 16px; font-size: 15px; gap: 8px; }
     .home-btn svg { width: 16px; height: 16px; }
+    /* 移动端同步缩小，左右一致 */
     .link-btn { width: 48px; height: 48px; }
     .link-btn svg { width: 21px; height: 21px; }
-    .copy-btn { height: 48px; padding: 0 14px; font-size: 14px; gap: 7px; }
+    .copy-btn { height: 48px; padding: 0 14px; font-size: 14px; gap: 7px; border-radius: 24px; }
     .copy-btn svg { width: 15px; height: 15px; }
-    .two-columns { gap: 14px; }
+    .two-columns { gap: 12px; }
     .title { font-size: 20px; }
   }
 </style>
@@ -285,7 +286,7 @@
   <!-- 左右两栏 -->
   <div class="two-columns" id="twoColumns">
 
-    <!-- 左栏：四个网址图标按钮（独立跳转） -->
+    <!-- 左栏：四个网址图标按钮（跳转到内网地址） -->
     <div class="link-column">
       <!-- 路由 -->
       <a class="link-btn" href="http://192.168.50.1" target="_blank" rel="noopener" aria-label="打开路由 http://192.168.50.1">
