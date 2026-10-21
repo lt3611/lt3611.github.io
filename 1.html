@@ -30,7 +30,7 @@
     flex-direction: column;
     align-items: center;
     gap: 24px;
-    max-width: 480px;
+    max-width: 420px;
     width: 100%;
   }
 
@@ -55,36 +55,63 @@
     margin-top: -8px;
   }
 
-  /* 竖排容器 */
-  .btn-grid {
+  /* ===== 主页按钮 ===== */
+  .home-btn {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 100%;
-    margin-top: 8px;
-  }
-
-  .btn-item {
-    display: flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     width: 100%;
+    padding: 15px 20px;
+    border-radius: 60px;
+    background: linear-gradient(135deg, #3b5bdb, #8b5cf6);
+    color: #fff;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: 0 10px 20px -8px rgba(59, 91, 219, 0.5),
+                0 4px 10px rgba(59, 91, 219, 0.15),
+                inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
+    margin-top: -6px;
+    margin-bottom: 4px;
   }
 
-  .url-display {
+  .home-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+    box-shadow: 0 14px 26px -8px rgba(59, 91, 219, 0.6),
+                0 6px 14px rgba(59, 91, 219, 0.2),
+                inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  }
+
+  .home-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 6px 14px -6px rgba(59, 91, 219, 0.4),
+                inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .home-btn svg {
+    width: 18px; height: 18px; flex-shrink: 0;
+    fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .home-btn:focus-visible {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 3px;
+  }
+
+  /* 竖排按钮容器 */
+  .btn-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
     width: 100%;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 40px;
-    padding: 9px 14px;
-    font-size: 12px;
-    color: #1e2b4f;
-    border: 1px solid #d9e2f0;
-    text-align: center;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    margin-top: 8px;
   }
 
   .copy-btn {
@@ -95,27 +122,38 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 13px 14px;
+    gap: 10px;
+    padding: 15px 20px;
     border-radius: 60px;
     background: #1a2b4c;
     color: #fff;
     font-weight: 500;
-    font-size: 15px;
+    font-size: 16px;
+    letter-spacing: 0.01em;
     white-space: nowrap;
     width: 100%;
     box-shadow: 0 8px 18px -6px rgba(26, 43, 76, 0.4),
                 0 2px 6px rgba(26, 43, 76, 0.1),
                 inset 0 1px 1px rgba(255, 255, 255, 0.2);
-    transition: background 0.25s ease, transform 0.15s ease;
+    transition: background 0.25s ease, transform 0.15s ease, box-shadow 0.25s ease;
     -webkit-tap-highlight-color: transparent;
   }
 
-  .copy-btn:hover { background: #233a62; transform: translateY(-1px); }
-  .copy-btn:active { transform: translateY(1px); background: #16233d; }
+  .copy-btn:hover {
+    background: #233a62;
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px -8px rgba(26, 43, 76, 0.5),
+                0 4px 10px rgba(26, 43, 76, 0.15),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  }
+
+  .copy-btn:active {
+    transform: translateY(1px);
+    background: #16233d;
+  }
 
   .copy-btn svg {
-    width: 16px; height: 16px; flex-shrink: 0;
+    width: 18px; height: 18px; flex-shrink: 0;
     fill: none; stroke: currentColor; stroke-width: 2;
     stroke-linecap: round; stroke-linejoin: round;
   }
@@ -125,6 +163,11 @@
     box-shadow: 0 8px 18px -6px rgba(43, 110, 79, 0.5);
   }
   .copy-btn.copied:hover { background: #2f7a58; }
+
+  .copy-btn:focus-visible {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 3px;
+  }
 
   /* Toast */
   .toast-message {
@@ -148,10 +191,9 @@
   .toast-message.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   @media (max-width: 480px) {
-    .card { padding: 28px 18px; gap: 18px; }
-    .copy-btn { padding: 11px 12px; font-size: 14px; gap: 6px; }
-    .copy-btn svg { width: 14px; height: 14px; }
-    .url-display { padding: 7px 10px; font-size: 10px; }
+    .card { padding: 28px 20px; gap: 20px; }
+    .copy-btn, .home-btn { padding: 13px 16px; font-size: 15px; gap: 8px; }
+    .copy-btn svg, .home-btn svg { width: 16px; height: 16px; }
     .title { font-size: 20px; }
   }
 </style>
@@ -160,53 +202,52 @@
 
 <div class="card">
   <div class="title"><span>自用导航</span> 链接集合</div>
+
+  <!-- 主页按钮：点击跳转到 http://lt3611.ccwu.cc/ -->
+  <a class="home-btn" href="http://lt3611.ccwu.cc/" target="_blank" rel="noopener" aria-label="打开自用导航主页">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 9.5L12 3l9 6.5"/>
+      <path d="M5 10v10h14V10"/>
+      <path d="M9 20v-6h6v6"/>
+    </svg>
+    <span>主页</span>
+  </a>
+
   <p class="sub">点击任意按钮复制专属导航地址</p>
 
-  <div class="btn-grid" id="btnGrid">
+  <div class="btn-list" id="btnList">
     <!-- 按钮 1 -->
-    <div class="btn-item">
-      <div class="url-display">lt3611.ccwu.cc</div>
-      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        <span class="btn-text">自用导航</span>
-      </button>
-    </div>
+    <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      <span class="btn-text">自用导航</span>
+    </button>
     <!-- 按钮 2 -->
-    <div class="btn-item">
-      <div class="url-display">lt3611.ccwu.cc</div>
-      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        <span class="btn-text">自用导航</span>
-      </button>
-    </div>
+    <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      <span class="btn-text">自用导航</span>
+    </button>
     <!-- 按钮 3 -->
-    <div class="btn-item">
-      <div class="url-display">lt3611.ccwu.cc</div>
-      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        <span class="btn-text">自用导航</span>
-      </button>
-    </div>
+    <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      <span class="btn-text">自用导航</span>
+    </button>
     <!-- 按钮 4 -->
-    <div class="btn-item">
-      <div class="url-display">lt3611.ccwu.cc</div>
-      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        <span class="btn-text">自用导航</span>
-      </button>
-    </div>
+    <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      <span class="btn-text">自用导航</span>
+    </button>
   </div>
 </div>
 
