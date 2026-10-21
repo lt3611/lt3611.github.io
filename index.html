@@ -30,7 +30,7 @@
     flex-direction: column;
     align-items: center;
     gap: 24px;
-    max-width: 480px;
+    max-width: 520px;
     width: 100%;
   }
 
@@ -100,32 +100,41 @@
     stroke-linecap: round; stroke-linejoin: round;
   }
 
-  /* ===== 按钮列表容器 ===== */
-  .btn-list {
+  /* ===== 左右两栏容器 ===== */
+  .two-columns {
     display: flex;
-    flex-direction: column;
-    gap: 14px;
+    gap: 20px;
     width: 100%;
+    align-items: flex-start;
     margin-top: 8px;
   }
 
-  /* ===== 每一行：网址按钮 + 复制按钮 ===== */
-  .btn-row {
+  /* 左栏：四个网址图标按钮（竖排） */
+  .link-column {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
+    flex-direction: column;
+    gap: 14px;
+    flex-shrink: 0;
   }
 
-  /* ===== 网址图标按钮（左侧） ===== */
+  /* 右栏：四个复制按钮（竖排） */
+  .copy-column {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ===== 左右按钮统一尺寸：高 54px，圆角 60px ===== */
+  /* 左栏网址按钮 */
   .link-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
     width: 54px;
     height: 54px;
-    border-radius: 50%;
+    border-radius: 60px;
     background: linear-gradient(135deg, #3b5bdb, #8b5cf6);
     color: #fff;
     text-decoration: none;
@@ -165,9 +174,8 @@
     outline-offset: 3px;
   }
 
-  /* ===== 复制按钮（右侧，占满剩余空间） ===== */
+  /* 右栏复制按钮 —— 与左侧同高、同圆角 */
   .copy-btn {
-    flex: 1;
     border: none;
     outline: none;
     cursor: pointer;
@@ -175,15 +183,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 15px 20px;
+    gap: 9px;
+    height: 54px;
+    padding: 0 20px;
     border-radius: 60px;
     background: #1a2b4c;
     color: #fff;
     font-weight: 500;
-    font-size: 16px;
+    font-size: 15px;
     letter-spacing: 0.01em;
     white-space: nowrap;
+    width: 100%;
     box-shadow: 0 8px 18px -6px rgba(26, 43, 76, 0.4),
                 0 2px 6px rgba(26, 43, 76, 0.1),
                 inset 0 1px 1px rgba(255, 255, 255, 0.2);
@@ -205,7 +215,7 @@
   }
 
   .copy-btn svg {
-    width: 18px; height: 18px; flex-shrink: 0;
+    width: 17px; height: 17px; flex-shrink: 0;
     fill: none; stroke: currentColor; stroke-width: 2;
     stroke-linecap: round; stroke-linejoin: round;
   }
@@ -243,12 +253,15 @@
   .toast-message.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   @media (max-width: 480px) {
-    .card { padding: 28px 20px; gap: 20px; max-width: 420px; }
-    .copy-btn, .home-btn { padding: 13px 16px; font-size: 15px; gap: 8px; }
-    .copy-btn svg, .home-btn svg { width: 16px; height: 16px; }
-    .link-btn { width: 46px; height: 46px; }
-    .link-btn svg { width: 20px; height: 20px; }
-    .btn-row { gap: 10px; }
+    .card { padding: 28px 20px; gap: 20px; max-width: 440px; }
+    .home-btn { padding: 13px 16px; font-size: 15px; gap: 8px; }
+    .home-btn svg { width: 16px; height: 16px; }
+    /* 移动端左右按钮同步缩小，保持一致 */
+    .link-btn { width: 48px; height: 48px; }
+    .link-btn svg { width: 21px; height: 21px; }
+    .copy-btn { height: 48px; padding: 0 14px; font-size: 14px; gap: 7px; }
+    .copy-btn svg { width: 15px; height: 15px; }
+    .two-columns { gap: 14px; }
     .title { font-size: 20px; }
   }
 </style>
@@ -270,10 +283,12 @@
 
   <p class="sub">点击图标跳转，点击按钮复制链接</p>
 
-  <div class="btn-list" id="btnList">
+  <!-- 左右两栏 -->
+  <div class="two-columns" id="twoColumns">
 
-    <!-- 第 1 行：电视导航 -->
-    <div class="btn-row">
+    <!-- 左栏：四个独立的网址图标按钮（竖排） -->
+    <div class="link-column">
+      <!-- 电视导航 -->
       <a class="link-btn" href="http://lt3611.ccwu.cc/tools/tv.txt" target="_blank" rel="noopener" aria-label="打开电视导航 http://lt3611.ccwu.cc/tools/tv.txt">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
@@ -282,17 +297,7 @@
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
       </a>
-      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv.txt" aria-label="复制电视导航链接 http://lt3611.ccwu.cc/tools/tv.txt">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        <span class="btn-text">电视导航</span>
-      </button>
-    </div>
-
-    <!-- 第 2 行：电视新闻 -->
-    <div class="btn-row">
+      <!-- 电视新闻 -->
       <a class="link-btn" href="http://lt3611.ccwu.cc/tools/tv3.txt" target="_blank" rel="noopener" aria-label="打开电视新闻 http://lt3611.ccwu.cc/tools/tv3.txt">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
@@ -301,17 +306,7 @@
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
       </a>
-      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv3.txt" aria-label="复制电视新闻链接 http://lt3611.ccwu.cc/tools/tv3.txt">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        <span class="btn-text">电视新闻</span>
-      </button>
-    </div>
-
-    <!-- 第 3 行：影视学习 -->
-    <div class="btn-row">
+      <!-- 影视学习 -->
       <a class="link-btn" href="http://lt3611.ccwu.cc/tools/tv1.txt" target="_blank" rel="noopener" aria-label="打开影视学习 http://lt3611.ccwu.cc/tools/tv1.txt">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
@@ -320,17 +315,7 @@
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
       </a>
-      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv1.txt" aria-label="复制影视学习链接 http://lt3611.ccwu.cc/tools/tv1.txt">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        <span class="btn-text">影视学习</span>
-      </button>
-    </div>
-
-    <!-- 第 4 行：影视复制 -->
-    <div class="btn-row">
+      <!-- 影视复制 -->
       <a class="link-btn" href="http://lt3611.ccwu.cc/tools/tv2.txt" target="_blank" rel="noopener" aria-label="打开影视复制 http://lt3611.ccwu.cc/tools/tv2.txt">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
@@ -339,6 +324,35 @@
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
       </a>
+    </div>
+
+    <!-- 右栏：四个独立的复制按钮（竖排） -->
+    <div class="copy-column">
+      <!-- 电视导航 -->
+      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv.txt" aria-label="复制电视导航链接 http://lt3611.ccwu.cc/tools/tv.txt">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span class="btn-text">电视导航</span>
+      </button>
+      <!-- 电视新闻 -->
+      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv3.txt" aria-label="复制电视新闻链接 http://lt3611.ccwu.cc/tools/tv3.txt">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span class="btn-text">电视新闻</span>
+      </button>
+      <!-- 影视学习 -->
+      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv1.txt" aria-label="复制影视学习链接 http://lt3611.ccwu.cc/tools/tv1.txt">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span class="btn-text">影视学习</span>
+      </button>
+      <!-- 影视复制 -->
       <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv2.txt" aria-label="复制影视复制链接 http://lt3611.ccwu.cc/tools/tv2.txt">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
