@@ -1,474 +1,309 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>自用导航 - 四个复制按钮</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自用导航 - 四个复制按钮</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(145deg, #f8faff 0%, #eef2f9 100%);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(145deg, #f8faff 0%, #eef2f9 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
 
-    .card {
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 24px;
-      padding: 40px 32px;
-      box-shadow: 0 25px 40px -12px rgba(0, 20, 60, 0.25),
-                  inset 0 1px 2px rgba(255, 255, 255, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 24px;
-      max-width: 960px;
-      width: 100%;
-    }
+  .card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 24px;
+    padding: 40px 32px;
+    box-shadow: 0 25px 40px -12px rgba(0, 20, 60, 0.25),
+                inset 0 1px 2px rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    max-width: 480px;
+    width: 100%;
+  }
 
-    .title {
-      font-size: 24px;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      color: #1f2a4a;
-      text-align: center;
-    }
+  .title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1f2a4a;
+    text-align: center;
+  }
 
-    .title span {
-      background: linear-gradient(135deg, #3b5bdb, #8b5cf6);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
+  .title span {
+    background: linear-gradient(135deg, #3b5bdb, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 
-    .sub {
-      font-size: 15px;
-      color: #4b587c;
-      text-align: center;
-      max-width: 500px;
-      line-height: 1.5;
-      margin-top: -8px;
-    }
+  .sub {
+    font-size: 15px;
+    color: #4b587c;
+    text-align: center;
+    margin-top: -8px;
+  }
 
-    /* 四个按钮的并排容器 */
-    .btn-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-      width: 100%;
-      margin-top: 8px;
-    }
+  /* 竖排容器 */
+  .btn-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    margin-top: 8px;
+  }
 
-    /* 每个按钮单元的包装 */
-    .btn-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-    }
+  .btn-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
 
-    /* 每个按钮上方的链接展示框（小尺寸） */
-    .url-display {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 40px;
-      padding: 9px 14px;
-      font-size: 11px;
-      color: #1e2b4f;
-      border: 1px solid #d9e2f0;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      word-break: break-all;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
+  .url-display {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 40px;
+    padding: 9px 14px;
+    font-size: 12px;
+    color: #1e2b4f;
+    border: 1px solid #d9e2f0;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  }
 
-    .url-display:hover {
-      border-color: #b6c8e3;
-      box-shadow: 0 2px 8px rgba(59, 91, 219, 0.08);
-    }
+  .copy-btn {
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 14px;
+    border-radius: 60px;
+    background: #1a2b4c;
+    color: #fff;
+    font-weight: 500;
+    font-size: 15px;
+    white-space: nowrap;
+    width: 100%;
+    box-shadow: 0 8px 18px -6px rgba(26, 43, 76, 0.4),
+                0 2px 6px rgba(26, 43, 76, 0.1),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    transition: background 0.25s ease, transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
 
-    .url-text {
-      font-weight: 500;
-      opacity: 0.9;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-align: center;
-      flex: 1;
-      font-family: 'SF Mono', 'Menlo', 'Consolas', 'Courier New', monospace;
-      letter-spacing: 0.01em;
-    }
+  .copy-btn:hover { background: #233a62; transform: translateY(-1px); }
+  .copy-btn:active { transform: translateY(1px); background: #16233d; }
 
-    /* 复制按钮 */
-    .copy-btn {
-      border: none;
-      outline: none;
-      background: transparent;
-      cursor: pointer;
-      font-family: inherit;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 18px;
-      border-radius: 60px;
-      background: #1a2b4c;
-      color: white;
-      font-weight: 500;
-      font-size: 14px;
-      letter-spacing: 0.01em;
-      box-shadow: 0 8px 18px -6px rgba(26, 43, 76, 0.4),
-                  0 2px 6px rgba(26, 43, 76, 0.1),
-                  inset 0 1px 1px rgba(255, 255, 255, 0.2);
-      transition: background 0.25s ease, transform 0.15s ease, box-shadow 0.25s ease;
-      user-select: none;
-      -webkit-user-select: none;
-      white-space: nowrap;
-      width: 100%;
-      -webkit-tap-highlight-color: transparent;
-    }
+  .copy-btn svg {
+    width: 16px; height: 16px; flex-shrink: 0;
+    fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
 
-    .copy-btn:hover {
-      background: #233a62;
-      box-shadow: 0 12px 24px -8px rgba(26, 43, 76, 0.5),
-                  0 4px 10px rgba(26, 43, 76, 0.15),
-                  inset 0 1px 1px rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
-    }
+  .copy-btn.copied {
+    background: #2b6e4f;
+    box-shadow: 0 8px 18px -6px rgba(43, 110, 79, 0.5);
+  }
+  .copy-btn.copied:hover { background: #2f7a58; }
 
-    .copy-btn:active {
-      transform: translateY(1px);
-      box-shadow: 0 4px 12px -4px rgba(26, 43, 76, 0.4),
-                  inset 0 2px 4px rgba(0, 0, 0, 0.1);
-      background: #16233d;
-    }
+  /* Toast */
+  .toast-message {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: #1e293b;
+    color: #f1f5f9;
+    padding: 13px 32px;
+    border-radius: 60px;
+    font-size: 15px;
+    font-weight: 500;
+    box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.25s ease;
+    pointer-events: none;
+    z-index: 9999;
+    white-space: nowrap;
+  }
+  .toast-message.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    .copy-btn svg {
-      width: 16px;
-      height: 16px;
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      transition: stroke 0.2s;
-      flex-shrink: 0;
-    }
-
-    .copy-btn:focus-visible {
-      outline: 2px solid #8b5cf6;
-      outline-offset: 3px;
-    }
-
-    /* 复制成功状态 */
-    .copy-btn.copied {
-      background: #2b6e4f;
-      box-shadow: 0 8px 18px -6px rgba(43, 110, 79, 0.5);
-    }
-
-    .copy-btn.copied:hover {
-      background: #2f7a58;
-    }
-
-    /* Toast 提示 */
-    .toast-message {
-      position: fixed;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%) translateY(16px);
-      background: #1e293b;
-      color: #f1f5f9;
-      padding: 13px 32px;
-      border-radius: 60px;
-      font-size: 15px;
-      font-weight: 500;
-      letter-spacing: 0.01em;
-      box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.4);
-      opacity: 0;
-      transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1);
-      pointer-events: none;
-      z-index: 9999;
-      white-space: nowrap;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-
-    .toast-message.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    /* 平板：两列 */
-    @media (max-width: 860px) {
-      .btn-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-      }
-    }
-
-    /* 手机：单列（但更紧凑）或两列？为了可读性，选两列并缩小 */
-    @media (max-width: 480px) {
-      .card {
-        padding: 28px 20px;
-        gap: 18px;
-      }
-
-      .btn-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-      }
-
-      .copy-btn {
-        padding: 10px 12px;
-        font-size: 12px;
-        gap: 6px;
-      }
-
-      .copy-btn svg {
-        width: 14px;
-        height: 14px;
-      }
-
-      .url-display {
-        padding: 7px 10px;
-        font-size: 9px;
-      }
-
-      .url-text {
-        font-size: 9px;
-      }
-
-      .title {
-        font-size: 20px;
-      }
-
-      .sub {
-        font-size: 14px;
-      }
-    }
-
-    /* 极窄屏：单列，避免挤压 */
-    @media (max-width: 360px) {
-      .btn-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+  @media (max-width: 480px) {
+    .card { padding: 28px 18px; gap: 18px; }
+    .copy-btn { padding: 11px 12px; font-size: 14px; gap: 6px; }
+    .copy-btn svg { width: 14px; height: 14px; }
+    .url-display { padding: 7px 10px; font-size: 10px; }
+    .title { font-size: 20px; }
+  }
+</style>
 </head>
 <body>
-  <div class="card">
-    <div class="title">
-      <span>自用导航</span> 链接集合
-    </div>
-    <p class="sub">点击任意按钮复制专属导航地址</p>
 
-    <!-- 四个并排的复制按钮 -->
-    <div class="btn-grid" id="btnGrid">
-      <!-- 按钮 1 -->
-      <div class="btn-item">
-        <div class="url-display">
-          <span class="url-text">lt3611.ccwu.cc</span>
-        </div>
-        <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接 http://lt3611.ccwu.cc/">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
-          <span class="btn-text">自用导航</span>
-        </button>
-      </div>
-      <!-- 按钮 2 -->
-      <div class="btn-item">
-        <div class="url-display">
-          <span class="url-text">lt3611.ccwu.cc</span>
-        </div>
-        <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接 http://lt3611.ccwu.cc/">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
-          <span class="btn-text">自用导航</span>
-        </button>
-      </div>
-      <!-- 按钮 3 -->
-      <div class="btn-item">
-        <div class="url-display">
-          <span class="url-text">lt3611.ccwu.cc</span>
-        </div>
-        <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接 http://lt3611.ccwu.cc/">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
-          <span class="btn-text">自用导航</span>
-        </button>
-      </div>
-      <!-- 按钮 4 -->
-      <div class="btn-item">
-        <div class="url-display">
-          <span class="url-text">lt3611.ccwu.cc</span>
-        </div>
-        <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接 http://lt3611.ccwu.cc/">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
-          <span class="btn-text">自用导航</span>
-        </button>
-      </div>
+<div class="card">
+  <div class="title"><span>自用导航</span> 链接集合</div>
+  <p class="sub">点击任意按钮复制专属导航地址</p>
+
+  <div class="btn-grid" id="btnGrid">
+    <!-- 按钮 1 -->
+    <div class="btn-item">
+      <div class="url-display">lt3611.ccwu.cc</div>
+      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span class="btn-text">自用导航</span>
+      </button>
+    </div>
+    <!-- 按钮 2 -->
+    <div class="btn-item">
+      <div class="url-display">lt3611.ccwu.cc</div>
+      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span class="btn-text">自用导航</span>
+      </button>
+    </div>
+    <!-- 按钮 3 -->
+    <div class="btn-item">
+      <div class="url-display">lt3611.ccwu.cc</div>
+      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span class="btn-text">自用导航</span>
+      </button>
+    </div>
+    <!-- 按钮 4 -->
+    <div class="btn-item">
+      <div class="url-display">lt3611.ccwu.cc</div>
+      <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/" aria-label="复制自用导航链接">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span class="btn-text">自用导航</span>
+      </button>
     </div>
   </div>
+</div>
 
-  <!-- Toast 提示 -->
-  <div class="toast-message" id="toast">✅ 自用导航链接已复制</div>
+<div class="toast-message" id="toast">✅ 自用导航链接已复制</div>
 
-  <script>
-    (function() {
-      'use strict';
+<script>
+(function () {
+  'use strict';
 
-      // ===== 按钮默认文字 =====
-      var DEFAULT_BTN_TEXT = '自用导航';
+  var DEFAULT_BTN_TEXT = '自用导航';
+  var toastEl = document.getElementById('toast');
+  var copyBtns = document.querySelectorAll('.copy-btn');
+  var toastTimer = null;
 
-      // ===== DOM 元素 =====
-      var toastEl = document.getElementById('toast');
-      var copyBtns = document.querySelectorAll('.copy-btn');
+  function showToast(message, duration) {
+    if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    toastTimer = setTimeout(function () {
+      toastEl.classList.remove('show');
+      toastTimer = null;
+    }, duration || 2000);
+  }
 
-      // ===== Toast 控制 =====
-      var toastTimer = null;
+  function fallbackCopy(text) {
+    return new Promise(function (resolve) {
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      textarea.style.left = '-9999px';
+      textarea.style.opacity = '0';
+      textarea.setAttribute('readonly', '');
+      document.body.appendChild(textarea);
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      var success = false;
+      try { success = document.execCommand('copy'); } catch (e) { success = false; }
+      document.body.removeChild(textarea);
+      resolve(success);
+    });
+  }
 
-      function showToast(message, duration) {
-        if (toastTimer) {
-          clearTimeout(toastTimer);
-          toastTimer = null;
-        }
-        toastEl.textContent = message;
-        toastEl.classList.add('show');
-        toastTimer = setTimeout(function() {
-          toastEl.classList.remove('show');
-          toastTimer = null;
-        }, duration || 2000);
-      }
-
-      // ===== 降级复制方案 (execCommand) =====
-      function fallbackCopy(text) {
-        return new Promise(function(resolve) {
-          var textarea = document.createElement('textarea');
-          textarea.value = text;
-
-          textarea.style.position = 'fixed';
-          textarea.style.top = '-9999px';
-          textarea.style.left = '-9999px';
-          textarea.style.width = '1px';
-          textarea.style.height = '1px';
-          textarea.style.opacity = '0';
-          textarea.setAttribute('readonly', '');
-
-          document.body.appendChild(textarea);
-
-          textarea.select();
-          textarea.setSelectionRange(0, textarea.value.length);
-
-          var success = false;
-          try {
-            success = document.execCommand('copy');
-          } catch (err) {
-            console.error('execCommand 复制失败:', err);
-            success = false;
-          }
-
-          document.body.removeChild(textarea);
-          resolve(success);
-        });
-      }
-
-      // ===== 复制核心逻辑 =====
-      function copyText(text) {
-        // 优先使用现代 Clipboard API
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          return navigator.clipboard.writeText(text).then(function() {
-            return true;
-          }).catch(function(err) {
-            console.warn('Clipboard API 失败，尝试降级方案:', err);
-            return fallbackCopy(text);
-          });
-        } else {
-          return fallbackCopy(text);
-        }
-      }
-
-      // ===== 为每个按钮绑定独立的事件处理 =====
-      copyBtns.forEach(function(btn) {
-        var btnText = btn.querySelector('.btn-text');
-        // 每个按钮独立的定时器变量，避免互相干扰
-        var restoreTextTimer = null;
-        var failRestoreTimer = null;
-
-        btn.addEventListener('click', function() {
-          var textToCopy = btn.getAttribute('data-copy') || 'http://lt3611.ccwu.cc/';
-
-          // 防止连续点击
-          btn.disabled = true;
-          btn.style.opacity = '0.8';
-          btn.style.cursor = 'default';
-
-          copyText(textToCopy).then(function(success) {
-            if (success) {
-              // 成功
-              btn.classList.add('copied');
-              btnText.textContent = '已复制!';
-              showToast('✅ 自用导航链接已复制', 2000);
-
-              // 2秒后恢复按钮文字
-              if (restoreTextTimer) {
-                clearTimeout(restoreTextTimer);
-              }
-              restoreTextTimer = setTimeout(function() {
-                btnText.textContent = DEFAULT_BTN_TEXT;
-                btn.classList.remove('copied');
-                restoreTextTimer = null;
-              }, 2000);
-            } else {
-              // 失败
-              showToast('❌ 复制失败，请手动复制', 2500);
-              btnText.textContent = '复制失败';
-              if (failRestoreTimer) {
-                clearTimeout(failRestoreTimer);
-              }
-              failRestoreTimer = setTimeout(function() {
-                btnText.textContent = DEFAULT_BTN_TEXT;
-                failRestoreTimer = null;
-              }, 2000);
-            }
-          }).catch(function(err) {
-            console.error('复制异常:', err);
-            showToast('❌ 复制失败，请稍后重试', 2000);
-            btnText.textContent = DEFAULT_BTN_TEXT;
-          }).finally(function() {
-            // 重新启用按钮
-            btn.disabled = false;
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-          });
-        });
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () {
+        return true;
+      }).catch(function () {
+        return fallbackCopy(text);
       });
-    })();
-  </script>
+    }
+    return fallbackCopy(text);
+  }
+
+  copyBtns.forEach(function (btn) {
+    var btnText = btn.querySelector('.btn-text');
+    var restoreTimer = null;
+    var failTimer = null;
+
+    btn.addEventListener('click', function () {
+      var textToCopy = btn.getAttribute('data-copy') || 'http://lt3611.ccwu.cc/';
+
+      btn.disabled = true;
+      btn.style.opacity = '0.8';
+
+      copyText(textToCopy).then(function (success) {
+        if (success) {
+          btn.classList.add('copied');
+          btnText.textContent = '已复制!';
+          showToast('✅ 自用导航链接已复制', 2000);
+
+          if (restoreTimer) clearTimeout(restoreTimer);
+          restoreTimer = setTimeout(function () {
+            btnText.textContent = DEFAULT_BTN_TEXT;
+            btn.classList.remove('copied');
+            restoreTimer = null;
+          }, 2000);
+        } else {
+          showToast('❌ 复制失败，请手动复制', 2500);
+          btnText.textContent = '复制失败';
+          if (failTimer) clearTimeout(failTimer);
+          failTimer = setTimeout(function () {
+            btnText.textContent = DEFAULT_BTN_TEXT;
+            failTimer = null;
+          }, 2000);
+        }
+      }).catch(function () {
+        showToast('❌ 复制失败，请稍后重试', 2000);
+        btnText.textContent = DEFAULT_BTN_TEXT;
+      }).finally(function () {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      });
+    });
+  });
+})();
+</script>
+
 </body>
 </html>
