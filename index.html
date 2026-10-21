@@ -256,7 +256,6 @@
     .card { padding: 28px 20px; gap: 20px; max-width: 440px; }
     .home-btn { padding: 13px 16px; font-size: 15px; gap: 8px; }
     .home-btn svg { width: 16px; height: 16px; }
-    /* 移动端左右按钮同步缩小，保持一致 */
     .link-btn { width: 48px; height: 48px; }
     .link-btn svg { width: 21px; height: 21px; }
     .copy-btn { height: 48px; padding: 0 14px; font-size: 14px; gap: 7px; }
@@ -286,10 +285,10 @@
   <!-- 左右两栏 -->
   <div class="two-columns" id="twoColumns">
 
-    <!-- 左栏：四个独立的网址图标按钮（竖排） -->
+    <!-- 左栏：四个网址图标按钮（独立跳转） -->
     <div class="link-column">
-      <!-- 电视导航 -->
-      <a class="link-btn" href="http://lt3611.ccwu.cc/tools/tv.txt" target="_blank" rel="noopener" aria-label="打开电视导航 http://lt3611.ccwu.cc/tools/tv.txt">
+      <!-- 路由 -->
+      <a class="link-btn" href="http://192.168.50.1" target="_blank" rel="noopener" aria-label="打开路由 http://192.168.50.1">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
           <path d="M3.6 9h16.8"/>
@@ -297,8 +296,8 @@
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
       </a>
-      <!-- 电视新闻 -->
-      <a class="link-btn" href="http://lt3611.ccwu.cc/tools/tv3.txt" target="_blank" rel="noopener" aria-label="打开电视新闻 http://lt3611.ccwu.cc/tools/tv3.txt">
+      <!-- 电视 -->
+      <a class="link-btn" href="http://192.168.50.198:56789" target="_blank" rel="noopener" aria-label="打开电视 http://192.168.50.198:56789">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
           <path d="M3.6 9h16.8"/>
@@ -306,8 +305,8 @@
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
       </a>
-      <!-- 影视学习 -->
-      <a class="link-btn" href="http://lt3611.ccwu.cc/tools/tv1.txt" target="_blank" rel="noopener" aria-label="打开影视学习 http://lt3611.ccwu.cc/tools/tv1.txt">
+      <!-- 学习 -->
+      <a class="link-btn" href="http://192.168.50.1:9999" target="_blank" rel="noopener" aria-label="打开学习 http://192.168.50.1:9999">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
           <path d="M3.6 9h16.8"/>
@@ -315,8 +314,8 @@
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
       </a>
-      <!-- 影视复制 -->
-      <a class="link-btn" href="http://lt3611.ccwu.cc/tools/tv2.txt" target="_blank" rel="noopener" aria-label="打开影视复制 http://lt3611.ccwu.cc/tools/tv2.txt">
+      <!-- 调试 -->
+      <a class="link-btn" href="http://192.168.50.1" target="_blank" rel="noopener" aria-label="打开调试 http://192.168.50.1">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
           <path d="M3.6 9h16.8"/>
@@ -326,7 +325,7 @@
       </a>
     </div>
 
-    <!-- 右栏：四个独立的复制按钮（竖排） -->
+    <!-- 右栏：四个独立的复制按钮（复制 .txt 链接） -->
     <div class="copy-column">
       <!-- 电视导航 -->
       <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv.txt" aria-label="复制电视导航链接 http://lt3611.ccwu.cc/tools/tv.txt">
