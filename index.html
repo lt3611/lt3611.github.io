@@ -30,7 +30,7 @@
     flex-direction: column;
     align-items: center;
     gap: 24px;
-    max-width: 520px;
+    max-width: 560px;
     width: 100%;
   }
 
@@ -100,48 +100,56 @@
     stroke-linecap: round; stroke-linejoin: round;
   }
 
-  /* ===== 左右两栏容器 ===== */
+  /* ===== 左右等分布局 ===== */
   .two-columns {
     display: flex;
-    gap: 16px;
     width: 100%;
-    align-items: flex-start;
     margin-top: 8px;
+    justify-content: space-between;
+    align-items: flex-start;
   }
 
-  /* 左栏：四个网址图标按钮（竖排） */
-  .link-column {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    flex-shrink: 0;
-  }
-
-  /* 右栏：四个复制按钮（竖排） */
+  /* 左右两栏各占 50% 宽度，居中排列按钮 */
+  .link-column,
   .copy-column {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    flex: 1;
-    min-width: 0;
+    gap: 16px;
+    width: 50%;
+    align-items: center;
   }
 
-  /* ===== 左栏网址按钮：固定 54×54，圆形 ===== */
-  .link-btn {
+  /* ===== 左右按钮统一尺寸 ===== */
+  .link-btn,
+  .copy-btn {
+    width: 100%;
+    max-width: 180px;     /* 控制最大宽度，防止过宽 */
+    height: 54px;
+    border-radius: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #3b5bdb, #8b5cf6);
+    gap: 10px;
     color: #fff;
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
     text-decoration: none;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease, background 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 左栏网址按钮（渐变紫蓝） */
+  .link-btn {
+    background: linear-gradient(135deg, #3b5bdb, #8b5cf6);
     box-shadow: 0 8px 18px -6px rgba(59, 91, 219, 0.5),
                 0 2px 6px rgba(59, 91, 219, 0.15),
                 inset 0 1px 1px rgba(255, 255, 255, 0.25);
-    transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease;
-    -webkit-tap-highlight-color: transparent;
   }
 
   .link-btn:hover {
@@ -158,46 +166,12 @@
                 inset 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
-  .link-btn svg {
-    width: 24px;
-    height: 24px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  .link-btn:focus-visible {
-    outline: 2px solid #8b5cf6;
-    outline-offset: 3px;
-  }
-
-  /* ===== 右栏复制按钮：高度 54px，圆角 27px（与左栏圆形视觉高度一致） ===== */
+  /* 右栏复制按钮（深色） */
   .copy-btn {
-    border: none;
-    outline: none;
-    cursor: pointer;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    height: 54px;
-    padding: 0 20px;
-    border-radius: 27px;          /* 54px 高度的一半，形成半圆形端部 */
     background: #1a2b4c;
-    color: #fff;
-    font-weight: 500;
-    font-size: 15px;
-    letter-spacing: 0.01em;
-    white-space: nowrap;
-    width: 100%;
     box-shadow: 0 8px 18px -6px rgba(26, 43, 76, 0.4),
                 0 2px 6px rgba(26, 43, 76, 0.1),
                 inset 0 1px 1px rgba(255, 255, 255, 0.2);
-    transition: background 0.25s ease, transform 0.15s ease, box-shadow 0.25s ease;
-    -webkit-tap-highlight-color: transparent;
   }
 
   .copy-btn:hover {
@@ -213,11 +187,22 @@
     background: #16233d;
   }
 
+  .link-btn svg,
   .copy-btn svg {
-    width: 17px; height: 17px; flex-shrink: 0;
-    fill: none; stroke: currentColor; stroke-width: 2;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
+  }
+
+  .link-btn:focus-visible,
+  .copy-btn:focus-visible {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 3px;
   }
 
   .copy-btn.copied {
@@ -225,11 +210,6 @@
     box-shadow: 0 8px 18px -6px rgba(43, 110, 79, 0.5);
   }
   .copy-btn.copied:hover { background: #2f7a58; }
-
-  .copy-btn:focus-visible {
-    outline: 2px solid #8b5cf6;
-    outline-offset: 3px;
-  }
 
   /* Toast */
   .toast-message {
@@ -253,15 +233,15 @@
   .toast-message.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   @media (max-width: 480px) {
-    .card { padding: 28px 20px; gap: 20px; max-width: 440px; }
+    .card { padding: 28px 20px; gap: 20px; max-width: 460px; }
     .home-btn { padding: 13px 16px; font-size: 15px; gap: 8px; }
     .home-btn svg { width: 16px; height: 16px; }
-    /* 移动端同步缩小，左右一致 */
-    .link-btn { width: 48px; height: 48px; }
-    .link-btn svg { width: 21px; height: 21px; }
-    .copy-btn { height: 48px; padding: 0 14px; font-size: 14px; gap: 7px; border-radius: 24px; }
-    .copy-btn svg { width: 15px; height: 15px; }
-    .two-columns { gap: 12px; }
+    .link-btn,
+    .copy-btn { height: 48px; font-size: 14px; gap: 7px; border-radius: 60px; }
+    .link-btn svg,
+    .copy-btn svg { width: 16px; height: 16px; }
+    .link-column,
+    .copy-column { gap: 13px; }
     .title { font-size: 20px; }
   }
 </style>
@@ -283,10 +263,10 @@
 
   <p class="sub">点击图标跳转，点击按钮复制链接</p>
 
-  <!-- 左右两栏 -->
+  <!-- 左右等分布局 -->
   <div class="two-columns" id="twoColumns">
 
-    <!-- 左栏：四个网址图标按钮（跳转到内网地址） -->
+    <!-- 左栏：四个网址按钮（等分 50% 宽） -->
     <div class="link-column">
       <!-- 路由 -->
       <a class="link-btn" href="http://192.168.50.1" target="_blank" rel="noopener" aria-label="打开路由 http://192.168.50.1">
@@ -296,6 +276,7 @@
           <path d="M3.6 15h16.8"/>
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
+        <span>路由</span>
       </a>
       <!-- 电视 -->
       <a class="link-btn" href="http://192.168.50.198:56789" target="_blank" rel="noopener" aria-label="打开电视 http://192.168.50.198:56789">
@@ -305,6 +286,7 @@
           <path d="M3.6 15h16.8"/>
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
+        <span>电视</span>
       </a>
       <!-- 学习 -->
       <a class="link-btn" href="http://192.168.50.1:9999" target="_blank" rel="noopener" aria-label="打开学习 http://192.168.50.1:9999">
@@ -314,6 +296,7 @@
           <path d="M3.6 15h16.8"/>
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
+        <span>学习</span>
       </a>
       <!-- 调试 -->
       <a class="link-btn" href="http://192.168.50.1" target="_blank" rel="noopener" aria-label="打开调试 http://192.168.50.1">
@@ -323,10 +306,11 @@
           <path d="M3.6 15h16.8"/>
           <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
         </svg>
+        <span>调试</span>
       </a>
     </div>
 
-    <!-- 右栏：四个独立的复制按钮（复制 .txt 链接） -->
+    <!-- 右栏：四个复制按钮（等分 50% 宽） -->
     <div class="copy-column">
       <!-- 电视导航 -->
       <button class="copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv.txt" aria-label="复制电视导航链接 http://lt3611.ccwu.cc/tools/tv.txt">
