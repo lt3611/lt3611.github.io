@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A3 → A4 自动分割器（铺满打印）</title>
+<title>A3 → A4 自动分割器（支持点击放大）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -38,12 +38,18 @@
   .preview-title { font-size: .85rem; font-weight: 600; color: #0c2d4b; margin-bottom: 8px; width: 100%; display: flex; justify-content: space-between; }
   .preview-title span { color: #627d9b; font-weight: normal; font-size: .75rem; background: #ecf3fb; padding: 1px 6px; border-radius: 10px; }
   .preview-img { width: 100%; min-height: 120px; background: #f4f8ff; border: 1px solid #d9e7fa; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; margin-bottom: 10px; }
-  .preview-img img { width: 100%; height: auto; display: block; }
+  .preview-img img { width: 100%; height: auto; display: block; cursor: zoom-in; transition: opacity 0.2s; }
+  .preview-img img:hover { opacity: 0.8; }
   .placeholder { color: #7c94b0; font-size: .8rem; text-align: center; }
   
   .status-text { font-size: .8rem; color: #7a8fa8; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
   .spinner { width: 14px; height: 14px; border: 2px solid #d0e2ff; border-top: 2px solid #1a5fd0; border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
+  
+  /* 全屏看图放大遮罩层 */
+  .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; cursor: zoom-out; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .lightbox.show { opacity: 1; pointer-events: auto; }
+  .lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 </style>
 </head>
 <body>
@@ -51,7 +57,7 @@
   <div class="upload-area" id="uploadArea">
     <div class="upload-icon">📄</div>
     <div class="upload-text">点击或拖拽，支持多文件批量上传</div>
-    <div class="upload-hint">精准 50% 居中切分（支持铺满打印）</div>
+    <div class="upload-hint">精准 50% 居中切分 · 支持点击图片放大查看</div>
     <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/jpg,application/pdf,.pdf">
   </div>
 
@@ -69,6 +75,11 @@
   </div>
 </div>
 
+<!-- 放大预览弹窗 -->
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('show')">
+  <img id="lightboxImg" src="" alt="放大预览">
+</div>
+
 <script>
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -78,8 +89,15 @@
   const el = id => document.getElementById(id);
   const uploadArea = el('uploadArea'), fileInput = el('fileInput'), fileList = el('fileList');
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
+  const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // 显示大图
+  window.showImageZoom = (url) => {
+    lightboxImg.src = url;
+    lightbox.classList.add('show');
+  };
 
   function canvasToJpg(canvas) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
@@ -151,7 +169,7 @@
              previewHtml = `<div class="preview-grid" style="max-width:300px;">
                 <div class="preview-card" style="flex: 1 1 100%; max-width: 100%;">
                   <div class="preview-title">原图 <span>直接输出</span></div>
-                  <div class="preview-img"><img src="${item.result.original.dataUrl}"></div>
+                  <div class="preview-img"><img src="${item.result.original.dataUrl}" onclick="window.showImageZoom(this.src)"></div>
                 </div>
              </div>`;
           } else {
@@ -180,7 +198,8 @@
   }
 
   function buildPreview(item, tag, label, dataUrl) {
-    let imgHtml = dataUrl ? `<img src="${dataUrl}">` : `<div class="placeholder">${label}</div>`;
+    // 加上了 onclick 事件触发大图预览
+    let imgHtml = dataUrl ? `<img src="${dataUrl}" onclick="window.showImageZoom(this.src)">` : `<div class="placeholder">${label}</div>`;
     if (!item) return `<div class="preview-card"><div class="preview-img">${imgHtml}</div></div>`;
     return `<div class="preview-card">
       <div class="preview-title">${label} <span>${tag}</span></div>
@@ -306,8 +325,6 @@
 
     const doc = iframe.contentWindow.document;
     doc.open();
-    
-    // 🌟 修改了这里的打印 CSS 样式：实现了铺满 A4 纸
     doc.write(`
       <!DOCTYPE html>
       <html>
@@ -327,7 +344,7 @@
           .print-page img { 
             width: 100%; 
             height: 100%; 
-            object-fit: fill; /* 强制拉伸铺满整个页面 */
+            object-fit: fill; /* 强制铺满整个A4纸张 */
             display: block; 
           }
         </style>
