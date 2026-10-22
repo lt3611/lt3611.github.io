@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A3 → A4 批量分割器 · 输出JPG · 打包下载</title>
+  <title>A3 → A4 批量分割器 · 自动分割 · 打印</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
@@ -89,6 +89,12 @@
       box-shadow: none;
     }
     .btn-danger-outline:hover:not(:disabled) { background: #ffeeee; }
+    .btn-print {
+      background: #1e7a1e; box-shadow: 0 4px 10px rgba(30,122,30,.25);
+    }
+    .btn-print:hover:not(:disabled) {
+      background: #145014; box-shadow: 0 8px 16px rgba(30,122,30,.3);
+    }
     .btn-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 
     .file-list { display: flex; flex-direction: column; gap: 20px; }
@@ -175,20 +181,54 @@
       padding: 2px 10px; border-radius: 30px; font-size: .7rem;
       font-weight: 600; margin-left: 6px; letter-spacing: .2px;
     }
+    /* 打印样式：打印时只显示打印区域，隐藏其他 */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #fff;
+        padding: 0;
+        margin: 0;
+      }
+      #printArea img {
+        max-width: 100%;
+        page-break-after: always;
+        display: block;
+      }
+      #printArea .print-page {
+        page-break-after: always;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100vh;
+      }
+      #printArea .print-page:last-child {
+        page-break-after: auto;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>✂️ A3 → A4 <span>批量分割器</span></h1>
     <div class="subhead">
-      批量上传图片或 PDF，分割为 A4 并输出 <strong>高质量 JPG</strong>（最大清晰度）。PDF 逐页分割，每页输出为多张 A4 JPG。下载全部打包为 ZIP。
+      批量上传图片或 PDF，<strong>自动分割</strong>为 A4 并输出高质量 JPG。支持打印、打包下载全部。
     </div>
 
     <!-- 上传区 -->
     <div class="upload-area" id="uploadArea">
       <div class="upload-icon">📄</div>
       <div class="upload-text">点击或拖拽，支持多文件批量上传</div>
-      <div class="upload-hint">JPG / PNG / WebP / PDF · 可多选</div>
+      <div class="upload-hint">JPG / PNG / WebP / PDF · 可多选 · 上传后自动分割</div>
       <input type="file" id="fileInput" multiple
              accept="image/jpeg,image/png,image/webp,image/jpg,application/pdf,.pdf">
     </div>
@@ -200,7 +240,6 @@
         <span id="splitProgress"></span>
       </div>
       <div class="btn-group">
-        <button class="btn" id="splitAllBtn" disabled>✂️ 全部分割</button>
         <button class="btn btn-outline" id="downloadAllBtn" disabled>⬇️ 打包下载全部</button>
         <button class="btn btn-danger-outline btn-sm" id="clearAllBtn" disabled>🗑 清空全部</button>
       </div>
@@ -215,6 +254,9 @@
       ⚡ 全部处理在浏览器本地完成 · 不上传服务器 · JPG 质量 0.95
     </div>
   </div>
+
+  <!-- 打印区域（隐藏） -->
+  <div id="printArea" style="display:none;"></div>
 
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -235,13 +277,12 @@
       const fileListEl = document.getElementById('fileList');
       const emptyState = document.getElementById('emptyState');
       const fileCountEl = document.getElementById('fileCount');
-      const splitAllBtn = document.getElementById('splitAllBtn');
       const downloadAllBtn = document.getElementById('downloadAllBtn');
       const clearAllBtn = document.getElementById('clearAllBtn');
       const splitProgress = document.getElementById('splitProgress');
+      const printArea = document.getElementById('printArea');
 
       // ========== 工具函数 ==========
-      // 将 canvas 转为高质量 JPG 的 dataUrl 和 blob
       function canvasToJpg(canvas, quality = 0.95) {
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
         const parts = dataUrl.split(',');
@@ -273,7 +314,6 @@
           ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       }
 
-      // 分割单张图片/canvas 为两张 canvas
       function splitSourceToTwo(source, isLandscape) {
         const w = source.width || source.naturalWidth;
         const h = source.height || source.naturalHeight;
@@ -301,11 +341,8 @@
         fileCountEl.textContent = `${total} 个文件`;
         emptyState.classList.toggle('hidden', total !== 0);
 
-        const anyPending = items.some(it => it.status === 'pending');
         const anyDone = items.some(it => it.status === 'done');
         const anySplitting = items.some(it => it.status === 'splitting');
-
-        splitAllBtn.disabled = !anyPending || anySplitting;
         downloadAllBtn.disabled = !anyDone || anySplitting;
         clearAllBtn.disabled = total === 0 || anySplitting;
 
@@ -328,7 +365,6 @@
         const badgeText = isPdf ? 'PDF' : (item.file.name.split('.').pop() || 'IMG').toUpperCase();
         const sizeMB = (item.file.size / (1024 * 1024)).toFixed(2);
 
-        // ---- 头部 ----
         const head = document.createElement('div');
         head.className = 'file-card-head';
 
@@ -351,7 +387,6 @@
         splitBtn.addEventListener('click', () => splitSingle(item.id));
         actions.appendChild(splitBtn);
 
-        // 下载按钮
         if (item.status === 'done' && item.result) {
           const dl1 = document.createElement('button');
           dl1.className = 'btn btn-outline btn-sm';
@@ -364,6 +399,12 @@
           dl2.textContent = isPdf ? '下载PDF-A4②' : '下载 A4②';
           dl2.addEventListener('click', () => downloadItemA4_2(item));
           actions.appendChild(dl2);
+
+          const printBtn = document.createElement('button');
+          printBtn.className = 'btn btn-sm btn-print';
+          printBtn.textContent = '🖨️ 打印';
+          printBtn.addEventListener('click', () => printItem(item));
+          actions.appendChild(printBtn);
         }
 
         const removeBtn = document.createElement('button');
@@ -376,26 +417,23 @@
         head.appendChild(actions);
         card.appendChild(head);
 
-        // ---- 预览区 ----
         const previewGrid = document.createElement('div');
         previewGrid.className = 'preview-grid';
 
         if (isPdf && item.status === 'done' && item.result?.pages) {
-          // PDF 显示第一页的分割预览
           previewGrid.appendChild(createPreviewCard(
-            item, '①', '第1页 上/左', item.result.pages[0]?.a4_1?.dataUrl, item.status));
+            item, '①', '第1页 上/左', item.result.pages[0]?.a4_1?.dataUrl, item.status, 0));
           previewGrid.appendChild(createPreviewCard(
-            item, '②', '第1页 下/右', item.result.pages[0]?.a4_2?.dataUrl, item.status));
+            item, '②', '第1页 下/右', item.result.pages[0]?.a4_2?.dataUrl, item.status, 1));
         } else {
           previewGrid.appendChild(createPreviewCard(
-            item, '①', isPdf ? '上/左' : '左 / 上', item.result?.a4_1?.dataUrl, item.status));
+            item, '①', isPdf ? '上/左' : '左 / 上', item.result?.a4_1?.dataUrl, item.status, 0));
           previewGrid.appendChild(createPreviewCard(
-            item, '②', isPdf ? '下/右' : '右 / 下', item.result?.a4_2?.dataUrl, item.status));
+            item, '②', isPdf ? '下/右' : '右 / 下', item.result?.a4_2?.dataUrl, item.status, 1));
         }
 
         card.appendChild(previewGrid);
 
-        // ---- 状态文字 ----
         const statusEl = document.createElement('div');
         statusEl.className = 'card-status';
         if (item.status === 'splitting') {
@@ -417,7 +455,7 @@
         return card;
       }
 
-      function createPreviewCard(item, indexStr, label, dataUrl, status) {
+      function createPreviewCard(item, indexStr, label, dataUrl, status, pageIndex) {
         const wrap = document.createElement('div');
         wrap.className = 'preview-card';
 
@@ -446,7 +484,114 @@
           imgBox.appendChild(ph);
         }
         wrap.appendChild(imgBox);
+
+        // 在预览图片下方加打印按钮（如果已有图片）
+        if (dataUrl && item.status === 'done') {
+          const printOneBtn = document.createElement('button');
+          printOneBtn.className = 'btn btn-sm btn-print';
+          printOneBtn.textContent = '🖨️ 打印这张';
+          printOneBtn.style.marginTop = '8px';
+          printOneBtn.addEventListener('click', () => {
+            printSingleImage(item, pageIndex, indexStr === '①' ? 'a4_1' : 'a4_2');
+          });
+          wrap.appendChild(printOneBtn);
+        }
+
         return wrap;
+      }
+
+      // ========== 打印功能 ==========
+      function printSingleImage(item, pageIndex, which) {
+        let dataUrl = null;
+        if (item.type === 'image') {
+          dataUrl = which === 'a4_1' ? item.result.a4_1?.dataUrl : item.result.a4_2?.dataUrl;
+        } else if (item.type === 'pdf' && item.result.pages) {
+          const page = item.result.pages[pageIndex];
+          if (page) {
+            dataUrl = which === 'a4_1' ? page.a4_1?.dataUrl : page.a4_2?.dataUrl;
+          }
+        }
+        if (!dataUrl) {
+          alert('图片数据不存在');
+          return;
+        }
+        // 构建打印区域
+        printArea.innerHTML = '';
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'print-page';
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        pageDiv.appendChild(img);
+        printArea.appendChild(pageDiv);
+        printArea.style.display = 'block';
+
+        // 触发打印
+        window.print();
+
+        // 打印后恢复
+        setTimeout(() => {
+          printArea.style.display = 'none';
+          printArea.innerHTML = '';
+        }, 500);
+      }
+
+      function printItem(item) {
+        if (item.status !== 'done' || !item.result) return;
+        printArea.innerHTML = '';
+
+        if (item.type === 'image') {
+          // 打印两张 A4
+          const d1 = item.result.a4_1?.dataUrl;
+          const d2 = item.result.a4_2?.dataUrl;
+          if (d1) {
+            const pageDiv1 = document.createElement('div');
+            pageDiv1.className = 'print-page';
+            const img1 = document.createElement('img');
+            img1.src = d1;
+            pageDiv1.appendChild(img1);
+            printArea.appendChild(pageDiv1);
+          }
+          if (d2) {
+            const pageDiv2 = document.createElement('div');
+            pageDiv2.className = 'print-page';
+            const img2 = document.createElement('img');
+            img2.src = d2;
+            pageDiv2.appendChild(img2);
+            printArea.appendChild(pageDiv2);
+          }
+        } else if (item.type === 'pdf' && item.result.pages) {
+          // 打印 PDF 所有页的分割图
+          item.result.pages.forEach(page => {
+            if (page.a4_1?.dataUrl) {
+              const pageDiv1 = document.createElement('div');
+              pageDiv1.className = 'print-page';
+              const img1 = document.createElement('img');
+              img1.src = page.a4_1.dataUrl;
+              pageDiv1.appendChild(img1);
+              printArea.appendChild(pageDiv1);
+            }
+            if (page.a4_2?.dataUrl) {
+              const pageDiv2 = document.createElement('div');
+              pageDiv2.className = 'print-page';
+              const img2 = document.createElement('img');
+              img2.src = page.a4_2.dataUrl;
+              pageDiv2.appendChild(img2);
+              printArea.appendChild(pageDiv2);
+            }
+          });
+        }
+
+        if (printArea.children.length === 0) {
+          alert('没有可打印的内容');
+          return;
+        }
+
+        printArea.style.display = 'block';
+        window.print();
+        setTimeout(() => {
+          printArea.style.display = 'none';
+          printArea.innerHTML = '';
+        }, 500);
       }
 
       // ========== 文件处理 ==========
@@ -480,43 +625,18 @@
         items = items.concat(newItems);
         render();
 
+        // 上传后自动分割每个新文件
         newItems.forEach(async (item) => {
-          if (item.type === 'image') {
-            try {
-              item.image = await loadImageFromFile(item.file);
-            } catch (e) {
-              item.status = 'error';
-              item.errorMsg = '图片加载失败';
-              render();
-            }
-          }
+          // 自动开始分割
+          await autoSplitItem(item.id);
         });
       }
 
-      function loadImageFromFile(file) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error('图片加载失败'));
-            img.src = e.target.result;
-          };
-          reader.onerror = () => reject(new Error('文件读取失败'));
-          reader.readAsDataURL(file);
-        });
-      }
-
-      function removeItem(id) {
-        items = items.filter(it => it.id !== id);
-        render();
-      }
-
-      // ========== 分割单个 ==========
-      async function splitSingle(id) {
+      async function autoSplitItem(id) {
         const item = items.find(it => it.id === id);
         if (!item || item.status === 'splitting') return;
-        if (item.status === 'done' && !confirm('重新分割会覆盖现有结果，确定吗？')) return;
+        // 如果已分割，不重复自动分割
+        if (item.status === 'done') return;
 
         item.status = 'splitting';
         item.errorMsg = null;
@@ -550,7 +670,34 @@
         render();
       }
 
-      // 分割 PDF → 每页分割成两张 A4 JPG
+      // 手动分割（用于重新分割按钮）
+      async function splitSingle(id) {
+        const item = items.find(it => it.id === id);
+        if (!item || item.status === 'splitting') return;
+        if (item.status === 'done' && !confirm('重新分割会覆盖现有结果，确定吗？')) return;
+        await autoSplitItem(id);
+      }
+
+      function loadImageFromFile(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('图片加载失败'));
+            img.src = e.target.result;
+          };
+          reader.onerror = () => reject(new Error('文件读取失败'));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function removeItem(id) {
+        items = items.filter(it => it.id !== id);
+        render();
+      }
+
+      // ========== 分割 PDF → JPG ==========
       async function splitPdfToA4Jpg(pdfArrayBuffer) {
         const loadingTask = pdfjsLib.getDocument({ data: pdfArrayBuffer });
         const pdf = await loadingTask.promise;
@@ -561,7 +708,6 @@
 
         for (let i = 1; i <= numPages; i++) {
           const page = await pdf.getPage(i);
-          // 使用较高的 scale 提高清晰度，2.0 已经比较清晰，3.0 更清晰但更慢/更大
           const viewport = page.getViewport({ scale: 2.5 });
           const canvas = document.createElement('canvas');
           canvas.width = viewport.width;
@@ -592,7 +738,6 @@
             downloadBlob(item.result.a4_1.blob, getOutName(item, '1', 'jpg'));
           }
         } else if (item.type === 'pdf' && item.result.pages) {
-          // 下载PDF的第一页的两个A4
           const p = item.result.pages[0];
           if (p?.a4_1?.blob) downloadBlob(p.a4_1.blob, getOutName(item, 'p1_1', 'jpg'));
         }
@@ -610,24 +755,7 @@
         }
       }
 
-      // ========== 批量操作 ==========
-      async function splitAllPending() {
-        const pending = items.filter(it => it.status === 'pending' || it.status === 'error');
-        if (pending.length === 0) return;
-        splitAllBtn.disabled = true;
-        downloadAllBtn.disabled = true;
-        clearAllBtn.disabled = true;
-
-        for (let idx = 0; idx < pending.length; idx++) {
-          const it = pending[idx];
-          splitProgress.textContent = `正在处理 ${idx + 1}/${pending.length}...`;
-          await splitSingle(it.id);
-        }
-        splitProgress.textContent = '';
-        render();
-      }
-
-      // 打包下载：将所有已完成文件的 JPG 打包为 ZIP
+      // ========== 打包下载 ==========
       async function downloadAllDone() {
         const done = items.filter(it => it.status === 'done' && it.result);
         if (done.length === 0) return;
@@ -639,86 +767,4 @@
           const zip = new JSZip();
 
           done.forEach(item => {
-            const baseName = item.file.name.replace(/\.[^/.]+$/, '');
-
-            if (item.type === 'image') {
-              if (item.result.a4_1?.blob) {
-                zip.file(`${baseName}_A4_1.jpg`, item.result.a4_1.blob);
-              }
-              if (item.result.a4_2?.blob) {
-                zip.file(`${baseName}_A4_2.jpg`, item.result.a4_2.blob);
-              }
-            } else if (item.type === 'pdf' && item.result.pages) {
-              item.result.pages.forEach((page, idx) => {
-                const pageNum = idx + 1;
-                if (page.a4_1?.blob) {
-                  zip.file(`${baseName}_第${pageNum}页_A4_1.jpg`, page.a4_1.blob);
-                }
-                if (page.a4_2?.blob) {
-                  zip.file(`${baseName}_第${pageNum}页_A4_2.jpg`, page.a4_2.blob);
-                }
-              });
-            }
-          });
-
-          const zipBlob = await zip.generateAsync({
-            type: 'blob',
-            compression: 'DEFLATE',
-            compressionOptions: { level: 6 }
-          });
-
-          const now = new Date();
-          const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
-          downloadBlob(zipBlob, `A4分割结果_${dateStr}.zip`);
-        } catch (err) {
-          console.error('打包失败:', err);
-          alert('打包下载失败：' + (err.message || '未知错误'));
-        } finally {
-          downloadAllBtn.disabled = false;
-          downloadAllBtn.textContent = '⬇️ 打包下载全部';
-          render();
-        }
-      }
-
-      function clearAll() {
-        if (items.length === 0) return;
-        if (!confirm('确定清空所有文件吗？')) return;
-        items = [];
-        render();
-      }
-
-      // ========== 事件绑定 ==========
-      uploadArea.addEventListener('click', () => {
-        fileInput.value = '';
-        fileInput.click();
-      });
-
-      fileInput.addEventListener('change', (e) => {
-        addFiles(e.target.files);
-        fileInput.value = '';
-      });
-
-      uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-      });
-      uploadArea.addEventListener('dragleave', () => {
-        uploadArea.classList.remove('dragover');
-      });
-      uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        if (e.dataTransfer.files && e.dataTransfer.files.length) {
-          addFiles(e.dataTransfer.files);
-        }
-      });
-
-      splitAllBtn.addEventListener('click', splitAllPending);
-      downloadAllBtn.addEventListener('click', downloadAllDone);
-      clearAllBtn.addEventListener('click', clearAll);
-
-      render();
-    })();
-  </script>
-</body>
-</html>
+            const baseName = item.file.name.replace(/\.[^/.
