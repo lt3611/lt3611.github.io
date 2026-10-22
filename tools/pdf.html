@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A3 → A4 自动分割器（支持切分方向切换）</title>
+<title>A3 → A4 自动分割器（中缝微调版）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; }
   body { background: #f5f7fc; font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 20px; min-height: 100vh; }
-  .card { background: #fff; max-width: 1000px; width: 100%; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,20,40,.15); padding: 30px; }
+  .card { background: #fff; max-width: 1100px; width: 100%; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,20,40,.15); padding: 30px; }
   
   .upload-area { border: 2px dashed #b8cef0; border-radius: 16px; background: #fafdff; padding: 25px; text-align: center; cursor: pointer; transition: .2s; margin-bottom: 15px; }
   .upload-area:hover, .upload-area.dragover { border-color: #2d7aff; background: #f2f9ff; }
@@ -18,11 +18,17 @@
   .upload-text { font-weight: 600; color: #0b2b4a; font-size: 1.1rem; }
   .upload-hint { font-size: .85rem; color: #6d7e91; background: #ecf3fb; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; }
 
-  /* 切分选项栏 */
-  .options-bar { display: flex; justify-content: center; gap: 20px; align-items: center; margin-bottom: 20px; background: #f0f6ff; padding: 10px; border-radius: 12px; flex-wrap: wrap; }
-  .options-bar span { font-size: .9rem; font-weight: 600; color: #1a5fd0; }
-  .options-bar label { font-size: .9rem; color: #1c3b5e; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-  .options-bar input[type="radio"] { accent-color: #1a5fd0; transform: scale(1.2); }
+  /* 控制选项栏 */
+  .options-bar { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; background: #f0f6ff; padding: 15px; border-radius: 12px; }
+  .options-row { display: flex; justify-content: center; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .options-row span { font-size: .95rem; font-weight: 600; color: #1a5fd0; }
+  .options-row label { font-size: .95rem; color: #1c3b5e; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 500;}
+  .options-row input[type="radio"] { accent-color: #1a5fd0; transform: scale(1.2); cursor: pointer;}
+
+  /* 滑块样式 */
+  .slider-row { display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
+  .slider-row input[type="range"] { flex: 1; accent-color: #1a5fd0; }
+  .slider-val { font-weight: bold; color: #b13b3b; width: 45px; text-align: center; background: #fff; padding: 2px 6px; border-radius: 6px; border: 1px solid #d0e2ff; }
 
   .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
   .count { background: #d4e4ff; padding: 6px 12px; border-radius: 20px; font-size: .85rem; font-weight: 600; color: #004cbf; }
@@ -43,10 +49,12 @@
   .preview-card { flex: 1 1 200px; max-width: 260px; background: #fbfdff; border: 1px solid #e3ecf8; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; }
   .preview-title { font-size: .85rem; font-weight: 600; color: #0c2d4b; margin-bottom: 8px; width: 100%; display: flex; justify-content: space-between; }
   .preview-title span { color: #627d9b; font-weight: normal; font-size: .75rem; background: #ecf3fb; padding: 1px 6px; border-radius: 10px; }
-  .preview-img { width: 100%; min-height: 120px; background: #f4f8ff; border: 1px solid #d9e7fa; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; margin-bottom: 10px; }
-  .preview-img img { width: 100%; height: auto; display: block; cursor: zoom-in; }
-  .placeholder { color: #7c94b0; font-size: .8rem; text-align: center; }
   
+  /* 修复预览图变形问题 */
+  .preview-img { width: 100%; height: 220px; background: #f4f8ff; border: 1px solid #d9e7fa; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; margin-bottom: 10px; }
+  .preview-img img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; cursor: zoom-in; }
+  
+  .placeholder { color: #7c94b0; font-size: .8rem; text-align: center; }
   .status-text { font-size: .8rem; color: #7a8fa8; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
   .spinner { width: 14px; height: 14px; border: 2px solid #d0e2ff; border-top: 2px solid #1a5fd0; border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -61,16 +69,22 @@
   <div class="upload-area" id="uploadArea">
     <div class="upload-icon">📄</div>
     <div class="upload-text">点击或拖拽，支持多文件批量上传</div>
-    <div class="upload-hint">精准 50% 居中切分 · 支持铺满打印</div>
+    <div class="upload-hint">支持切分位置微调 · 彻底告别切字</div>
     <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/jpg,application/pdf,.pdf">
   </div>
 
-  <!-- 增加切分方向控制 -->
+  <!-- 控制面板 -->
   <div class="options-bar">
-    <span>切分方向：</span>
-    <label><input type="radio" name="splitMode" value="auto" checked> 自动识别</label>
-    <label><input type="radio" name="splitMode" value="lr"> 强制左右切分（横版）</label>
-    <label><input type="radio" name="splitMode" value="tb"> 强制上下切分（竖版）</label>
+    <div class="options-row">
+      <span>切分方向：</span>
+      <label><input type="radio" name="splitMode" value="lr" checked> 左右切分（横向）</label>
+      <label><input type="radio" name="splitMode" value="tb"> 上下切分（竖向）</label>
+    </div>
+    <div class="slider-row">
+      <span style="font-size:.85rem; color:#1c3b5e;">中缝位置微调：</span>
+      <input type="range" id="splitRatio" min="0.3" max="0.7" step="0.005" value="0.5">
+      <span class="slider-val" id="splitRatioVal">50%</span>
+    </div>
   </div>
 
   <div class="toolbar">
@@ -96,11 +110,13 @@
 
   const items = [];
   let nextId = 1;
+  let currentRatio = 0.5; // 默认 50%
 
   const el = id => document.getElementById(id);
   const uploadArea = el('uploadArea'), fileInput = el('fileInput'), fileList = el('fileList');
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
   const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
+  const splitRatioInput = el('splitRatio'), splitRatioVal = el('splitRatioVal');
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -119,23 +135,26 @@
     return { dataUrl, blob, blobUrl };
   }
 
-  function splitToTwo(source, isLandscape) {
+  // 根据比例切分
+  function splitToTwo(source, isLandscape, ratio) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
     const c1 = document.createElement('canvas'), c2 = document.createElement('canvas');
     
     if (isLandscape) {
-      const aw = Math.floor(w / 2);
-      c1.width = aw; c1.height = h;
-      c1.getContext('2d').drawImage(source, 0, 0, aw, h, 0, 0, aw, h);
-      c2.width = w - aw; c2.height = h;
-      c2.getContext('2d').drawImage(source, aw, 0, w - aw, h, 0, 0, w - aw, h);
+      const splitX = Math.floor(w * ratio);
+      c1.width = splitX; c1.height = h;
+      c1.getContext('2d').drawImage(source, 0, 0, splitX, h, 0, 0, splitX, h);
+      
+      c2.width = w - splitX; c2.height = h;
+      c2.getContext('2d').drawImage(source, splitX, 0, w - splitX, h, 0, 0, w - splitX, h);
     } else {
-      const ah = Math.floor(h / 2);
-      c1.width = w; c1.height = ah;
-      c1.getContext('2d').drawImage(source, 0, 0, w, ah, 0, 0, w, ah);
-      c2.width = w; c2.height = h - ah;
-      c2.getContext('2d').drawImage(source, 0, ah, w, h - ah, 0, 0, w, h - ah);
+      const splitY = Math.floor(h * ratio);
+      c1.width = w; c1.height = splitY;
+      c1.getContext('2d').drawImage(source, 0, 0, w, splitY, 0, 0, w, splitY);
+      
+      c2.width = w; c2.height = h - splitY;
+      c2.getContext('2d').drawImage(source, 0, splitY, w, h - splitY, 0, 0, w, h - splitY);
     }
     return { c1, c2 };
   }
@@ -156,40 +175,26 @@
       let previewHtml = '';
 
       if (item.status === 'splitting') {
-        statusHtml = '<div class="spinner"></div> 正在居中切分...';
+        statusHtml = '<div class="spinner"></div> 正在切分...';
         previewHtml = `<div class="preview-grid">${buildPreview(null, '处理中...')}</div>`;
       } else if (item.status === 'error') {
         statusHtml = `❌ ${esc(item.errorMsg)}`;
       } else if (item.status === 'done') {
         if (item.type === 'pdf') {
-          statusHtml = `✅ PDF共 ${item.result.pageCount} 页，全部分割完成`;
+          statusHtml = `✅ PDF共 ${item.result.pageCount} 页，当前按 ${Math.round(currentRatio*100)}% 位置切分`;
           previewHtml = `<div class="preview-grid">`;
           item.result.pages.forEach((p, idx)=>{
-            if(p.original){
-              previewHtml += buildPreview(item, '原图', `第${idx+1}页`, p.original.dataUrl);
-            }else{
-              previewHtml += buildPreview(item, '左/上', `第${idx+1}页 A4①`, p.a4_1.dataUrl);
-              previewHtml += buildPreview(item, '右/下', `第${idx+1}页 A4②`, p.a4_2.dataUrl);
-            }
+            previewHtml += buildPreview(item, '左/上', `第${idx+1}页 A4①`, p.a4_1.dataUrl);
+            previewHtml += buildPreview(item, '右/下', `第${idx+1}页 A4②`, p.a4_2.dataUrl);
           })
           previewHtml += `</div>`;
         } else {
-          if (item.result.original) {
-             statusHtml = '⚠️ 图幅接近正方形，<b>保留原图直接输出</b>';
-             previewHtml = `<div class="preview-grid" style="max-width:300px;">
-                <div class="preview-card" style="flex: 1 1 100%; max-width: 100%;">
-                  <div class="preview-title">原图 <span>直接输出</span></div>
-                  <div class="preview-img"><img src="${item.result.original.dataUrl}" onclick="window.showImageZoom(this.src)"></div>
-                </div>
-             </div>`;
-          } else {
-             statusHtml = '✅ 已成功居中分割为两张高质量 JPG';
-             previewHtml = `
-              <div class="preview-grid">
-                ${buildPreview(item, '左/上', 'A4 ①', item.result?.a4_1?.dataUrl)}
-                ${buildPreview(item, '右/下', 'A4 ②', item.result?.a4_2?.dataUrl)}
-              </div>`;
-          }
+          statusHtml = `✅ 已成功分割为两张高质量 JPG (切分位置: ${Math.round(currentRatio*100)}%)`;
+          previewHtml = `
+            <div class="preview-grid">
+              ${buildPreview(item, '左/上', 'A4 ①', item.result?.a4_1?.dataUrl)}
+              ${buildPreview(item, '右/下', 'A4 ②', item.result?.a4_2?.dataUrl)}
+            </div>`;
         }
       }
 
@@ -220,8 +225,8 @@
     const item = items.find(it => it.id === id);
     if (!item || item.status === 'splitting') return;
     
-    // 🌟 获取用户选择的切分方向
     const splitMode = document.querySelector('input[name="splitMode"]:checked').value;
+    const isLandscape = (splitMode === 'lr');
 
     item.status = 'splitting'; item.result = null; render();
 
@@ -233,24 +238,8 @@
           reader.readAsDataURL(item.file);
         });
         
-        const w = img.naturalWidth, h = img.naturalHeight;
-        
-        // 正方形不切
-        if (Math.abs(w - h) / Math.max(w, h) < 0.1 && splitMode === 'auto') {
-           const canvas = document.createElement('canvas');
-           canvas.width = w; canvas.height = h;
-           canvas.getContext('2d').drawImage(img, 0, 0);
-           item.result = { original: canvasToJpg(canvas) };
-        } else {
-           // 判断切分方向
-           let isLandscape;
-           if (splitMode === 'lr') isLandscape = true;
-           else if (splitMode === 'tb') isLandscape = false;
-           else isLandscape = (w >= h);
-
-           const { c1, c2 } = splitToTwo(img, isLandscape);
-           item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
-        }
+        const { c1, c2 } = splitToTwo(img, isLandscape, currentRatio);
+        item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
       } else {
         if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
@@ -263,17 +252,8 @@
           canvas.width = viewport.width; canvas.height = viewport.height;
           await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
-          if (Math.abs(canvas.width - canvas.height) / Math.max(canvas.width, canvas.height) < 0.1 && splitMode === 'auto') {
-            pages.push({ original: canvasToJpg(canvas) });
-          } else {
-            let isLandscape;
-            if (splitMode === 'lr') isLandscape = true;
-            else if (splitMode === 'tb') isLandscape = false;
-            else isLandscape = (canvas.width >= canvas.height);
-
-            const { c1, c2 } = splitToTwo(canvas, isLandscape);
-            pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
-          }
+          const { c1, c2 } = splitToTwo(canvas, isLandscape, currentRatio);
+          pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
         }
         item.result = { pages, pageCount: pages.length };
       }
@@ -312,20 +292,12 @@
     done.forEach(item => {
       const base = item.file.name.replace(/\.[^/.]+$/, '');
       if (item.type === 'image') {
-        if (item.result.original) {
-           zip.file(`${base}_原图.jpg`, item.result.original.blob);
-        } else {
-           zip.file(`${base}_A4_1.jpg`, item.result.a4_1.blob);
-           zip.file(`${base}_A4_2.jpg`, item.result.a4_2.blob);
-        }
+        zip.file(`${base}_A4_1.jpg`, item.result.a4_1.blob);
+        zip.file(`${base}_A4_2.jpg`, item.result.a4_2.blob);
       } else {
         item.result.pages.forEach((p, i) => {
-          if (p.original) {
-             zip.file(`${base}_第${i+1}页_原图.jpg`, p.original.blob);
-          } else {
-             zip.file(`${base}_第${i+1}页_A4_1.jpg`, p.a4_1.blob);
-             zip.file(`${base}_第${i+1}页_A4_2.jpg`, p.a4_2.blob);
-          }
+          zip.file(`${base}_第${i+1}页_A4_1.jpg`, p.a4_1.blob);
+          zip.file(`${base}_第${i+1}页_A4_2.jpg`, p.a4_2.blob);
         });
       }
     });
@@ -356,18 +328,14 @@
           @page { size: A4 portrait; margin: 0; }
           body { margin: 0; padding: 0; }
           .print-page { 
-            page-break-after: always; 
-            page-break-inside: avoid; 
-            width: 210mm; 
-            height: 297mm; 
-            display: block; 
-            overflow: hidden; 
-            margin: 0 auto;
+            page-break-after: always; page-break-inside: avoid; 
+            width: 210mm; height: 297mm; 
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; margin: 0 auto;
           }
           .print-page img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: fill; /* 强制铺满整个A4纸张 */
+            max-width: 100%; max-height: 100%; 
+            object-fit: contain; /* 改为 contain 防止打印时严重拉伸 */
             display: block; 
           }
         </style>
@@ -380,18 +348,10 @@
     const body = doc.body;
     done.forEach(item => {
       if (item.type === 'image') {
-        if (item.result.original) {
-           body.innerHTML += `<div class="print-page"><img src="${item.result.original.blobUrl}"></div>`;
-        } else {
-           body.innerHTML += `<div class="print-page"><img src="${item.result.a4_1.blobUrl}"></div><div class="print-page"><img src="${item.result.a4_2.blobUrl}"></div>`;
-        }
+        body.innerHTML += `<div class="print-page"><img src="${item.result.a4_1.blobUrl}"></div><div class="print-page"><img src="${item.result.a4_2.blobUrl}"></div>`;
       } else {
         item.result.pages.forEach(p => {
-          if (p.original) {
-             body.innerHTML += `<div class="print-page"><img src="${p.original.blobUrl}"></div>`;
-          } else {
-             body.innerHTML += `<div class="print-page"><img src="${p.a4_1.blobUrl}"></div><div class="print-page"><img src="${p.a4_2.blobUrl}"></div>`;
-          }
+          body.innerHTML += `<div class="print-page"><img src="${p.a4_1.blobUrl}"></div><div class="print-page"><img src="${p.a4_2.blobUrl}"></div>`;
         });
       }
     });
@@ -403,18 +363,27 @@
     }, 100);
   };
 
-  // 监听选项切换，自动重置并重新处理
+  // 监听滑块和方向切换，自动重新处理
+  let debounceTimer;
+  function triggerReprocess() {
+    if (items.length === 0) return;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      items.forEach(it => {
+        it.status = 'pending';
+        processFile(it.id);
+      });
+    }, 300);
+  }
+
+  splitRatioInput.addEventListener('input', (e) => {
+    currentRatio = parseFloat(e.target.value);
+    splitRatioVal.textContent = Math.round(currentRatio * 100) + '%';
+    triggerReprocess();
+  });
+
   document.querySelectorAll('input[name="splitMode"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-      if (items.length > 0) {
-        if (confirm('切换切分方向会重新处理所有文件，确定吗？')) {
-          items.forEach(it => {
-            it.status = 'pending';
-            processFile(it.id);
-          });
-        }
-      }
-    });
+    radio.addEventListener('change', triggerReprocess);
   });
 
   render();
