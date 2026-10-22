@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A3 → A4 自动分割器（智能白边检测）</title>
+<title>A3 → A4 自动分割器（铺满打印）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -51,7 +51,7 @@
   <div class="upload-area" id="uploadArea">
     <div class="upload-icon">📄</div>
     <div class="upload-text">点击或拖拽，支持多文件批量上传</div>
-    <div class="upload-hint">智能寻找白边中缝，完美不切字、不多字</div>
+    <div class="upload-hint">精准 50% 居中切分（支持铺满打印）</div>
     <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/jpg,application/pdf,.pdf">
   </div>
 
@@ -91,81 +91,23 @@
     return { dataUrl, blob, blobUrl };
   }
 
-  function findBestSplitPos(source, isLandscape) {
-    const w = source.width || source.naturalWidth;
-    const h = source.height || source.naturalHeight;
-    const canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(source, 0, 0);
-    
-    let bestPos = isLandscape ? Math.floor(w / 2) : Math.floor(h / 2);
-
-    try {
-      if (isLandscape) {
-        const startX = Math.floor(w * 0.3);
-        const endX = Math.floor(w * 0.7);
-        const scanW = endX - startX;
-        const imgData = ctx.getImageData(startX, 0, scanW, h).data;
-        const stepY = Math.max(1, Math.floor(h / 300));
-        let maxWhiteness = -1;
-        for (let x = 0; x < scanW; x++) {
-          let whiteness = 0;
-          for (let y = 0; y < h; y += stepY) {
-            const idx = (y * scanW + x) * 4;
-            const brightness = 0.299 * imgData[idx] + 0.587 * imgData[idx+1] + 0.114 * imgData[idx+2];
-            if (brightness > 240) whiteness++;
-          }
-          if (whiteness > maxWhiteness) {
-            maxWhiteness = whiteness;
-            bestPos = startX + x;
-          }
-        }
-      } else {
-        const startY = Math.floor(h * 0.3);
-        const endY = Math.floor(h * 0.7);
-        const scanH = endY - startY;
-        const imgData = ctx.getImageData(0, startY, w, scanH).data;
-        const stepX = Math.max(1, Math.floor(w / 300));
-        let maxWhiteness = -1;
-        for (let y = 0; y < scanH; y++) {
-          let whiteness = 0;
-          for (let x = 0; x < w; x += stepX) {
-            const idx = (y * w + x) * 4;
-            const brightness = 0.299 * imgData[idx] + 0.587 * imgData[idx+1] + 0.114 * imgData[idx+2];
-            if (brightness > 240) whiteness++;
-          }
-          if (whiteness > maxWhiteness) {
-            maxWhiteness = whiteness;
-            bestPos = startY + y;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("白边检测失败，退回中心切分", e);
-    }
-    return bestPos;
-  }
-
-  function splitToTwo(source, splitPos, isLandscape) {
+  function splitToTwo(source, isLandscape) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
     const c1 = document.createElement('canvas'), c2 = document.createElement('canvas');
     
     if (isLandscape) {
-      const w1 = splitPos;
-      const w2 = w - splitPos;
-      c1.width = w1; c1.height = h;
-      c1.getContext('2d').drawImage(source, 0, 0, w1, h, 0, 0, w1, h);
-      c2.width = w2; c2.height = h;
-      c2.getContext('2d').drawImage(source, splitPos, 0, w2, h, 0, 0, w2, h);
+      const aw = Math.floor(w / 2);
+      c1.width = aw; c1.height = h;
+      c1.getContext('2d').drawImage(source, 0, 0, aw, h, 0, 0, aw, h);
+      c2.width = w - aw; c2.height = h;
+      c2.getContext('2d').drawImage(source, aw, 0, w - aw, h, 0, 0, w - aw, h);
     } else {
-      const h1 = splitPos;
-      const h2 = h - splitPos;
-      c1.width = w; c1.height = h1;
-      c1.getContext('2d').drawImage(source, 0, 0, w, h1, 0, 0, w, h1);
-      c2.width = w; c2.height = h2;
-      c2.getContext('2d').drawImage(source, 0, splitPos, w, h2, 0, 0, w, h2);
+      const ah = Math.floor(h / 2);
+      c1.width = w; c1.height = ah;
+      c1.getContext('2d').drawImage(source, 0, 0, w, ah, 0, 0, w, ah);
+      c2.width = w; c2.height = h - ah;
+      c2.getContext('2d').drawImage(source, 0, ah, w, h - ah, 0, 0, w, h - ah);
     }
     return { c1, c2 };
   }
@@ -186,7 +128,7 @@
       let previewHtml = '';
 
       if (item.status === 'splitting') {
-        statusHtml = '<div class="spinner"></div> 正在智能切分...';
+        statusHtml = '<div class="spinner"></div> 正在居中切分...';
         previewHtml = `<div class="preview-grid">${buildPreview(null, '处理中...')}</div>`;
       } else if (item.status === 'error') {
         statusHtml = `❌ ${esc(item.errorMsg)}`;
@@ -213,7 +155,7 @@
                 </div>
              </div>`;
           } else {
-             statusHtml = '✅ 已成功分割为两张高质量 JPG（智能中缝避让）';
+             statusHtml = '✅ 已成功居中分割为两张高质量 JPG';
              previewHtml = `
               <div class="preview-grid">
                 ${buildPreview(item, '左/上', 'A4 ①', item.result?.a4_1?.dataUrl)}
@@ -237,7 +179,6 @@
     });
   }
 
-  // 调整了参数顺序，使其更符合语义：item, 角落标识(tag), 标题(label), 图片链接(dataUrl)
   function buildPreview(item, tag, label, dataUrl) {
     let imgHtml = dataUrl ? `<img src="${dataUrl}">` : `<div class="placeholder">${label}</div>`;
     if (!item) return `<div class="preview-card"><div class="preview-img">${imgHtml}</div></div>`;
@@ -269,8 +210,7 @@
            item.result = { original: canvasToJpg(canvas) };
         } else {
            const isLandscape = w >= h;
-           const bestPos = findBestSplitPos(img, isLandscape);
-           const { c1, c2 } = splitToTwo(img, bestPos, isLandscape);
+           const { c1, c2 } = splitToTwo(img, isLandscape);
            item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
         }
       } else {
@@ -289,8 +229,7 @@
             pages.push({ original: canvasToJpg(canvas) });
           } else {
             const isLandscape = canvas.width >= canvas.height;
-            const bestPos = findBestSplitPos(canvas, isLandscape);
-            const { c1, c2 } = splitToTwo(canvas, bestPos, isLandscape);
+            const { c1, c2 } = splitToTwo(canvas, isLandscape);
             pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
           }
         }
@@ -367,6 +306,8 @@
 
     const doc = iframe.contentWindow.document;
     doc.open();
+    
+    // 🌟 修改了这里的打印 CSS 样式：实现了铺满 A4 纸
     doc.write(`
       <!DOCTYPE html>
       <html>
@@ -374,8 +315,21 @@
         <style>
           @page { size: A4 portrait; margin: 0; }
           body { margin: 0; padding: 0; }
-          .print-page { page-break-after: always; page-break-inside: avoid; width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-          .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; }
+          .print-page { 
+            page-break-after: always; 
+            page-break-inside: avoid; 
+            width: 210mm; 
+            height: 297mm; 
+            display: block; 
+            overflow: hidden; 
+            margin: 0 auto;
+          }
+          .print-page img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: fill; /* 强制拉伸铺满整个页面 */
+            display: block; 
+          }
         </style>
       </head>
       <body></body>
