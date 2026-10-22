@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A3 → A4 自动分割器（中缝微调版）</title>
+<title>A3 → A4 可视化拖拽分割器</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -11,35 +11,56 @@
   body { background: #f5f7fc; font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 20px; min-height: 100vh; }
   .card { background: #fff; max-width: 1100px; width: 100%; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,20,40,.15); padding: 30px; }
   
-  .upload-area { border: 2px dashed #b8cef0; border-radius: 16px; background: #fafdff; padding: 25px; text-align: center; cursor: pointer; transition: .2s; margin-bottom: 15px; }
+  /* 上传区 */
+  .upload-area { border: 2px dashed #b8cef0; border-radius: 16px; background: #fafdff; padding: 20px; text-align: center; cursor: pointer; transition: .2s; margin-bottom: 15px; }
   .upload-area:hover, .upload-area.dragover { border-color: #2d7aff; background: #f2f9ff; }
   .upload-area input { display: none; }
-  .upload-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .upload-icon { font-size: 2rem; margin-bottom: 8px; }
   .upload-text { font-weight: 600; color: #0b2b4a; font-size: 1.1rem; }
   .upload-hint { font-size: .85rem; color: #6d7e91; background: #ecf3fb; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; }
 
-  /* 控制选项栏 */
-  .options-bar { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; background: #f0f6ff; padding: 15px; border-radius: 12px; }
-  .options-row { display: flex; justify-content: center; gap: 20px; align-items: center; flex-wrap: wrap; }
-  .options-row span { font-size: .95rem; font-weight: 600; color: #1a5fd0; }
-  .options-row label { font-size: .95rem; color: #1c3b5e; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 500;}
-  .options-row input[type="radio"] { accent-color: #1a5fd0; transform: scale(1.2); cursor: pointer;}
+  /* 微调控制面板 */
+  .fine-tune-panel { display: none; background: #fff; border: 2px solid #1a5fd0; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(26,95,208,0.1); }
+  .fine-tune-panel.active { display: block; }
+  .tune-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+  .tune-title { font-weight: 600; color: #1a5fd0; font-size: 1.1rem; }
+  
+  .options-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+  .options-row label { font-size: .9rem; color: #1c3b5e; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 500;}
 
-  /* 滑块样式 */
-  .slider-row { display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%; max-width: 600px; margin: 0 auto; }
-  .slider-row input[type="range"] { flex: 1; accent-color: #1a5fd0; }
-  .slider-val { font-weight: bold; color: #b13b3b; width: 45px; text-align: center; background: #fff; padding: 2px 6px; border-radius: 6px; border: 1px solid #d0e2ff; }
+  /* 拖拽画布区 */
+  .drag-container { position: relative; width: 100%; max-width: 800px; margin: 0 auto; background: #eef2f7; border-radius: 8px; overflow: hidden; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; min-height: 300px; }
+  .drag-container img { max-width: 100%; max-height: 60vh; display: block; pointer-events: none; }
+  
+  /* 半透明遮罩 */
+  .mask { position: absolute; top: 0; bottom: 0; background: rgba(255,255,255,0.5); pointer-events: none; transition: width 0.05s; }
+  .mask.left { left: 0; }
+  .mask.right { right: 0; }
+  
+  /* 红色切分线 */
+  .split-line { position: absolute; top: 0; bottom: 0; width: 4px; background: #ff3b30; left: 50%; transform: translateX(-50%); cursor: ew-resize; box-shadow: 0 0 8px rgba(255,59,48,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .split-line::after { content: '↔ 拖动'; position: absolute; top: 50%; background: #ff3b30; color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 20px; white-space: nowrap; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
+  /* 如果是上下切分，调整线样式 */
+  .drag-container.vertical .mask { left: 0; right: 0; top: auto; bottom: auto; width: 100%; }
+  .drag-container.vertical .mask.top { top: 0; }
+  .drag-container.vertical .mask.bottom { bottom: 0; }
+  .drag-container.vertical .split-line { top: auto; bottom: auto; left: 0; right: 0; width: auto; height: 4px; transform: translateY(-50%); cursor: ns-resize; }
+  .drag-container.vertical .split-line::after { content: '↕ 拖动'; }
+
+  /* 工具栏 */
   .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
   .count { background: #d4e4ff; padding: 6px 12px; border-radius: 20px; font-size: .85rem; font-weight: 600; color: #004cbf; }
   .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
   
-  .btn { border: none; background: #1a5fd0; color: #fff; font-weight: 600; padding: 8px 18px; border-radius: 20px; cursor: pointer; transition: .2s; font-size: .9rem; display: inline-flex; align-items: center; justify-content: center;}
+  .btn { border: none; background: #1a5fd0; color: #fff; font-weight: 600; padding: 10px 22px; border-radius: 20px; cursor: pointer; transition: .2s; font-size: .95rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;}
   .btn:disabled { background: #a6bbd9; cursor: not-allowed; opacity: .7; }
   .btn-outline { background: #fff; color: #1a5fd0; border: 1.5px solid #1a5fd0; }
   .btn-danger { background: #fff; color: #b13b3b; border: 1.5px solid #e0a0a0; }
   .btn-print { background: #1e7a1e; color: #fff; }
+  .btn-success { background: #1e7a1e; color: #fff; font-size: 1.05rem; padding: 12px 30px; box-shadow: 0 4px 10px rgba(30,122,30,.3);}
 
+  /* 结果文件列表 */
   .file-card { border: 1px solid #e3ecf8; border-radius: 16px; padding: 15px; margin-bottom: 15px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,.03); }
   .file-head { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
   .file-info { display: flex; align-items: center; gap: 10px; font-weight: 500; color: #1c3b5e; font-size: .95rem; word-break: break-all; }
@@ -49,8 +70,6 @@
   .preview-card { flex: 1 1 200px; max-width: 260px; background: #fbfdff; border: 1px solid #e3ecf8; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; }
   .preview-title { font-size: .85rem; font-weight: 600; color: #0c2d4b; margin-bottom: 8px; width: 100%; display: flex; justify-content: space-between; }
   .preview-title span { color: #627d9b; font-weight: normal; font-size: .75rem; background: #ecf3fb; padding: 1px 6px; border-radius: 10px; }
-  
-  /* 修复预览图变形问题 */
   .preview-img { width: 100%; height: 220px; background: #f4f8ff; border: 1px solid #d9e7fa; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; margin-bottom: 10px; }
   .preview-img img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; cursor: zoom-in; }
   
@@ -59,6 +78,7 @@
   .spinner { width: 14px; height: 14px; border: 2px solid #d0e2ff; border-top: 2px solid #1a5fd0; border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
   
+  /* 大图查看 */
   .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; cursor: zoom-out; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .lightbox.show { opacity: 1; pointer-events: auto; }
   .lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; }
@@ -66,28 +86,39 @@
 </head>
 <body>
 <div class="card">
+  <!-- 上传区 -->
   <div class="upload-area" id="uploadArea">
     <div class="upload-icon">📄</div>
     <div class="upload-text">点击或拖拽，支持多文件批量上传</div>
-    <div class="upload-hint">支持切分位置微调 · 彻底告别切字</div>
+    <div class="upload-hint">上传后请手动微调切分线，然后开始分割</div>
     <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/jpg,application/pdf,.pdf">
   </div>
 
-  <!-- 控制面板 -->
-  <div class="options-bar">
-    <div class="options-row">
-      <span>切分方向：</span>
-      <label><input type="radio" name="splitMode" value="lr" checked> 左右切分（横向）</label>
-      <label><input type="radio" name="splitMode" value="tb"> 上下切分（竖向）</label>
+  <!-- 可视化微调面板 -->
+  <div class="fine-tune-panel" id="fineTunePanel">
+    <div class="tune-header">
+      <div class="tune-title">🎯 拖拽红线调整切分位置</div>
+      <div class="options-row">
+        <label><input type="radio" name="splitMode" value="lr" checked> 左右切分</label>
+        <label><input type="radio" name="splitMode" value="tb"> 上下切分</label>
+      </div>
     </div>
-    <div class="slider-row">
-      <span style="font-size:.85rem; color:#1c3b5e;">中缝位置微调：</span>
-      <input type="range" id="splitRatio" min="0.3" max="0.7" step="0.005" value="0.5">
-      <span class="slider-val" id="splitRatioVal">50%</span>
+    
+    <!-- 拖拽交互区 -->
+    <div class="drag-container" id="dragContainer">
+      <img id="dragImage" src="" alt="预览图">
+      <div class="mask left" id="maskLeft"></div>
+      <div class="mask right" id="maskRight"></div>
+      <div class="split-line" id="splitLine"></div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 20px;">
+      <button class="btn btn-success" id="startSplitBtn">✂️ 确认位置，开始分割</button>
     </div>
   </div>
 
-  <div class="toolbar">
+  <!-- 工具栏 -->
+  <div class="toolbar" id="toolbar" style="display:none;">
     <div class="count" id="fileCount">0 个文件</div>
     <div class="btn-group">
       <button class="btn btn-outline" id="downloadAllBtn" disabled>⬇️ 打包下载</button>
@@ -96,8 +127,9 @@
     </div>
   </div>
 
+  <!-- 分割结果展示区 -->
   <div id="fileList">
-    <div class="placeholder" style="padding: 30px;">暂无文件</div>
+    <div class="placeholder" style="padding: 30px;">请先上传文件并调整切分位置</div>
   </div>
 </div>
 
@@ -110,20 +142,21 @@
 
   const items = [];
   let nextId = 1;
-  let currentRatio = 0.5; // 默认 50%
+  let currentRatio = 0.5; // 默认正中间
+  let previewFile = null; // 用于微调预览的原始文件
+  let previewImageObj = null; // 绘制到界面的缩略图
 
   const el = id => document.getElementById(id);
-  const uploadArea = el('uploadArea'), fileInput = el('fileInput'), fileList = el('fileList');
+  const uploadArea = el('uploadArea'), fileInput = el('fileInput');
+  const fineTunePanel = el('fineTunePanel'), toolbar = el('toolbar'), fileList = el('fileList');
+  const dragImage = el('dragImage'), dragContainer = el('dragContainer');
+  const maskLeft = el('maskLeft'), maskRight = el('maskRight'), splitLine = el('splitLine');
+  const startSplitBtn = el('startSplitBtn');
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
   const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
-  const splitRatioInput = el('splitRatio'), splitRatioVal = el('splitRatioVal');
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-  window.showImageZoom = (url) => {
-    lightboxImg.src = url;
-    lightbox.classList.add('show');
-  };
+  window.showImageZoom = (url) => { lightboxImg.src = url; lightbox.classList.add('show'); };
 
   function canvasToJpg(canvas) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
@@ -135,7 +168,60 @@
     return { dataUrl, blob, blobUrl };
   }
 
-  // 根据比例切分
+  // --- 交互区逻辑 ---
+  function updateLinePos() {
+    const mode = document.querySelector('input[name="splitMode"]:checked').value;
+    if (mode === 'lr') {
+      dragContainer.classList.remove('vertical');
+      splitLine.style.left = (currentRatio * 100) + '%';
+      splitLine.style.top = '0';
+      splitLine.style.bottom = '0';
+      
+      maskLeft.style.width = (currentRatio * 100) + '%';
+      maskRight.style.width = ((1 - currentRatio) * 100) + '%';
+    } else {
+      dragContainer.classList.add('vertical');
+      splitLine.style.top = (currentRatio * 100) + '%';
+      splitLine.style.left = '0';
+      splitLine.style.right = '0';
+
+      maskLeft.style.height = (currentRatio * 100) + '%';
+      maskRight.style.height = ((1 - currentRatio) * 100) + '%';
+    }
+  }
+
+  let isDragging = false;
+  function handlePointerMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const rect = dragContainer.getBoundingClientRect();
+    const mode = document.querySelector('input[name="splitMode"]:checked').value;
+    
+    let ratio;
+    if (mode === 'lr') {
+      const clientX = e.clientX || e.touches[0].clientX;
+      ratio = (clientX - rect.left) / rect.width;
+    } else {
+      const clientY = e.clientY || e.touches[0].clientY;
+      ratio = (clientY - rect.top) / rect.height;
+    }
+    // 限制在 10% 到 90% 之间，防止拖出边界
+    currentRatio = Math.max(0.1, Math.min(0.9, ratio));
+    updateLinePos();
+  }
+
+  splitLine.addEventListener('pointerdown', (e) => { isDragging = true; e.target.setPointerCapture(e.pointerId); });
+  window.addEventListener('pointermove', handlePointerMove);
+  window.addEventListener('pointerup', () => { isDragging = false; });
+  
+  document.querySelectorAll('input[name="splitMode"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      currentRatio = 0.5; // 切换方向时重置回中心
+      updateLinePos();
+    });
+  });
+
+  // --- 文件处理逻辑 ---
   function splitToTwo(source, isLandscape, ratio) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
@@ -159,14 +245,117 @@
     return { c1, c2 };
   }
 
-  function render() {
-    fileCount.textContent = `${items.length} 个文件`;
-    const anyDone = items.some(it => it.status === 'done');
-    downloadAllBtn.disabled = !anyDone;
-    printAllBtn.disabled = !anyDone;
-    clearAllBtn.disabled = items.length === 0;
+  async function generateThumbnail(file) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 1.5 }); // 缩略图不用太高清
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width; canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          resolve(canvas.toDataURL('image/jpeg'));
+        } else {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        }
+      } catch (err) { reject(err); }
+    });
+  }
+
+  // 处理上传
+  uploadArea.onclick = () => { fileInput.value = ''; fileInput.click(); };
+  fileInput.onchange = e => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
     
-    fileList.innerHTML = items.length ? '' : '<div class="placeholder" style="padding:30px;">暂无文件</div>';
+    // 如果第一次上传，生成微调缩略图
+    if (items.length === 0) {
+      previewFile = files[0];
+      generateThumbnail(previewFile).then(dataUrl => {
+        dragImage.src = dataUrl;
+        fineTunePanel.classList.add('active');
+        toolbar.style.display = 'flex';
+        updateLinePos();
+      }).catch(err => {
+        alert('预览生成失败: ' + err.message);
+      });
+    }
+
+    files.forEach(file => {
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (!isPdf && !file.type.startsWith('image/')) return;
+      
+      // 刚上传，先不处理，状态标为 pending
+      items.push({ id: nextId++, file, type: isPdf ? 'pdf' : 'image', status: 'pending', result: null });
+    });
+    
+    fileCount.textContent = `${items.length} 个文件已就绪`;
+    fileList.innerHTML = '<div class="placeholder" style="padding: 30px; color: #1a5fd0;">📌 文件已就绪，请在上方拖拽红线微调位置，然后点击【开始分割】。</div>';
+  };
+
+  // 监听点击开始分割
+  startSplitBtn.onclick = () => {
+    if (items.length === 0) return;
+    const splitMode = document.querySelector('input[name="splitMode"]:checked').value;
+    const isLandscape = (splitMode === 'lr');
+
+    // 隐藏微调面板，展示处理列表
+    fineTunePanel.classList.remove('active');
+    renderList(); // 渲染处理状态
+
+    // 批量处理
+    items.forEach(async (item) => {
+      if (item.status === 'done') return;
+      item.status = 'splitting'; renderList();
+
+      try {
+        if (item.type === 'image') {
+          const img = await new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = e => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = e.target.result; };
+            reader.readAsDataURL(item.file);
+          });
+          
+          const { c1, c2 } = splitToTwo(img, isLandscape, currentRatio);
+          item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
+        } else {
+          if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
+          const pages = [];
+          
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 2.5 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width; canvas.height = viewport.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+            const { c1, c2 } = splitToTwo(canvas, isLandscape, currentRatio);
+            pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
+          }
+          item.result = { pages, pageCount: pages.length };
+        }
+        item.status = 'done';
+      } catch (e) {
+        item.status = 'error'; item.errorMsg = e.message || '处理失败';
+      }
+      renderList();
+    });
+  };
+
+  // 渲染处理结果列表
+  function renderList() {
+    const anyDone = items.some(it => it.status === 'done');
+    const anySplitting = items.some(it => it.status === 'splitting');
+    downloadAllBtn.disabled = !anyDone || anySplitting;
+    printAllBtn.disabled = !anyDone || anySplitting;
+    clearAllBtn.disabled = items.length === 0 || anySplitting;
+
+    fileList.innerHTML = '';
     
     items.forEach(item => {
       const card = document.createElement('div');
@@ -174,14 +363,15 @@
       let statusHtml = '';
       let previewHtml = '';
 
-      if (item.status === 'splitting') {
+      if (item.status === 'pending') {
+        statusHtml = '⏳ 等待分割';
+      } else if (item.status === 'splitting') {
         statusHtml = '<div class="spinner"></div> 正在切分...';
-        previewHtml = `<div class="preview-grid">${buildPreview(null, '处理中...')}</div>`;
       } else if (item.status === 'error') {
         statusHtml = `❌ ${esc(item.errorMsg)}`;
       } else if (item.status === 'done') {
         if (item.type === 'pdf') {
-          statusHtml = `✅ PDF共 ${item.result.pageCount} 页，当前按 ${Math.round(currentRatio*100)}% 位置切分`;
+          statusHtml = `✅ PDF共 ${item.result.pageCount} 页，全部分割完成`;
           previewHtml = `<div class="preview-grid">`;
           item.result.pages.forEach((p, idx)=>{
             previewHtml += buildPreview(item, '左/上', `第${idx+1}页 A4①`, p.a4_1.dataUrl);
@@ -189,7 +379,7 @@
           })
           previewHtml += `</div>`;
         } else {
-          statusHtml = `✅ 已成功分割为两张高质量 JPG (切分位置: ${Math.round(currentRatio*100)}%)`;
+          statusHtml = `✅ 已成功切分`;
           previewHtml = `
             <div class="preview-grid">
               ${buildPreview(item, '左/上', 'A4 ①', item.result?.a4_1?.dataUrl)}
@@ -214,75 +404,24 @@
 
   function buildPreview(item, tag, label, dataUrl) {
     let imgHtml = dataUrl ? `<img src="${dataUrl}" onclick="window.showImageZoom(this.src)">` : `<div class="placeholder">${label}</div>`;
-    if (!item) return `<div class="preview-card"><div class="preview-img">${imgHtml}</div></div>`;
     return `<div class="preview-card">
       <div class="preview-title">${label} <span>${tag}</span></div>
       <div class="preview-img">${imgHtml}</div>
     </div>`;
   }
 
-  async function processFile(id) {
-    const item = items.find(it => it.id === id);
-    if (!item || item.status === 'splitting') return;
-    
-    const splitMode = document.querySelector('input[name="splitMode"]:checked').value;
-    const isLandscape = (splitMode === 'lr');
+  // 清空
+  clearAllBtn.onclick = () => { 
+    if(confirm('确定清空全部文件？')) { 
+      items.length = 0; 
+      fileCount.textContent = '0 个文件';
+      fineTunePanel.classList.remove('active');
+      toolbar.style.display = 'none';
+      fileList.innerHTML = '<div class="placeholder" style="padding: 30px;">暂无文件</div>';
+    } 
+  };
 
-    item.status = 'splitting'; item.result = null; render();
-
-    try {
-      if (item.type === 'image') {
-        const img = await new Promise((res, rej) => {
-          const reader = new FileReader();
-          reader.onload = e => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = e.target.result; };
-          reader.readAsDataURL(item.file);
-        });
-        
-        const { c1, c2 } = splitToTwo(img, isLandscape, currentRatio);
-        item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
-      } else {
-        if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
-        const pages = [];
-        
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 2.5 });
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width; canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-
-          const { c1, c2 } = splitToTwo(canvas, isLandscape, currentRatio);
-          pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
-        }
-        item.result = { pages, pageCount: pages.length };
-      }
-      item.status = 'done';
-    } catch (e) {
-      item.status = 'error'; item.errorMsg = e.message || '处理失败';
-    }
-    render();
-  }
-
-  function addFiles(files) {
-    Array.from(files).forEach(file => {
-      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-      if (!isPdf && !file.type.startsWith('image/')) return;
-      const newItem = { id: nextId++, file, type: isPdf ? 'pdf' : 'image', status: 'pending', result: null };
-      items.push(newItem);
-      processFile(newItem.id);
-    });
-  }
-
-  uploadArea.onclick = () => { fileInput.value = ''; fileInput.click(); };
-  fileInput.onchange = e => addFiles(e.target.files);
-  
-  uploadArea.ondragover = e => { e.preventDefault(); uploadArea.classList.add('dragover'); };
-  uploadArea.ondragleave = () => uploadArea.classList.remove('dragover');
-  uploadArea.ondrop = e => { e.preventDefault(); uploadArea.classList.remove('dragover'); addFiles(e.dataTransfer.files); };
-
-  clearAllBtn.onclick = () => { if(confirm('确定清空全部文件？')) { items.length = 0; render(); } };
-
+  // 打包下载
   downloadAllBtn.onclick = async () => {
     const done = items.filter(it => it.status === 'done');
     if (!done.length) return;
@@ -310,6 +449,7 @@
     downloadAllBtn.textContent = '⬇️ 打包下载'; downloadAllBtn.disabled = false;
   };
 
+  // 打印全部
   printAllBtn.onclick = () => {
     const done = items.filter(it => it.status === 'done');
     if (!done.length) return;
@@ -335,7 +475,7 @@
           }
           .print-page img { 
             max-width: 100%; max-height: 100%; 
-            object-fit: contain; /* 改为 contain 防止打印时严重拉伸 */
+            object-fit: contain; /* 缩放留白防拉伸 */
             display: block; 
           }
         </style>
@@ -363,30 +503,6 @@
     }, 100);
   };
 
-  // 监听滑块和方向切换，自动重新处理
-  let debounceTimer;
-  function triggerReprocess() {
-    if (items.length === 0) return;
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      items.forEach(it => {
-        it.status = 'pending';
-        processFile(it.id);
-      });
-    }, 300);
-  }
-
-  splitRatioInput.addEventListener('input', (e) => {
-    currentRatio = parseFloat(e.target.value);
-    splitRatioVal.textContent = Math.round(currentRatio * 100) + '%';
-    triggerReprocess();
-  });
-
-  document.querySelectorAll('input[name="splitMode"]').forEach(radio => {
-    radio.addEventListener('change', triggerReprocess);
-  });
-
-  render();
 </script>
 </body>
 </html>
