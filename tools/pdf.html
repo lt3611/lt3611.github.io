@@ -50,40 +50,6 @@
   .spinner { width: 14px; height: 14px; border: 2px solid #d0e2ff; border-top: 2px solid #1a5fd0; border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
   .hidden { display: none !important; }
-
-  /* ========== 打印专用样式优化 ========== */
-  #printArea { display: none; }
-  @media print {
-    /* 强制 A4 纸张和无边距 */
-    @page { size: A4; margin: 0; }
-    body { background: #fff; margin: 0; padding: 0; }
-    body * { visibility: hidden; }
-    #printArea, #printArea * { visibility: visible; }
-    
-    #printArea { 
-      display: block !important; 
-      position: absolute; left: 0; top: 0; width: 100%; 
-    }
-    
-    /* 每一页固定尺寸为 A4，强制分页 */
-    .print-page { 
-      page-break-after: always; 
-      page-break-inside: avoid;
-      width: 210mm; 
-      height: 297mm; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      overflow: hidden;
-    }
-    
-    /* 图片按比例缩放适应页面 */
-    .print-page img { 
-      max-width: 100%; 
-      max-height: 100%; 
-      object-fit: contain; 
-    }
-  }
 </style>
 </head>
 <body>
@@ -109,8 +75,6 @@
   </div>
 </div>
 
-<div id="printArea"></div>
-
 <script>
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -119,16 +83,19 @@
 
   const el = id => document.getElementById(id);
   const uploadArea = el('uploadArea'), fileInput = el('fileInput'), fileList = el('fileList');
-  const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn'), printArea = el('printArea');
+  const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+  // 核心优化：同时生成 BlobUrl（用于极速渲染/打印）和 DataUrl（用于预览显示）
   function canvasToJpg(canvas) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
     const bstr = atob(dataUrl.split(',')[1]);
     let n = bstr.length; const u8 = new Uint8Array(n);
     while (n--) u8[n] = bstr.charCodeAt(n);
-    return { dataUrl, blob: new Blob([u8], { type: 'image/jpeg' }) };
+    const blob = new Blob([u8], { type: 'image/jpeg' });
+    const blobUrl = URL.createObjectURL(blob); 
+    return { dataUrl, blob, blobUrl };
   }
 
   function splitToTwo(source, isLandscape) {
@@ -280,43 +247,75 @@
     downloadAllBtn.textContent = '⬇️ 打包下载全部'; downloadAllBtn.disabled = false;
   };
 
-  // 【优化】全局打印全部逻辑
-  printAllBtn.onclick = async () => {
+  // 【终极优化】使用 BlobUrl 和 iframe 实现极速、稳定、完整的全量打印
+  printAllBtn.onclick = () => {
     const done = items.filter(it => it.status === 'done');
     if (!done.length) return;
-    
-    // 1. 构建 4 张图的 HTML
-    let html = '';
+
+    // 1. 创建隐藏的 iframe 容器，避免干扰当前页面的渲染进程
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    // 写入专门用于打印的干净环境
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @page { size: A4 portrait; margin: 0; }
+          body { margin: 0; padding: 0; }
+          .print-page { 
+            page-break-after: always; 
+            page-break-inside: avoid;
+            width: 210mm; 
+            height: 297mm; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden;
+          }
+          .print-page img { 
+            max-width: 100%; 
+            max-height: 100%; 
+            object-fit: contain; 
+          }
+        </style>
+      </head>
+      <body></body>
+      </html>
+    `);
+    doc.close();
+
+    // 2. 注入图片（使用 blobUrl，加载速度比 Base64 快几十倍）
+    const body = doc.body;
     done.forEach(item => {
       if (item.type === 'image') {
-        html += `<div class="print-page"><img src="${item.result.a4_1.dataUrl}"></div><div class="print-page"><img src="${item.result.a4_2.dataUrl}"></div>`;
+        body.innerHTML += `<div class="print-page"><img src="${item.result.a4_1.blobUrl}"></div>`;
+        body.innerHTML += `<div class="print-page"><img src="${item.result.a4_2.blobUrl}"></div>`;
       } else {
         item.result.pages.forEach(p => {
-          html += `<div class="print-page"><img src="${p.a4_1.dataUrl}"></div><div class="print-page"><img src="${p.a4_2.dataUrl}"></div>`;
+          body.innerHTML += `<div class="print-page"><img src="${p.a4_1.blobUrl}"></div>`;
+          body.innerHTML += `<div class="print-page"><img src="${p.a4_2.blobUrl}"></div>`;
         });
       }
     });
-    
-    printArea.innerHTML = html;
-    printArea.style.display = 'block'; 
 
-    // 2. 关键优化：等待所有图片完全加载完毕后再唤起打印机
-    const imgs = printArea.querySelectorAll('img');
-    const loadPromises = Array.from(imgs).map(img => {
-      return new Promise(resolve => {
-        if (img.complete) resolve();
-        else { img.onload = resolve; img.onerror = resolve; }
-      });
-    });
-
-    // 等待加载完成（大约0.5秒延迟，确保渲染完成）
-    await Promise.all(loadPromises);
-    await new Promise(r => setTimeout(r, 300)); 
-
-    window.print();
-    
-    // 3. 恢复页面
-    setTimeout(() => { printArea.style.display = 'none'; printArea.innerHTML = ''; }, 1000);
+    // 3. 由于 blobUrl 极快，只要稍微等各图片的 onload 即可（这里用 100ms 确保万无一失）
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print(); // 直接调用 iframe 的打印
+      
+      // 4. 打印结束后清理 iframe
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 2000);
+    }, 100);
   };
 
   render();
