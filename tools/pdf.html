@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>A3 → A4 独立微调分割器</title>
+<title>A3 → A4 多线切割器</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -22,17 +22,9 @@
   /* 微调控制面板 */
   .fine-tune-panel { display: none; background: #fff; border: 2px solid #1a5fd0; border-radius: 16px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(26,95,208,0.1); }
   .fine-tune-panel.active { display: block; }
-  .tune-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; position: sticky; top: 0; background: #fff; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #eee;}
-  .tune-title { font-weight: 600; color: #1a5fd0; font-size: 1.1rem; }
   
-  .options-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-  .options-row label { font-size: .9rem; color: #1c3b5e; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 500;}
-
-  /* 缩放工具 */
-  .zoom-tools { display: flex; align-items: center; gap: 8px; background: #f0f6ff; padding: 5px 10px; border-radius: 20px; }
-  .zoom-btn { border: none; background: #fff; border: 1px solid #b8cef0; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: bold; color: #1a5fd0; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-  .zoom-btn:hover { background: #e3f0ff; }
-  .zoom-text { font-size: 0.85rem; font-weight: 600; color: #1a5fd0; min-width: 45px; text-align: center; }
+  /* 顶部提示语 */
+  .tune-tip { font-size: 0.95rem; font-weight: 600; color: #1a5fd0; text-align: center; margin-bottom: 15px; background: #f0f6ff; padding: 8px; border-radius: 8px;}
 
   /* 垂直多页拖拽容器 */
   .drag-gallery { display: flex; flex-direction: column; gap: 40px; max-height: 65vh; overflow: auto; padding: 20px 10px; background: #f8fafd; border-radius: 12px; margin-bottom: 15px; border: 1px solid #e3ecf8; }
@@ -46,33 +38,42 @@
   .drag-container { position: relative; width: 100%; background: #eef2f7; border-radius: 8px; overflow: hidden; user-select: none; border: 1px solid #d0e2ff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: zoom-in; }
   .drag-container img { width: 100%; display: block; pointer-events: none; }
   
-  /* 半透明遮罩 */
-  .mask { position: absolute; top: 0; bottom: 0; background: rgba(255,255,255,0.6); pointer-events: none; transition: width 0.05s; }
-  .mask.left { left: 0; }
-  .mask.right { right: 0; }
-  
-  /* 红色切分线 (小图) */
-  .split-line { position: absolute; top: 0; bottom: 0; width: 4px; background: #ff3b30; left: 50%; transform: translateX(-50%); box-shadow: 0 0 8px rgba(255,59,48,0.8); z-index: 5; pointer-events: none;}
-  
-  /* 上下切分样式 */
-  .drag-container.vertical .mask { left: 0; right: 0; top: auto; bottom: auto; width: 100%; }
-  .drag-container.vertical .mask.top { top: 0; }
-  .drag-container.vertical .mask.bottom { bottom: 0; }
-  .drag-container.vertical .split-line { top: auto; bottom: auto; left: 0; right: 0; width: auto; height: 4px; transform: translateY(-50%); }
-
-  /* 🌟 底部操作按钮组 (完美网格三等分) */
-  .action-buttons { 
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr; /* 绝对三等分 */
-    gap: 6px; 
-    margin-top: 15px; 
-    width: 100%; 
+  /* ===== 小图红线：视觉 1px，触摸区 20px ===== */
+  .drag-container .split-line {
+    position: absolute; top: 0; bottom: 0;
+    width: 20px; 
+    transform: translateX(-50%);
+    z-index: 10;
+    pointer-events: none;
   }
+  .drag-container .split-line::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 1.5px;
+    background: #ff3b30;
+    box-shadow: 0 0 3px rgba(255,59,48,0.6);
+  }
+
+  /* 小图上下切分 */
+  .drag-container.vertical .split-line {
+    top: auto; bottom: auto; left: 0; right: 0;
+    width: 100%; height: 20px;
+    transform: translateY(-50%);
+  }
+  .drag-container.vertical .split-line::after {
+    top: 50%; left: 0; right: 0; bottom: auto;
+    height: 1.5px; width: auto;
+    transform: translateY(-50%);
+  }
+
+  /* 🌟 底部操作按钮组 */
+  .action-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 15px; width: 100%; }
   
   .action-buttons .btn { 
-    width: 100%;
-    font-size: 0.8rem; 
-    padding: 10px 0; 
+    flex: 1;
+    font-size: 0.9rem; 
+    padding: 12px 0; 
     border-radius: 8px; 
     display: flex; 
     align-items: center; 
@@ -83,16 +84,11 @@
     transition: .2s;
   }
   
-  .action-buttons .btn-auto { background: #1a5fd0; color: #fff; }
   .action-buttons .btn-success { background: #1e7a1e; color: #fff; }
-  .action-buttons .btn-danger { 
-    background: #fff !important; 
-    color: #b13b3b !important; 
-    border: 1.5px solid #e0a0a0 !important; 
-  }
+  .action-buttons .btn-danger { background: #fff !important; color: #b13b3b !important; border: 1.5px solid #e0a0a0 !important; }
   .action-buttons .btn-danger:active { background: #ffeeee !important; }
 
-  /* 工具栏 (下方的打印下载栏) */
+  /* 工具栏 */
   .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
   .count { background: #d4e4ff; padding: 6px 12px; border-radius: 20px; font-size: .85rem; font-weight: 600; color: #004cbf; }
   .btn-group { display: flex; gap: 10px; flex-wrap: wrap; width: 100%; }
@@ -118,7 +114,7 @@
   .preview-img { width: 100%; height: 220px; background: #f4f8ff; border: 1px solid #d9e7fa; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; margin-bottom: 10px; }
   .preview-img img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; cursor: zoom-in; }
   
-  .placeholder { color: #7c94b0; font-size: .8rem; text-align: center; }
+  .placeholder { color: #7c94b0; font-size: .9rem; text-align: center; }
   .status-text { font-size: .8rem; color: #7a8fa8; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
   .spinner { width: 14px; height: 14px; border: 2px solid #d0e2ff; border-top: 2px solid #1a5fd0; border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -127,10 +123,24 @@
   .fullscreen-tuner { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; display: none; flex-direction: column; overflow: hidden; }
   .fullscreen-tuner.show { display: flex; }
   
-  .fs-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #222; color: #fff; gap: 10px; z-index: 10; flex-wrap: wrap;}
-  .fs-title { font-weight: 600; font-size: 0.95rem; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+  /* 重构的全屏顶部工具栏 */
+  .fs-header { display: flex; flex-direction: column; padding: 10px 15px; background: #222; color: #fff; gap: 10px; z-index: 10;}
+  .fs-header-top { display: flex; justify-content: space-between; align-items: center; width: 100%;}
+  .fs-header-bottom { display: flex; justify-content: flex-end; align-items: center; width: 100%; gap: 10px; flex-wrap: wrap;}
   
-  /* 大图缩放工具 */
+  .fs-title { font-weight: 600; font-size: 0.95rem; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+  
+  /* 加线/减线 */
+  .fs-tools-row { display: flex; gap: 10px; align-items: center; }
+  .fs-tool-btn { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s; }
+  .fs-tool-btn:hover { background: rgba(255,255,255,0.3); border-color: #888; }
+
+  /* 切分方向 */
+  .fs-options-row { display: flex; gap: 12px; align-items: center; background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px;}
+  .fs-options-row label { font-size: 0.85rem; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 4px; font-weight: 500;}
+  .fs-options-row input[type="radio"] { accent-color: #ff3b30; cursor: pointer;}
+
+  /* 缩放工具 */
   .fs-zoom-tools { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 20px; }
   .fs-zoom-btn { border: none; background: transparent; color: #fff; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
   .fs-zoom-btn:hover { background: rgba(255,255,255,0.2); }
@@ -143,87 +153,100 @@
   /* 缩放容器 */
   .fs-container { position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.5); user-select: none; touch-action: pan-x pan-y; flex-shrink: 0; }
   .fs-container img { display: block; width: 100%; height: 100%; pointer-events: none; object-fit: fill; }
-  .fs-container .mask { background: rgba(0,0,0,0.5); }
   
-  /* 放大后的红线 */
-  .fs-container .split-line { width: 6px; background: #ff3b30; box-shadow: 0 0 10px #ff3b30; cursor: ew-resize; pointer-events: auto; }
-  
-  /* 🌟 拖动圆心图标 */
-  .fs-drag-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: #ff3b30; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-  
-  /* 🌟 极致分离的微调按钮 (全屏穿透布局) */
-  .fs-top-adjust {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10000;
-    pointer-events: none; 
-  }
-  
-  .fs-top-adjust.lr {
-    display: flex;
-    align-items: center; 
-    justify-content: space-between; 
-    padding: 0 15px;
-    box-sizing: border-box;
-  }
-  
-  .fs-top-adjust.tb {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 80px 0 120px 0; 
-    box-sizing: border-box;
-  }
-
-  .fs-adjust-btn {
-    pointer-events: auto; 
-    background: rgba(255,255,255,0.15);
-    color: #fff;
-    border: 2px solid #fff;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    font-size: 1.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    transition: background 0.2s, transform 0.1s;
-    backdrop-filter: blur(4px);
+  /* ===== 大图红线：视觉 1.5px，触摸区 30px ===== */
+  .fs-container .split-line {
+    position: absolute; top: 0; bottom: 0;
+    width: 30px; 
+    transform: translateX(-50%);
+    cursor: ew-resize;
+    touch-action: none;
+    z-index: 10;
+    -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
   }
-  .fs-adjust-btn:active {
-    background: rgba(255,255,255,0.5);
-    transform: scale(0.95);
+  .fs-container .split-line::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 1.5px; 
+    background: #ff3b30;
+    box-shadow: 0 0 3px rgba(255,59,48,0.5);
   }
 
-  /* 🌟 底部完成调整按钮 */
-  .fs-finish-btn { 
-    position: fixed; 
-    bottom: 30px; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    background: #1e7a1e; 
+  /* 大图上下切分 */
+  .fs-container.vertical .split-line {
+    top: auto; bottom: auto; left: 0; right: 0;
+    width: 100%; height: 30px;
+    transform: translateY(-50%);
+    cursor: ns-resize;
+  }
+  .fs-container.vertical .split-line::after {
+    top: 50%; left: 0; right: 0; bottom: auto;
+    height: 1.5px; width: auto;
+    transform: translateY(-50%);
+  }
+
+  /* 高亮选中的线 */
+  .fs-container .split-line.active { z-index: 15; }
+  .fs-container .split-line.active::after {
+    background: #ff0000;
+    box-shadow: 0 0 8px rgba(255,0,0,0.8);
+  }
+
+  /* 拖动圆心图标 */
+  .fs-drag-handle { 
+    position: absolute; 
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%); 
+    width: 24px; height: 24px; 
+    background: #ff3b30; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    color: #fff; 
+    font-size: 14px; 
+    font-weight: bold; 
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5); 
+    pointer-events: none; 
+  }
+  .fs-container .split-line.active .fs-drag-handle { background: #ff0000; box-shadow: 0 2px 10px rgba(255,0,0,0.8); }
+
+  /* 极简微调按钮 */
+  .fs-top-adjust { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; pointer-events: none; }
+  .fs-top-adjust.lr { display: flex; align-items: center; justify-content: space-between; padding: 0 15px; box-sizing: border-box; }
+  .fs-top-adjust.tb { display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 80px 0 120px 0; box-sizing: border-box; }
+
+  /* 优化左右微调按钮，使其更清晰醒目 */
+  .fs-adjust-btn { 
+    pointer-events: auto; 
+    background: rgba(0, 0, 0, 0.65); 
     color: #fff; 
     border: 2px solid #fff; 
-    padding: 15px 40px; 
-    border-radius: 30px; 
-    font-size: 1.1rem; 
-    font-weight: bold; 
+    width: 56px;  
+    height: 56px; 
+    border-radius: 50%; 
+    font-size: 1.8rem; 
+    font-weight: bold;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
     cursor: pointer; 
-    box-shadow: 0 6px 20px rgba(0,0,0,0.6); 
-    z-index: 10000; 
-    transition: background 0.2s, transform 0.1s;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.8), 0 0 0 2px rgba(255,255,255,0.3); 
+    transition: background 0.2s, transform 0.1s; 
+    backdrop-filter: blur(4px); 
+    -webkit-user-select: none; 
+    user-select: none; 
   }
-  .fs-finish-btn:active { background: #145014; transform: translateX(-50%) scale(0.95); }
+  .fs-adjust-btn:active { 
+    background: rgba(0, 0, 0, 0.9); 
+    transform: scale(0.95); 
+  }
 
-  .fs-container.vertical .fs-drag-handle { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+  .fs-finish-btn { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e7a1e; color: #fff; border: 2px solid #fff; padding: 15px 40px; border-radius: 30px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.6); z-index: 10000; transition: background 0.2s, transform 0.1s; }
+  .fs-finish-btn:active { background: #145014; transform: translateX(-50%) scale(0.95); }
 
   /* 查看大图 */
   .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; cursor: zoom-out; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
@@ -237,33 +260,22 @@
   <div class="upload-area" id="uploadArea">
     <div class="upload-icon">📄</div>
     <div class="upload-text">点击或拖拽，支持多文件批量上传</div>
-    <div class="upload-hint">点击缩略图可放大精细微调（支持双指缩放）</div>
+    <div class="upload-hint">点击缩略图可放大精细微调（可添加多条分割线）</div>
     <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/jpg,application/pdf,.pdf">
   </div>
 
   <!-- 可视化微调面板 -->
   <div class="fine-tune-panel" id="fineTunePanel">
-    <div class="tune-header">
-      <div class="tune-title">🎯 独立微调</div>
-      <div class="options-row">
-        <label><input type="radio" name="splitMode" value="lr" checked> 左右切分</label>
-        <label><input type="radio" name="splitMode" value="tb"> 上下切分</label>
-      </div>
-      <div class="zoom-tools">
-        <button class="zoom-btn" id="zoomOutBtn">-</button>
-        <span class="zoom-text" id="zoomLevelText">100%</span>
-        <button class="zoom-btn" id="zoomInBtn">+</button>
-      </div>
-    </div>
+    <!-- 顶部居中提示语 -->
+    <div class="tune-tip">请点击缩略图放大并微调，然后点击下方的分割按钮</div>
     
     <!-- 垂直多页画廊 -->
     <div class="drag-gallery" id="dragGallery"></div>
     
-    <!-- 🌟 三个操作按钮绝对等分 -->
+    <!-- 底部按钮组 -->
     <div class="action-buttons">
-      <button class="btn btn-auto" id="autoSplitBtn">⚡ 自动居中</button>
-      <button class="btn btn-success" id="startSplitBtn">✂️ 按线分割</button>
-      <button class="btn btn-danger" id="cancelSplitBtn">❌ 取消</button>
+      <button class="btn btn-success" id="startSplitBtn" style="flex: 2; font-size: 1.05rem;">✂️ 确定分割</button>
+      <button class="btn btn-danger" id="cancelSplitBtn" style="flex: 1; font-size: 1rem;">❌ 取消分割</button>
     </div>
   </div>
 
@@ -285,12 +297,26 @@
 
 <!-- ===== 全屏高清微调弹窗 ===== -->
 <div class="fullscreen-tuner" id="fullscreenTuner">
+  <!-- 头部：两行布局 -->
   <div class="fs-header">
-    <div class="fs-title" id="fsTitle">放大微调</div>
-    <div class="fs-zoom-tools">
-      <button class="fs-zoom-btn" id="fsZoomOut">-</button>
-      <span class="fs-zoom-text" id="fsZoomLevel">100%</span>
-      <button class="fs-zoom-btn" id="fsZoomIn">+</button>
+    <div class="fs-header-top">
+      <div class="fs-title" id="fsTitle">放大微调</div>
+      <div class="fs-zoom-tools">
+        <button class="fs-zoom-btn" id="fsZoomOut">-</button>
+        <span class="fs-zoom-text" id="fsZoomLevel">100%</span>
+        <button class="fs-zoom-btn" id="fsZoomIn">+</button>
+      </div>
+    </div>
+    <!-- 加线/减线和切分方向在第二行，靠右对齐 -->
+    <div class="fs-header-bottom">
+      <div class="fs-tools-row">
+        <button class="fs-tool-btn" id="fsAddLineBtn">➕ 添加线</button>
+        <button class="fs-tool-btn" id="fsDelLineBtn">➖ 删除线</button>
+      </div>
+      <div class="fs-options-row">
+        <label><input type="radio" name="splitMode" value="lr" checked> 左右切分</label>
+        <label><input type="radio" name="splitMode" value="tb"> 上下切分</label>
+      </div>
     </div>
   </div>
   
@@ -298,22 +324,19 @@
     <div class="fs-scroll-content">
       <div class="fs-container" id="fsContainer">
         <img id="fsImage" src="">
-        <div class="mask left" id="fsMaskLeft"></div>
-        <div class="mask right" id="fsMaskRight"></div>
-        <div class="split-line" id="fsSplitLine">
-          <div class="fs-drag-handle">↔</div>
-        </div>
+        <!-- 动态生成多条红线 -->
+        <div id="fsLinesContainer"></div>
       </div>
     </div>
   </div>
 
-  <!-- 🌟 微调按钮 (左右两侧对称分布) -->
+  <!-- 微调按钮 (左右两侧对称分布) -->
   <div class="fs-top-adjust lr" id="fsTopAdjust">
     <button class="fs-adjust-btn" id="fsAdjustMinus">◀</button>
     <button class="fs-adjust-btn" id="fsAdjustPlus">▶</button>
   </div>
 
-  <!-- 🌟 完成调整按钮 (最底部) -->
+  <!-- 完成调整按钮 (最底部) -->
   <button class="fs-finish-btn" id="fsFinishBtn">✔️ 完成调整</button>
 </div>
 
@@ -328,6 +351,7 @@
   let nextId = 1;
   let isDragging = false;
   let currentFsData = null; 
+  let activeLineIndex = 0; // 当前选中的线
 
   let fsScale = 1;
   let initialPinchDist = 0;
@@ -337,18 +361,19 @@
   const uploadArea = el('uploadArea'), fileInput = el('fileInput');
   const fineTunePanel = el('fineTunePanel'), toolbar = el('toolbar'), fileList = el('fileList');
   const dragGallery = el('dragGallery');
-  const autoSplitBtn = el('autoSplitBtn'), startSplitBtn = el('startSplitBtn'), cancelSplitBtn = el('cancelSplitBtn');
+  const startSplitBtn = el('startSplitBtn'), cancelSplitBtn = el('cancelSplitBtn');
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
   const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
 
+  // 全屏微调元素
   const fullscreenTuner = el('fullscreenTuner'), fsTitle = el('fsTitle'), fsImage = el('fsImage');
-  const fsContainer = el('fsContainer'), fsMaskLeft = el('fsMaskLeft'), fsMaskRight = el('fsMaskRight'), fsSplitLine = el('fsSplitLine');
+  const fsContainer = el('fsContainer'), fsLinesContainer = el('fsLinesContainer');
   const fsDragArea = el('fsDragArea');
   const fsZoomIn = el('fsZoomIn'), fsZoomOut = el('fsZoomOut'), fsZoomLevel = el('fsZoomLevel');
-  
   const fsTopAdjust = el('fsTopAdjust');
   const fsFinishBtn = el('fsFinishBtn');
   const fsAdjustMinus = el('fsAdjustMinus'), fsAdjustPlus = el('fsAdjustPlus');
+  const fsAddLineBtn = el('fsAddLineBtn'), fsDelLineBtn = el('fsDelLineBtn');
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   window.showImageZoom = (url) => { lightboxImg.src = url; lightbox.classList.add('show'); };
@@ -363,51 +388,125 @@
     return { dataUrl, blob, blobUrl };
   }
 
-  function applyRatioToContainer(container, ratio) {
-    if (!container) return;
+  // 渲染小图上的红线
+  function renderSmallLines(container, ratios) {
     const mode = document.querySelector('input[name="splitMode"]:checked').value;
-    const splitLine = container.querySelector('.split-line');
-    const maskLeft = container.querySelector('.mask.left');
-    const maskRight = container.querySelector('.mask.right');
+    container.classList.toggle('vertical', mode === 'tb');
     
-    if (mode === 'lr') {
-      container.classList.remove('vertical');
-      splitLine.style.left = (ratio * 100) + '%';
-      splitLine.style.top = '0';
-      splitLine.style.bottom = '0';
-      maskLeft.style.width = (ratio * 100) + '%';
-      maskRight.style.width = ((1 - ratio) * 100) + '%';
-      maskLeft.style.height = '100%'; maskRight.style.height = '100%';
-    } else {
-      container.classList.add('vertical');
-      splitLine.style.top = (ratio * 100) + '%';
-      splitLine.style.left = '0';
-      splitLine.style.right = '0';
-      maskLeft.style.height = (ratio * 100) + '%';
-      maskRight.style.height = ((1 - ratio) * 100) + '%';
-      maskLeft.style.width = '100%'; maskRight.style.width = '100%';
-    }
+    container.querySelectorAll('.split-line').forEach(e => e.remove());
+    
+    ratios.forEach((ratio, index) => {
+      const line = document.createElement('div');
+      line.className = 'split-line';
+      line.dataset.index = index;
+      if (mode === 'lr') {
+        line.style.left = (ratio * 100) + '%';
+        line.style.top = '0'; line.style.bottom = '0';
+      } else {
+        line.style.top = (ratio * 100) + '%';
+        line.style.left = '0'; line.style.right = '0';
+      }
+      container.appendChild(line);
+    });
   }
 
-  function splitToTwo(source, isLandscape, ratio) {
+  // 渲染大图上的红线和遮罩
+  function renderFsLines(ratios, activeIdx) {
+    const mode = document.querySelector('input[name="splitMode"]:checked').value;
+    fsContainer.classList.toggle('vertical', mode === 'tb');
+    
+    fsLinesContainer.innerHTML = '';
+    
+    ratios.forEach((ratio, index) => {
+      const line = document.createElement('div');
+      line.className = `split-line ${index === activeIdx ? 'active' : ''}`;
+      
+      if (mode === 'lr') {
+        line.style.left = (ratio * 100) + '%';
+        line.style.top = '0'; line.style.bottom = '0';
+      } else {
+        line.style.top = (ratio * 100) + '%';
+        line.style.left = '0'; line.style.right = '0';
+      }
+      
+      const handle = document.createElement('div');
+      handle.className = 'fs-drag-handle';
+      handle.textContent = mode === 'lr' ? '↔' : '↕';
+      line.appendChild(handle);
+
+      // 拖拽事件
+      line.addEventListener('pointerdown', (e) => {
+        if (e.touches && e.touches.length > 1) return; 
+        isDragging = true;
+        activeLineIndex = index;
+        
+        // 切换高亮状态
+        fsLinesContainer.querySelectorAll('.split-line').forEach((l, i) => {
+            if (i === index) l.classList.add('active');
+            else l.classList.remove('active');
+        });
+        
+        e.target.setPointerCapture(e.pointerId);
+      });
+
+      fsLinesContainer.appendChild(line);
+    });
+  }
+
+  // 获得当前图片的切分比例数组
+  function getCurrentRatios() {
+    if (!currentFsData) return [];
+    const item = items.find(it => it.id === currentFsData.itemId);
+    return item.previews[currentFsData.pageIndex].ratios;
+  }
+
+  // 核心切分函数 (支持 N 条线，切成 N+1 块)
+  function splitToMulti(source, isLandscape, ratios) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
-    const c1 = document.createElement('canvas'), c2 = document.createElement('canvas');
     
+    const sorted = [...ratios].sort((a,b) => a - b);
+    const slices = [];
+    let lastPos = 0;
+
     if (isLandscape) {
-      const splitX = Math.floor(w * ratio);
-      c1.width = splitX; c1.height = h;
-      c1.getContext('2d').drawImage(source, 0, 0, splitX, h, 0, 0, splitX, h);
-      c2.width = w - splitX; c2.height = h;
-      c2.getContext('2d').drawImage(source, splitX, 0, w - splitX, h, 0, 0, w - splitX, h);
+      for (let i = 0; i < sorted.length; i++) {
+        const splitX = Math.floor(w * sorted[i]);
+        const sw = splitX - lastPos;
+        if (sw > 0) {
+          const c = document.createElement('canvas');
+          c.width = sw; c.height = h;
+          c.getContext('2d').drawImage(source, lastPos, 0, sw, h, 0, 0, sw, h);
+          slices.push(canvasToJpg(c));
+        }
+        lastPos = splitX;
+      }
+      if (w - lastPos > 0) {
+        const c = document.createElement('canvas');
+        c.width = w - lastPos; c.height = h;
+        c.getContext('2d').drawImage(source, lastPos, 0, w - lastPos, h, 0, 0, w - lastPos, h);
+        slices.push(canvasToJpg(c));
+      }
     } else {
-      const splitY = Math.floor(h * ratio);
-      c1.width = w; c1.height = splitY;
-      c1.getContext('2d').drawImage(source, 0, 0, w, splitY, 0, 0, w, splitY);
-      c2.width = w; c2.height = h - splitY;
-      c2.getContext('2d').drawImage(source, 0, splitY, w, h - splitY, 0, 0, w, h - splitY);
+      for (let i = 0; i < sorted.length; i++) {
+        const splitY = Math.floor(h * sorted[i]);
+        const sh = splitY - lastPos;
+        if (sh > 0) {
+          const c = document.createElement('canvas');
+          c.width = w; c.height = sh;
+          c.getContext('2d').drawImage(source, 0, lastPos, w, sh, 0, 0, w, sh);
+          slices.push(canvasToJpg(c));
+        }
+        lastPos = splitY;
+      }
+      if (h - lastPos > 0) {
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h - lastPos;
+        c.getContext('2d').drawImage(source, 0, lastPos, w, h - lastPos, 0, 0, w, h - lastPos);
+        slices.push(canvasToJpg(c));
+      }
     }
-    return { c1, c2 };
+    return slices;
   }
 
   async function generateThumbnails(file) {
@@ -422,7 +521,7 @@
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width; canvas.height = viewport.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        previews.push({ dataUrl: canvas.toDataURL('image/jpeg', 0.9), ratio: 0.5 });
+        previews.push({ dataUrl: canvas.toDataURL('image/jpeg', 0.9), ratios: [0.5] });
       }
     } else {
       const url = await new Promise(res => {
@@ -430,7 +529,7 @@
         reader.onload = e => res(e.target.result);
         reader.readAsDataURL(file);
       });
-      previews.push({ dataUrl: url, ratio: 0.5 });
+      previews.push({ dataUrl: url, ratios: [0.5] });
     }
     return previews;
   }
@@ -456,72 +555,48 @@
         container.dataset.idx = pageIdx;
         container.onclick = () => openFsTuner(item.id, pageIdx); 
         
-        container.innerHTML = `
-          <img src="${preview.dataUrl}">
-          <div class="mask left"></div>
-          <div class="mask right"></div>
-          <div class="split-line"></div>
-        `;
-
+        container.innerHTML = `<img src="${preview.dataUrl}">`;
         wrapper.appendChild(pageInfo);
         wrapper.appendChild(container);
         dragGallery.appendChild(wrapper);
 
-        applyRatioToContainer(container, preview.ratio);
+        renderSmallLines(container, preview.ratios);
       });
     });
   }
 
   function applyFsScale(scale) {
     if (!fsImage.naturalWidth) return;
-    fsScale = Math.max(0.2, Math.min(5, scale));
+    fsScale = Math.max(0.05, Math.min(5, scale));
     fsZoomLevel.textContent = Math.round(fsScale * 100) + '%';
     
-    const imgW = fsImage.naturalWidth;
-    const imgH = fsImage.naturalHeight;
-    
-    fsContainer.style.width = (imgW * fsScale) + 'px';
-    fsContainer.style.height = (imgH * fsScale) + 'px';
+    fsContainer.style.width = (fsImage.naturalWidth * fsScale) + 'px';
+    fsContainer.style.height = (fsImage.naturalHeight * fsScale) + 'px';
   }
 
   window.openFsTuner = (itemId, pageIndex) => {
     const item = items.find(it => it.id === itemId);
     if (!item) return;
     currentFsData = { itemId, pageIndex };
+    activeLineIndex = 0; // 默认选中第一条线
     
     fsImage.src = item.previews[pageIndex].dataUrl;
-    fsTitle.textContent = `${item.file.name} - 第${pageIndex + 1}页 放大微调`;
+    fsTitle.textContent = `${item.file.name} - 第${pageIndex + 1}页 微调`;
     fullscreenTuner.classList.add('show');
     
     const mode = document.querySelector('input[name="splitMode"]:checked').value;
-    const handle = fsSplitLine.querySelector('.fs-drag-handle');
-    
-    if (mode === 'lr') {
-      handle.textContent = '↔';
-      fsTopAdjust.className = 'fs-top-adjust lr';
-      fsAdjustMinus.textContent = '◀';
-      fsAdjustPlus.textContent = '▶';
-    } else {
-      handle.textContent = '↕';
-      fsTopAdjust.className = 'fs-top-adjust tb';
-      fsAdjustMinus.textContent = '▲';
-      fsAdjustPlus.textContent = '▼';
-    }
+    fsTopAdjust.className = mode === 'lr' ? 'fs-top-adjust lr' : 'fs-top-adjust tb';
+    fsAdjustMinus.textContent = mode === 'lr' ? '◀' : '▲';
+    fsAdjustPlus.textContent = mode === 'lr' ? '▶' : '▼';
     
     fsImage.onload = () => {
       const areaW = fsDragArea.clientWidth - 40;
       const areaH = fsDragArea.clientHeight - 120;
-      const imgW = fsImage.naturalWidth;
-      const imgH = fsImage.naturalHeight;
-      
-      const scaleX = areaW / imgW;
-      const scaleY = areaH / imgH;
-      
-      let initScale = Math.min(scaleX, scaleY, 1);
-      if (initScale < 0.2) initScale = 0.2;
+      let initScale = Math.min(areaW / fsImage.naturalWidth, areaH / fsImage.naturalHeight, 1);
+      if (initScale < 0.05) initScale = 0.05;
       
       applyFsScale(initScale);
-      applyRatioToContainer(fsContainer, item.previews[pageIndex].ratio);
+      renderFsLines(item.previews[pageIndex].ratios, activeLineIndex);
       
       setTimeout(() => {
         fsDragArea.scrollLeft = (fsDragArea.scrollWidth - fsDragArea.clientWidth) / 2;
@@ -538,43 +613,97 @@
   fsFinishBtn.onclick = (e) => {
     e.stopPropagation(); 
     closeFsTuner();
+    renderTunePanel(); // 同步刷新小图上的红线
   };
 
-  fsZoomIn.onclick = () => applyFsScale(fsScale + 0.3);
-  fsZoomOut.onclick = () => applyFsScale(fsScale - 0.3);
+  // 🌟 缩放比例步长调小为 5%（0.05）
+  fsZoomIn.onclick = () => applyFsScale(fsScale + 0.05);
+  fsZoomOut.onclick = () => applyFsScale(fsScale - 0.05);
 
-  // 🌟 单点微调逻辑
-  function adjustRatio(delta) {
+  // 🌟 加线/减线
+  fsAddLineBtn.onclick = () => {
     if (!currentFsData) return;
     const item = items.find(it => it.id === currentFsData.itemId);
-    if (!item) return;
+    const ratios = item.previews[currentFsData.pageIndex].ratios;
+    
+    if (ratios.length >= 6) return alert('最多只支持切分 6 条线（7 张图）哦！');
+    
+    const sorted = [...ratios].sort((a,b) => a - b);
+    let newRatio = 0.75;
+    let maxGap = 0;
 
-    let ratio = item.previews[currentFsData.pageIndex].ratio;
-    ratio = Math.max(0.1, Math.min(0.9, ratio + delta));
-    item.previews[currentFsData.pageIndex].ratio = ratio;
+    if (sorted[0] > maxGap) { maxGap = sorted[0]; newRatio = sorted[0] / 2; }
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const gap = sorted[i+1] - sorted[i];
+      if (gap > maxGap) { maxGap = gap; newRatio = sorted[i] + gap / 2; }
+    }
+    const endGap = 1 - sorted[sorted.length - 1];
+    if (endGap > maxGap) { maxGap = endGap; newRatio = sorted[sorted.length - 1] + endGap / 2; }
 
-    applyRatioToContainer(fsContainer, ratio);
+    ratios.push(newRatio);
+    ratios.sort((a,b) => a - b);
+    
+    activeLineIndex = ratios.indexOf(newRatio); 
+    renderFsLines(ratios, activeLineIndex);
+    renderSmallLines(document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`), ratios);
+  };
+
+  fsDelLineBtn.onclick = () => {
+    if (!currentFsData) return;
+    const item = items.find(it => it.id === currentFsData.itemId);
+    const ratios = item.previews[currentFsData.pageIndex].ratios;
+    
+    if (ratios.length <= 1) return alert('至少需要保留 1 条分割线哦！');
+    
+    ratios.splice(activeLineIndex, 1);
+    activeLineIndex = 0;
+    
+    renderFsLines(ratios, activeLineIndex);
+    renderSmallLines(document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`), ratios);
+  };
+
+  // 🌟 单点微调
+  function adjustRatio(delta) {
+    if (!currentFsData) return;
+    const ratios = getCurrentRatios();
+    if (activeLineIndex < 0 || activeLineIndex >= ratios.length) return;
+
+    let newVal = ratios[activeLineIndex] + delta;
+    
+    const sorted = [...ratios].sort((a,b) => a-b);
+    const idxInSorted = sorted.indexOf(ratios[activeLineIndex]);
+    const prevLine = idxInSorted > 0 ? sorted[idxInSorted - 1] : 0;
+    const nextLine = idxInSorted < sorted.length - 1 ? sorted[idxInSorted + 1] : 1;
+    
+    newVal = Math.max(prevLine + 0.01, Math.min(nextLine - 0.01, newVal));
+    newVal = Math.max(0.05, Math.min(0.95, newVal));
+    ratios[activeLineIndex] = newVal;
+
+    // 更新大图 DOM
+    const fsLine = fsLinesContainer.children[activeLineIndex];
+    if (fsLine) {
+        if (document.querySelector('input[name="splitMode"]:checked').value === 'lr') fsLine.style.left = (newVal * 100) + '%';
+        else fsLine.style.top = (newVal * 100) + '%';
+    }
+
+    // 更新小图 DOM
     const smallContainer = document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`);
-    if (smallContainer) applyRatioToContainer(smallContainer, ratio);
+    if (smallContainer) {
+        const smallLine = smallContainer.querySelectorAll('.split-line')[activeLineIndex];
+        if (smallLine) {
+            if (document.querySelector('input[name="splitMode"]:checked').value === 'lr') smallLine.style.left = (newVal * 100) + '%';
+            else smallLine.style.top = (newVal * 100) + '%';
+        }
+    }
   }
 
-  fsAdjustMinus.onclick = (e) => {
-    e.stopPropagation();
-    adjustRatio(-0.002);
-  };
-  
-  fsAdjustPlus.onclick = (e) => {
-    e.stopPropagation();
-    adjustRatio(0.002);
-  };
+  fsAdjustMinus.onclick = (e) => { e.stopPropagation(); adjustRatio(-0.005); };
+  fsAdjustPlus.onclick = (e) => { e.stopPropagation(); adjustRatio(0.005); };
 
   // 双指捏合缩放
   fsDragArea.addEventListener('touchstart', (e) => {
     if (e.touches.length === 2) {
-      initialPinchDist = Math.hypot(
-        e.touches[0].pageX - e.touches[1].pageX,
-        e.touches[0].pageY - e.touches[1].pageY
-      );
+      initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
       initialPinchScale = fsScale;
     }
   }, { passive: false });
@@ -582,47 +711,51 @@
   fsDragArea.addEventListener('touchmove', (e) => {
     if (e.touches.length === 2) {
       e.preventDefault();
-      const dist = Math.hypot(
-        e.touches[0].pageX - e.touches[1].pageX,
-        e.touches[0].pageY - e.touches[1].pageY
-      );
-      if (initialPinchDist > 0) {
-        const newScale = initialPinchScale * (dist / initialPinchDist);
-        applyFsScale(newScale);
-      }
+      const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+      if (initialPinchDist > 0) applyFsScale(initialPinchScale * (dist / initialPinchDist));
     }
   }, { passive: false });
 
-  // 拖拽红线
-  fsSplitLine.addEventListener('pointerdown', (e) => {
-    if (e.touches && e.touches.length > 1) return; 
-    isDragging = true;
-    e.target.setPointerCapture(e.pointerId);
-  });
-
+  // 🌟 拖拽红线
   window.addEventListener('pointermove', (e) => {
     if (!isDragging || !currentFsData) return;
     e.preventDefault();
     
     const rect = fsContainer.getBoundingClientRect();
     const mode = document.querySelector('input[name="splitMode"]:checked').value;
+    const ratios = getCurrentRatios();
+    const sorted = [...ratios].sort((a,b) => a-b);
+    const idxInSorted = sorted.indexOf(ratios[activeLineIndex]);
     
-    let ratio;
+    const prevLine = idxInSorted > 0 ? sorted[idxInSorted - 1] : 0;
+    const nextLine = idxInSorted < sorted.length - 1 ? sorted[idxInSorted + 1] : 1;
+    
+    let newVal;
     if (mode === 'lr') {
       const clientX = e.clientX || e.touches[0].clientX;
-      ratio = (clientX - rect.left) / rect.width;
+      newVal = (clientX - rect.left) / rect.width;
     } else {
       const clientY = e.clientY || e.touches[0].clientY;
-      ratio = (clientY - rect.top) / rect.height;
+      newVal = (clientY - rect.top) / rect.height;
     }
-    ratio = Math.max(0.1, Math.min(0.9, ratio));
+    newVal = Math.max(prevLine + 0.01, Math.min(nextLine - 0.01, newVal));
+    newVal = Math.max(0.05, Math.min(0.95, newVal));
     
-    const item = items.find(it => it.id === currentFsData.itemId);
-    if (item) {
-      item.previews[currentFsData.pageIndex].ratio = ratio;
-      applyRatioToContainer(fsContainer, ratio); 
-      const smallContainer = document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`);
-      if (smallContainer) applyRatioToContainer(smallContainer, ratio);
+    ratios[activeLineIndex] = newVal;
+
+    const fsLine = fsLinesContainer.children[activeLineIndex];
+    if (fsLine) {
+        if (mode === 'lr') fsLine.style.left = (newVal * 100) + '%';
+        else fsLine.style.top = (newVal * 100) + '%';
+    }
+
+    const smallContainer = document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`);
+    if (smallContainer) {
+        const smallLine = smallContainer.querySelectorAll('.split-line')[activeLineIndex];
+        if (smallLine) {
+            if (mode === 'lr') smallLine.style.left = (newVal * 100) + '%';
+            else smallLine.style.top = (newVal * 100) + '%';
+        }
     }
   });
 
@@ -632,10 +765,22 @@
   document.querySelectorAll('input[name="splitMode"]').forEach(radio => {
     radio.addEventListener('change', () => {
       items.forEach(item => {
-        if (item.previews) item.previews.forEach(p => p.ratio = 0.5);
+        if (item.previews) {
+          item.previews.forEach(p => { p.ratios = [0.5]; });
+        }
       });
       renderTunePanel();
-      if (currentFsData) closeFsTuner();
+      
+      // 如果全屏弹窗正在显示，同步刷新全屏的线和按钮
+      if (currentFsData) {
+        const mode = document.querySelector('input[name="splitMode"]:checked').value;
+        fsTopAdjust.className = mode === 'lr' ? 'fs-top-adjust lr' : 'fs-top-adjust tb';
+        fsAdjustMinus.textContent = mode === 'lr' ? '◀' : '▲';
+        fsAdjustPlus.textContent = mode === 'lr' ? '▶' : '▼';
+        
+        const item = items.find(it => it.id === currentFsData.itemId);
+        renderFsLines(item.previews[currentFsData.pageIndex].ratios, activeLineIndex);
+      }
     });
   });
 
@@ -663,7 +808,8 @@
     toolbar.style.display = 'flex';
     
     fileCount.textContent = `${items.length} 个文件已就绪`;
-    fileList.innerHTML = '<div class="placeholder" style="padding: 30px; color: #1a5fd0;">📌 文件已就绪，请点击缩略图放大并微调，然后点击下方的分割按钮。</div>';
+    // 去掉 📌 符号，并替换为等待文字
+    fileList.innerHTML = '<div class="placeholder" style="padding: 30px;">文件已准备就绪，等待分割...</div>';
   };
 
   // 执行分割
@@ -689,9 +835,9 @@
             reader.readAsDataURL(item.file);
           });
           
-          const ratio = item.previews[0].ratio;
-          const { c1, c2 } = splitToTwo(img, isLandscape, ratio);
-          item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
+          const ratios = item.previews[0].ratios;
+          const slices = splitToMulti(img, isLandscape, ratios);
+          item.result = { slices };
         } else {
           if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
@@ -704,11 +850,11 @@
             canvas.width = viewport.width; canvas.height = viewport.height;
             await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
-            const ratio = item.previews[i-1] ? item.previews[i-1].ratio : 0.5;
-            const { c1, c2 } = splitToTwo(canvas, isLandscape, ratio);
-            pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
+            const ratios = item.previews[i-1].ratios;
+            const slices = splitToMulti(canvas, isLandscape, ratios);
+            pages.push({ slices });
           }
-          item.result = { pages, pageCount: pages.length };
+          item.result = { pages };
         }
         item.status = 'done';
       } catch (e) {
@@ -718,21 +864,9 @@
     });
   }
 
-  // 🌟 按钮事件监听
-  startSplitBtn.onclick = executeSplit; // 按微调位置
+  // 按钮事件监听
+  startSplitBtn.onclick = executeSplit; // 确定分割
   
-  autoSplitBtn.onclick = () => {
-    // 强制重置所有图片和PDF为 0.5 (居中)，并刷新UI
-    items.forEach(item => {
-      if (item.previews) {
-        item.previews.forEach(p => p.ratio = 0.5);
-      }
-    });
-    renderTunePanel();
-    // 重置后直接开始分割
-    executeSplit();
-  };
-
   // ❌ 取消分割（保留文件，展示原图，启用底部打印/下载按钮）
   cancelSplitBtn.onclick = () => {
     if (items.some(it => it.status === 'splitting')) {
@@ -754,7 +888,6 @@
   };
 
   function renderList() {
-    // 只要有已分割完成 或 原图状态的文件，就可以打印/下载
     const anyDone = items.some(it => it.status === 'done' || it.status === 'original');
     const anySplitting = items.some(it => it.status === 'splitting');
     
@@ -777,7 +910,6 @@
       } else if (item.status === 'error') {
         statusHtml = `❌ ${esc(item.errorMsg)}`;
       } else if (item.status === 'original') {
-        // 原图展示状态
         statusHtml = item.type === 'pdf' ? `✅ 已取消分割（保留 PDF 全部 ${item.previews.length} 页原图）` : '✅ 已取消分割（保留原图）';
         previewHtml = `<div class="preview-grid">`;
         item.previews.forEach((p, idx) => {
@@ -791,20 +923,21 @@
         previewHtml += `</div>`;
       } else if (item.status === 'done') {
         if (item.type === 'pdf') {
-          statusHtml = `✅ PDF共 ${item.result.pageCount} 页，全部分割完成`;
+          statusHtml = `✅ PDF共 ${item.result.pages.length} 页，全部分割完成`;
           previewHtml = `<div class="preview-grid">`;
-          item.result.pages.forEach((p, idx)=>{
-            previewHtml += buildPreview(item, '左/上', `第${idx+1}页 A4①`, p.a4_1.dataUrl);
-            previewHtml += buildPreview(item, '右/下', `第${idx+1}页 A4②`, p.a4_2.dataUrl);
+          item.result.pages.forEach((p, pageIdx)=>{
+            p.slices.forEach((slice, sliceIdx) => {
+              previewHtml += buildPreview(item, `第${pageIdx+1}页`, `图 ${sliceIdx+1}`, slice.dataUrl);
+            });
           })
           previewHtml += `</div>`;
         } else {
           statusHtml = `✅ 已成功切分`;
-          previewHtml = `
-            <div class="preview-grid">
-              ${buildPreview(item, '左/上', 'A4 ①', item.result?.a4_1?.dataUrl)}
-              ${buildPreview(item, '右/下', 'A4 ②', item.result?.a4_2?.dataUrl)}
-            </div>`;
+          previewHtml = `<div class="preview-grid">`;
+          item.result.slices.forEach((slice, sliceIdx) => {
+            previewHtml += buildPreview(item, `切分`, `图 ${sliceIdx+1}`, slice.dataUrl);
+          });
+          previewHtml += `</div>`;
         }
       }
 
@@ -850,7 +983,6 @@
       const base = item.file.name.replace(/\.[^/.]+$/, '');
       
       if (item.status === 'original') {
-        // 原图下载
         if (item.type === 'image') {
           zip.file(`${base}_原图.jpg`, item.file);
         } else {
@@ -869,14 +1001,15 @@
           }
         }
       } else {
-        // 已分割下载
         if (item.type === 'image') {
-          zip.file(`${base}_A4_1.jpg`, item.result.a4_1.blob);
-          zip.file(`${base}_A4_2.jpg`, item.result.a4_2.blob);
+          item.result.slices.forEach((slice, i) => {
+            zip.file(`${base}_图${i+1}.jpg`, slice.blob);
+          });
         } else {
-          item.result.pages.forEach((p, i) => {
-            zip.file(`${base}_第${i+1}页_A4_1.jpg`, p.a4_1.blob);
-            zip.file(`${base}_第${i+1}页_A4_2.jpg`, p.a4_2.blob);
+          item.result.pages.forEach((p, pageIdx) => {
+            p.slices.forEach((slice, sliceIdx) => {
+              zip.file(`${base}_第${pageIdx+1}页_图${sliceIdx+1}.jpg`, slice.blob);
+            });
           });
         }
       }
@@ -911,12 +1044,7 @@
         <style>
           @page { size: A4 portrait; margin: 0; }
           body { margin: 0; padding: 0; }
-          .print-page { 
-            page-break-after: always; page-break-inside: avoid; 
-            width: 210mm; height: 297mm; 
-            display: flex; justify-content: center; align-items: center;
-            overflow: hidden; margin: 0 auto;
-          }
+          .print-page { page-break-after: always; page-break-inside: avoid; width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; overflow: hidden; margin: 0 auto; }
           .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
         </style>
       </head>
@@ -931,10 +1059,14 @@
     for (const item of validItems) {
       if (item.status === 'done') {
         if (item.type === 'image') {
-          body.innerHTML += `<div class="print-page"><img src="${item.result.a4_1.blobUrl}"></div><div class="print-page"><img src="${item.result.a4_2.blobUrl}"></div>`;
+          item.result.slices.forEach(slice => {
+            body.innerHTML += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
+          });
         } else {
           item.result.pages.forEach(p => {
-            body.innerHTML += `<div class="print-page"><img src="${p.a4_1.blobUrl}"></div><div class="print-page"><img src="${p.a4_2.blobUrl}"></div>`;
+            p.slices.forEach(slice => {
+              body.innerHTML += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
+            });
           });
         }
       } else if (item.status === 'original') {
