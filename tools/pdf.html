@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A3 → A4 可视化拖拽分割器</title>
+<title>A3 → A4 可视化多页拖拽分割器</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -28,9 +28,11 @@
   .options-row { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
   .options-row label { font-size: .9rem; color: #1c3b5e; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 500;}
 
-  /* 拖拽画布区 */
-  .drag-container { position: relative; width: 100%; max-width: 800px; margin: 0 auto; background: #eef2f7; border-radius: 8px; overflow: hidden; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; min-height: 300px; }
-  .drag-container img { max-width: 100%; max-height: 60vh; display: block; pointer-events: none; }
+  /* 多页拖拽缩略图容器 */
+  .drag-gallery { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
+  
+  .drag-container { position: relative; width: 300px; flex-shrink: 0; background: #eef2f7; border-radius: 8px; overflow: hidden; user-select: none; touch-action: none; display: flex; justify-content: center; align-items: center; border: 1px solid #d0e2ff; }
+  .drag-container img { width: 100%; display: block; pointer-events: none; }
   
   /* 半透明遮罩 */
   .mask { position: absolute; top: 0; bottom: 0; background: rgba(255,255,255,0.5); pointer-events: none; transition: width 0.05s; }
@@ -39,9 +41,9 @@
   
   /* 红色切分线 */
   .split-line { position: absolute; top: 0; bottom: 0; width: 4px; background: #ff3b30; left: 50%; transform: translateX(-50%); cursor: ew-resize; box-shadow: 0 0 8px rgba(255,59,48,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .split-line::after { content: '↔ 拖动'; position: absolute; top: 50%; background: #ff3b30; color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 20px; white-space: nowrap; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+  .split-line::after { content: '↔ 拖动'; position: absolute; top: 50%; background: #ff3b30; color: #fff; font-size: 12px; padding: 4px 8px; border-radius: 20px; white-space: nowrap; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-  /* 如果是上下切分，调整线样式 */
+  /* 上下切分样式 */
   .drag-container.vertical .mask { left: 0; right: 0; top: auto; bottom: auto; width: 100%; }
   .drag-container.vertical .mask.top { top: 0; }
   .drag-container.vertical .mask.bottom { bottom: 0; }
@@ -97,22 +99,17 @@
   <!-- 可视化微调面板 -->
   <div class="fine-tune-panel" id="fineTunePanel">
     <div class="tune-header">
-      <div class="tune-title">🎯 拖拽红线调整切分位置</div>
+      <div class="tune-title">🎯 拖拽红线调整切分位置 (所有页面联动)</div>
       <div class="options-row">
         <label><input type="radio" name="splitMode" value="lr" checked> 左右切分</label>
         <label><input type="radio" name="splitMode" value="tb"> 上下切分</label>
       </div>
     </div>
     
-    <!-- 拖拽交互区 -->
-    <div class="drag-container" id="dragContainer">
-      <img id="dragImage" src="" alt="预览图">
-      <div class="mask left" id="maskLeft"></div>
-      <div class="mask right" id="maskRight"></div>
-      <div class="split-line" id="splitLine"></div>
-    </div>
+    <!-- 多页拖拽画廊 -->
+    <div class="drag-gallery" id="dragGallery"></div>
     
-    <div style="text-align: center; margin-top: 20px;">
+    <div style="text-align: center; margin-top: 10px;">
       <button class="btn btn-success" id="startSplitBtn">✂️ 确认位置，开始分割</button>
     </div>
   </div>
@@ -143,14 +140,12 @@
   const items = [];
   let nextId = 1;
   let currentRatio = 0.5; // 默认正中间
-  let previewFile = null; // 用于微调预览的原始文件
-  let previewImageObj = null; // 绘制到界面的缩略图
+  let thumbnailUrls = []; // 存储所有页面的缩略图
 
   const el = id => document.getElementById(id);
   const uploadArea = el('uploadArea'), fileInput = el('fileInput');
   const fineTunePanel = el('fineTunePanel'), toolbar = el('toolbar'), fileList = el('fileList');
-  const dragImage = el('dragImage'), dragContainer = el('dragContainer');
-  const maskLeft = el('maskLeft'), maskRight = el('maskRight'), splitLine = el('splitLine');
+  const dragGallery = el('dragGallery');
   const startSplitBtn = el('startSplitBtn');
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
   const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
@@ -171,30 +166,38 @@
   // --- 交互区逻辑 ---
   function updateLinePos() {
     const mode = document.querySelector('input[name="splitMode"]:checked').value;
-    if (mode === 'lr') {
-      dragContainer.classList.remove('vertical');
-      splitLine.style.left = (currentRatio * 100) + '%';
-      splitLine.style.top = '0';
-      splitLine.style.bottom = '0';
+    const containers = document.querySelectorAll('.drag-container');
+    
+    containers.forEach(container => {
+      const splitLine = container.querySelector('.split-line');
+      const maskLeft = container.querySelector('.mask.left');
+      const maskRight = container.querySelector('.mask.right');
       
-      maskLeft.style.width = (currentRatio * 100) + '%';
-      maskRight.style.width = ((1 - currentRatio) * 100) + '%';
-    } else {
-      dragContainer.classList.add('vertical');
-      splitLine.style.top = (currentRatio * 100) + '%';
-      splitLine.style.left = '0';
-      splitLine.style.right = '0';
-
-      maskLeft.style.height = (currentRatio * 100) + '%';
-      maskRight.style.height = ((1 - currentRatio) * 100) + '%';
-    }
+      if (mode === 'lr') {
+        container.classList.remove('vertical');
+        splitLine.style.left = (currentRatio * 100) + '%';
+        splitLine.style.top = '0';
+        splitLine.style.bottom = '0';
+        maskLeft.style.width = (currentRatio * 100) + '%';
+        maskRight.style.width = ((1 - currentRatio) * 100) + '%';
+      } else {
+        container.classList.add('vertical');
+        splitLine.style.top = (currentRatio * 100) + '%';
+        splitLine.style.left = '0';
+        splitLine.style.right = '0';
+        maskLeft.style.height = (currentRatio * 100) + '%';
+        maskRight.style.height = ((1 - currentRatio) * 100) + '%';
+      }
+    });
   }
 
   let isDragging = false;
+  let activeContainer = null;
+
   function handlePointerMove(e) {
-    if (!isDragging) return;
+    if (!isDragging || !activeContainer) return;
     e.preventDefault();
-    const rect = dragContainer.getBoundingClientRect();
+    const rect = activeContainer.getBoundingClientRect();
     const mode = document.querySelector('input[name="splitMode"]:checked').value;
     
     let ratio;
@@ -205,14 +208,22 @@
       const clientY = e.clientY || e.touches[0].clientY;
       ratio = (clientY - rect.top) / rect.height;
     }
-    // 限制在 10% 到 90% 之间，防止拖出边界
     currentRatio = Math.max(0.1, Math.min(0.9, ratio));
     updateLinePos();
   }
 
-  splitLine.addEventListener('pointerdown', (e) => { isDragging = true; e.target.setPointerCapture(e.pointerId); });
+  // 监听拖拽事件 (在生成缩略图时绑定)
+  function bindDragEvents(container) {
+    const line = container.querySelector('.split-line');
+    line.addEventListener('pointerdown', (e) => { 
+      isDragging = true; 
+      activeContainer = container;
+      e.target.setPointerCapture(e.pointerId); 
+    });
+  }
+
   window.addEventListener('pointermove', handlePointerMove);
-  window.addEventListener('pointerup', () => { isDragging = false; });
+  window.addEventListener('pointerup', () => { isDragging = false; activeContainer = null; });
   
   document.querySelectorAll('input[name="splitMode"]').forEach(radio => {
     radio.addEventListener('change', () => {
@@ -245,51 +256,79 @@
     return { c1, c2 };
   }
 
-  async function generateThumbnail(file) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+  // 生成所有文件所有页的缩略图
+  async function generateAllThumbnails(files) {
+    thumbnailUrls = [];
+    let count = 0;
+    for (const file of files) {
+      if (count >= 6) break; // 最多预览前6页，防止卡顿
+      
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (isPdf) {
+        try {
           const arrayBuffer = await file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-          const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 1.5 }); // 缩略图不用太高清
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width; canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          resolve(canvas.toDataURL('image/jpeg'));
-        } else {
+          for (let i = 1; i <= pdf.numPages; i++) {
+            if (count >= 6) break;
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 1.0 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width; canvas.height = viewport.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            thumbnailUrls.push(canvas.toDataURL('image/jpeg'));
+            count++;
+          }
+        } catch (e) { console.error('PDF缩略图生成失败', e); }
+      } else {
+        const url = await new Promise(res => {
           const reader = new FileReader();
-          reader.onload = e => resolve(e.target.result);
+          reader.onload = e => res(e.target.result);
           reader.readAsDataURL(file);
-        }
-      } catch (err) { reject(err); }
+        });
+        thumbnailUrls.push(url);
+        count++;
+      }
+    }
+  }
+
+  // 渲染微调面板
+  function renderTunePanel() {
+    dragGallery.innerHTML = '';
+    thumbnailUrls.forEach((url, idx) => {
+      const container = document.createElement('div');
+      container.className = 'drag-container';
+      container.innerHTML = `
+        <img src="${url}">
+        <div class="mask left"></div>
+        <div class="mask right"></div>
+        <div class="split-line"></div>
+      `;
+      dragGallery.appendChild(container);
+      bindDragEvents(container);
     });
+    updateLinePos();
   }
 
   // 处理上传
   uploadArea.onclick = () => { fileInput.value = ''; fileInput.click(); };
-  fileInput.onchange = e => {
+  fileInput.onchange = async e => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
     
-    // 如果第一次上传，生成微调缩略图
     if (items.length === 0) {
-      previewFile = files[0];
-      generateThumbnail(previewFile).then(dataUrl => {
-        dragImage.src = dataUrl;
-        fineTunePanel.classList.add('active');
-        toolbar.style.display = 'flex';
-        updateLinePos();
-      }).catch(err => {
-        alert('预览生成失败: ' + err.message);
-      });
+      // 生成预览缩略图
+      uploadArea.style.opacity = '0.5';
+      await generateAllThumbnails(files);
+      uploadArea.style.opacity = '1';
+      
+      renderTunePanel();
+      fineTunePanel.classList.add('active');
+      toolbar.style.display = 'flex';
     }
 
     files.forEach(file => {
       const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       if (!isPdf && !file.type.startsWith('image/')) return;
-      
-      // 刚上传，先不处理，状态标为 pending
       items.push({ id: nextId++, file, type: isPdf ? 'pdf' : 'image', status: 'pending', result: null });
     });
     
@@ -303,11 +342,9 @@
     const splitMode = document.querySelector('input[name="splitMode"]:checked').value;
     const isLandscape = (splitMode === 'lr');
 
-    // 隐藏微调面板，展示处理列表
     fineTunePanel.classList.remove('active');
-    renderList(); // 渲染处理状态
+    renderList();
 
-    // 批量处理
     items.forEach(async (item) => {
       if (item.status === 'done') return;
       item.status = 'splitting'; renderList();
@@ -414,6 +451,7 @@
   clearAllBtn.onclick = () => { 
     if(confirm('确定清空全部文件？')) { 
       items.length = 0; 
+      thumbnailUrls = [];
       fileCount.textContent = '0 个文件';
       fineTunePanel.classList.remove('active');
       toolbar.style.display = 'none';
@@ -475,7 +513,7 @@
           }
           .print-page img { 
             max-width: 100%; max-height: 100%; 
-            object-fit: contain; /* 缩放留白防拉伸 */
+            object-fit: contain;
             display: block; 
           }
         </style>
