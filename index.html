@@ -14,7 +14,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 15px;
   }
 
   .card {
@@ -22,7 +22,7 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-radius: 24px;
-    padding: 28px 16px;
+    padding: 32px 24px;
     box-shadow: 0 25px 40px -12px rgba(0, 20, 60, 0.25),
                 inset 0 1px 2px rgba(255, 255, 255, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.6);
@@ -30,7 +30,7 @@
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    max-width: 560px;
+    max-width: 480px;
     width: 100%;
   }
 
@@ -88,48 +88,26 @@
     stroke-linecap: round; stroke-linejoin: round;
   }
 
-  /* ===== 主体：左右两个大区块并排 ===== */
-  .main-layout {
-    display: flex;
-    gap: 12px;
+  /* ===== 2列等宽网格布局 ===== */
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px 16px; /* 上下14px，左右16px */
     width: 100%;
     margin-top: 4px;
   }
 
-  /* 左侧区块容器（包裹里面的三排） */
-  .left-block {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 12px; /* 排与排之间的间距 */
-  }
-
-  /* 右侧区块容器 */
-  .right-block {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  /* 每一排的内部网格（3列） */
-  .row-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px; /* 按钮左右之间的间距 */
-  }
-
-  /* ===== 统一按钮基础样式 ===== */
+  /* ===== 所有按钮统一基础样式 ===== */
   .action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    height: 44px;
+    gap: 6px;
+    height: 50px;
     border-radius: 60px;
     color: #fff;
     font-weight: 500;
-    font-size: 12px;
+    font-size: 15px;
     letter-spacing: 0.01em;
     white-space: nowrap;
     text-decoration: none;
@@ -139,7 +117,7 @@
     font-family: inherit;
     transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease, background 0.25s ease;
     -webkit-tap-highlight-color: transparent;
-    padding: 0 4px;
+    padding: 0 10px;
   }
 
   /* 左栏（跳转网址）按钮样式 */
@@ -164,8 +142,8 @@
 
   /* 图标统一尺寸 */
   .action-btn svg {
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
     fill: none;
     stroke: currentColor;
@@ -202,13 +180,10 @@
   }
   .toast-message.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* 极窄屏幕微调 */
   @media (max-width: 380px) {
-    .main-layout { gap: 8px; }
-    .left-block, .right-block { gap: 10px; }
-    .row-grid { gap: 4px; }
-    .action-btn { height: 40px; font-size: 11px; }
-    .action-btn svg { width: 12px; height: 12px; }
+    .grid-container { gap: 12px 10px; }
+    .action-btn { height: 46px; font-size: 14px; gap: 4px; }
+    .action-btn svg { width: 16px; height: 16px; }
   }
 </style>
 </head>
@@ -227,24 +202,10 @@
     <span>主页</span>
   </a>
 
-  <p class="sub">点击跳转，长按或点击右侧复制</p>
+  <p class="sub">点击图标跳转，点击按钮复制链接</p>
 
-  <!-- 左右大区块 -->
-  <div class="main-layout">
-    <!-- 左侧容器 -->
-    <div class="left-block">
-      <div class="row-grid" id="leftRow1"></div>
-      <div class="row-grid" id="leftRow2"></div>
-      <div class="row-grid" id="leftRow3"></div>
-    </div>
-    
-    <!-- 右侧容器 -->
-    <div class="right-block">
-      <div class="row-grid" id="rightRow1"></div>
-      <div class="row-grid" id="rightRow2"></div>
-      <div class="row-grid" id="rightRow3"></div>
-    </div>
-  </div>
+  <!-- 容器：按钮由 JS 自动生成 -->
+  <div class="grid-container" id="gridContainer"></div>
 </div>
 
 <div class="toast-message" id="toast">✅ 链接已复制</div>
@@ -254,77 +215,79 @@
   'use strict';
 
   // ==========================================
-  // ⬇️ 配置区：按排分配数据 ⬇️
+  // ⬇️ 在这里统一配置所有按钮的文字和链接 ⬇️
   // ==========================================
   
+  // 1. 顶部主页按钮的链接
   const HOME_URL = 'http://lt3611.ccwu.cc/';
 
-  // 第一排数据（上）
-  const row1Data = [
-    { leftText: '路由', rightText: '电视导航', linkUrl: 'http://192.168.50.1', copyUrl: 'http://lt3611.ccwu.cc/tools/tv.txt' },
-    { leftText: '电视', rightText: '电视新闻', linkUrl: 'http://192.168.50.198:56789', copyUrl: 'http://lt3611.ccwu.cc/tools/tv3.txt' },
-    { leftText: '学习', rightText: '影视学习', linkUrl: 'http://192.168.50.1:9999', copyUrl: 'http://lt3611.ccwu.cc/tools/tv1.txt' },
-    { leftText: '调试', rightText: '影视复制', linkUrl: 'http://192.168.50.1', copyUrl: 'http://lt3611.ccwu.cc/tools/tv2.txt' }
+  // 2. 按钮配置（已为您新增第五组数据）
+  const buttonConfig = [
+    {
+      name: '路由', 
+      linkUrl: 'http://192.168.50.1', 
+      copyUrl: 'http://lt3611.ccwu.cc/tools/tv.txt' 
+    },
+    {
+      name: '电视', 
+      linkUrl: 'http://192.168.50.198:56789',
+      copyUrl: 'http://lt3611.ccwu.cc/tools/tv3.txt'
+    },
+    {
+      name: '学习', 
+      linkUrl: 'http://192.168.50.1:9990/ui/zashboard/#/setup?hostname=192.168.50.1&port=9990&secret=clash',
+      copyUrl: 'http://lt3611.ccwu.cc/tools/tv1.txt'
+    },
+    {
+      name: '调试', 
+      linkUrl: 'http://192.168.50.1',
+      copyUrl: 'http://lt3611.ccwu.cc/tools/tv2.txt'
+    },
+    // 👇 这是为您新增的一排
+    {
+      name: '开始1', 
+      linkUrl: 'http://lt3611.ccwu.cc',
+      copyUrl: 'http://lt3611.ccwu.cc'
+    }
   ];
-
-  // 第二排数据（中）
-  const row2Data = [
-    { leftText: '备用1', rightText: '复制1', linkUrl: '#', copyUrl: '#' },
-    { leftText: '备用2', rightText: '复制2', linkUrl: '#', copyUrl: '#' },
-    { leftText: '备用3', rightText: '复制3', linkUrl: '#', copyUrl: '#' },
-    { leftText: '备用4', rightText: '复制4', linkUrl: '#', copyUrl: '#' }
-  ];
-
-  // 第三排数据（下）—— 填入了您给的新数据
-  const row3Data = [
-    { leftText: '开始1', rightText: '开始1', linkUrl: 'http://lt3611.ccwu.cc', copyUrl: 'http://lt3611.ccwu.cc' },
-    { leftText: '开始2', rightText: '开始2', linkUrl: 'http://lt3611.ccwu.cc', copyUrl: 'http://lt3611.ccwu.cc' },
-    { leftText: '开始3', rightText: '开始3', linkUrl: 'http://lt3611.ccwu.cc', copyUrl: 'http://lt3611.ccwu.cc' },
-    { leftText: '开始4', rightText: '开始4', linkUrl: 'http://lt3611.ccwu.cc', copyUrl: 'http://lt3611.ccwu.cc' }
-  ];
-
 
   // ==========================================
-  // ⬇️ 以下是自动生成和交互逻辑（无需修改） ⬇️
+  // ⬇️ 以下是自动生成和交互逻辑，通常不需要修改 ⬇️
   // ==========================================
 
+  // 设置主页按钮链接
   const homeBtn = document.getElementById('homeBtn');
   if (homeBtn) homeBtn.href = HOME_URL;
 
+  // 生成按钮的 HTML 模板
+  const gridContainer = document.getElementById('gridContainer');
+  
+  // 网址图标 SVG
   const linkSvg = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>`;
+  
+  // 复制图标 SVG
   const copySvg = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 
-  // 通用的渲染函数：传入数据数组和目标 DOM 容器
-  function renderRow(dataArray, leftContainerId, rightContainerId) {
-    let leftHtml = '';
-    let rightHtml = '';
+  // 循环生成 HTML
+  let htmlContent = '';
+  buttonConfig.forEach((item, index) => {
+    // 左侧跳转按钮
+    htmlContent += `
+      <a class="action-btn link-btn" href="${item.linkUrl}" target="_blank" rel="noopener">
+        ${linkSvg}
+        <span>${item.name}</span>
+      </a>
+    `;
+    // 右侧复制按钮
+    htmlContent += `
+      <button class="action-btn copy-btn" data-copy="${item.copyUrl}">
+        ${copySvg}
+        <span class="btn-text">${item.name}导航</span>
+      </button>
+    `;
+  });
 
-    // 因为要生成3列，所以把传进来的4个数据，每个循环生成3个按钮
-    dataArray.forEach(item => {
-      for(let i = 0; i < 3; i++) {
-        leftHtml += `
-          <a class="action-btn link-btn" href="${item.linkUrl}" target="_blank" rel="noopener">
-            ${linkSvg}
-            <span>${item.leftText}</span>
-          </a>
-        `;
-        rightHtml += `
-          <button class="action-btn copy-btn" data-copy="${item.copyUrl}">
-            ${copySvg}
-            <span class="btn-text">${item.rightText}</span>
-          </button>
-        `;
-      }
-    });
-
-    document.getElementById(leftContainerId).innerHTML = leftHtml;
-    document.getElementById(rightContainerId).innerHTML = rightHtml;
-  }
-
-  // 渲染三排数据
-  renderRow(row1Data, 'leftRow1', 'rightRow1');
-  renderRow(row2Data, 'leftRow2', 'rightRow2');
-  renderRow(row3Data, 'leftRow3', 'rightRow3');
+  gridContainer.innerHTML = htmlContent;
 
 
   // ===== 复制逻辑 =====
