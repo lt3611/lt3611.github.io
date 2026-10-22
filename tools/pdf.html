@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A3 → A4 自动分割器</title>
+<title>A3 → A4 自动分割器（非标尺寸原图输出）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -11,7 +11,6 @@
   body { background: #f5f7fc; font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 20px; min-height: 100vh; }
   .card { background: #fff; max-width: 1000px; width: 100%; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,20,40,.15); padding: 30px; }
   
-  /* 上传区 */
   .upload-area { border: 2px dashed #b8cef0; border-radius: 16px; background: #fafdff; padding: 25px; text-align: center; cursor: pointer; transition: .2s; margin-bottom: 20px; }
   .upload-area:hover, .upload-area.dragover { border-color: #2d7aff; background: #f2f9ff; }
   .upload-area input { display: none; }
@@ -19,7 +18,6 @@
   .upload-text { font-weight: 600; color: #0b2b4a; font-size: 1.1rem; }
   .upload-hint { font-size: .85rem; color: #6d7e91; background: #ecf3fb; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; }
 
-  /* 顶部工具栏 */
   .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
   .count { background: #d4e4ff; padding: 6px 12px; border-radius: 20px; font-size: .85rem; font-weight: 600; color: #004cbf; }
   .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -30,13 +28,11 @@
   .btn-danger { background: #fff; color: #b13b3b; border: 1.5px solid #e0a0a0; }
   .btn-print { background: #1e7a1e; color: #fff; }
 
-  /* 文件卡片 */
   .file-card { border: 1px solid #e3ecf8; border-radius: 16px; padding: 15px; margin-bottom: 15px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,.03); }
   .file-head { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
   .file-info { display: flex; align-items: center; gap: 10px; font-weight: 500; color: #1c3b5e; font-size: .95rem; word-break: break-all; }
   .badge { background: #d4e4ff; color: #004cbf; padding: 3px 8px; border-radius: 12px; font-size: .75rem; font-weight: bold; flex-shrink: 0; }
   
-  /* 预览区 */
   .preview-grid { display: flex; gap: 15px; flex-wrap: wrap; }
   .preview-card { flex: 1 1 200px; max-width: 260px; background: #fbfdff; border: 1px solid #e3ecf8; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; }
   .preview-title { font-size: .85rem; font-weight: 600; color: #0c2d4b; margin-bottom: 8px; width: 100%; display: flex; justify-content: space-between; }
@@ -45,7 +41,6 @@
   .preview-img img { width: 100%; height: auto; display: block; }
   .placeholder { color: #7c94b0; font-size: .8rem; text-align: center; }
   
-  /* 状态提示 */
   .status-text { font-size: .8rem; color: #7a8fa8; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
   .spinner { width: 14px; height: 14px; border: 2px solid #d0e2ff; border-top: 2px solid #1a5fd0; border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -57,7 +52,7 @@
   <div class="upload-area" id="uploadArea">
     <div class="upload-icon">📄</div>
     <div class="upload-text">点击或拖拽，支持多文件批量上传</div>
-    <div class="upload-hint">JPG / PNG / WebP / PDF · 上传后自动分割</div>
+    <div class="upload-hint">A3比例自动切分 · 非标比例直接原图输出</div>
     <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/jpg,application/pdf,.pdf">
   </div>
 
@@ -87,7 +82,14 @@
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  // 核心优化：同时生成 BlobUrl（用于极速渲染/打印）和 DataUrl（用于预览显示）
+  // 判断是否为 A 系列比例 (1.414 左右)
+  function isA3Ratio(w, h) {
+    if (!w || !h) return false;
+    const ratio = w / h;
+    return (ratio >= 1.34 && ratio <= 1.49) || (ratio >= 0.67 && ratio <= 0.75);
+  }
+
+  // 同时生成 BlobUrl（用于极速打印）和 DataUrl（用于预览）
   function canvasToJpg(canvas) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
     const bstr = atob(dataUrl.split(',')[1]);
@@ -130,6 +132,35 @@
       const card = document.createElement('div');
       card.className = 'file-card';
       
+      let statusHtml = '';
+      let previewHtml = '';
+
+      if (item.status === 'splitting') {
+        statusHtml = '<div class="spinner"></div> 正在检测并处理...';
+        previewHtml = `<div class="preview-grid">${buildPreview(null, '处理中...')}</div>`;
+      } else if (item.status === 'error') {
+        statusHtml = `❌ ${esc(item.errorMsg)}`;
+      } else if (item.status === 'done') {
+        if (item.result.original) {
+           // 非 A3 比例的图片，作为原图直接输出
+           statusHtml = '⚠️ 尺寸非 A3 比例，<b>保留原图直接输出</b>';
+           previewHtml = `<div class="preview-grid" style="max-width:300px;">
+              <div class="preview-card" style="flex: 1 1 100%; max-width: 100%;">
+                <div class="preview-title">原图 <span>直接输出</span></div>
+                <div class="preview-img"><img src="${item.result.original.dataUrl}"></div>
+              </div>
+           </div>`;
+        } else {
+           // A3 比例，切割为两张
+           statusHtml = '✅ 已成功分割为两张高质量 JPG';
+           previewHtml = `
+            <div class="preview-grid">
+              ${buildPreview(item, 1, 'A4 ①', item.result?.a4_1?.dataUrl)}
+              ${buildPreview(item, 2, 'A4 ②', item.result?.a4_2?.dataUrl)}
+            </div>`;
+        }
+      }
+
       card.innerHTML = `
         <div class="file-head">
           <div class="file-info">
@@ -137,22 +168,16 @@
             <span>${esc(item.file.name)}</span>
           </div>
         </div>
-        <div class="preview-grid">
-          ${buildPreview(item, 1, 'A4 ①', item.result?.a4_1?.dataUrl)}
-          ${buildPreview(item, 2, 'A4 ②', item.result?.a4_2?.dataUrl)}
-        </div>
-        <div class="status-text">
-          ${item.status === 'splitting' ? '<div class="spinner"></div> 正在分割...' : 
-            item.status === 'error' ? `❌ ${esc(item.errorMsg)}` : 
-            item.status === 'done' ? '✅ 已成功分割' : '⏳ 等待处理'}
-        </div>
+        ${previewHtml}
+        <div class="status-text">${statusHtml}</div>
       `;
       fileList.appendChild(card);
     });
   }
 
   function buildPreview(item, num, label, dataUrl) {
-    let imgHtml = dataUrl ? `<img src="${dataUrl}">` : `<div class="placeholder">等待分割</div>`;
+    let imgHtml = dataUrl ? `<img src="${dataUrl}">` : `<div class="placeholder">${label}</div>`;
+    if (!item) return `<div class="preview-card"><div class="preview-img">${imgHtml}</div></div>`;
     return `<div class="preview-card">
       <div class="preview-title">${label} <span>${num === 1 ? '左/上' : '右/下'}</span></div>
       <div class="preview-img">${imgHtml}</div>
@@ -172,24 +197,46 @@
           reader.onload = e => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = e.target.result; };
           reader.readAsDataURL(item.file);
         });
-        const { c1, c2 } = splitToTwo(img, img.naturalWidth >= img.naturalHeight);
-        item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
+        
+        if (isA3Ratio(img.naturalWidth, img.naturalHeight)) {
+          // 符合 A3 比例，切分
+          const { c1, c2 } = splitToTwo(img, img.naturalWidth >= img.naturalHeight);
+          item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
+        } else {
+          // 不符合比例，保留原图
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          item.result = { original: canvasToJpg(canvas) };
+        }
       } else {
         if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
         const pages = [];
+        
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
           const viewport = page.getViewport({ scale: 2.5 });
           const canvas = document.createElement('canvas');
           canvas.width = viewport.width; canvas.height = viewport.height;
           await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          const { c1, c2 } = splitToTwo(canvas, canvas.width >= canvas.height);
-          pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
+
+          if (isA3Ratio(viewport.width, viewport.height)) {
+            const { c1, c2 } = splitToTwo(canvas, canvas.width >= canvas.height);
+            pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
+          } else {
+            pages.push({ original: canvasToJpg(canvas) });
+          }
         }
-        item.result = { pages, pageCount: pdf.numPages };
-        item.result.a4_1 = pages[0].a4_1;
-        item.result.a4_2 = pages[0].a4_2;
+        
+        item.result = { pages, pageCount: pages.length };
+        // 提取首页用于预览
+        if (pages[0].original) {
+           item.result.original = pages[0].original;
+        } else {
+           item.result.a4_1 = pages[0].a4_1;
+           item.result.a4_2 = pages[0].a4_2;
+        }
       }
       item.status = 'done';
     } catch (e) {
@@ -209,7 +256,6 @@
     });
   }
 
-  // 事件绑定
   uploadArea.onclick = () => { fileInput.value = ''; fileInput.click(); };
   fileInput.onchange = e => addFiles(e.target.files);
   
@@ -219,7 +265,7 @@
 
   clearAllBtn.onclick = () => { if(confirm('确定清空全部文件？')) { items.length = 0; render(); } };
 
-  // 打包下载
+  // 打包下载逻辑（支持原图与切分图混合打包）
   downloadAllBtn.onclick = async () => {
     const done = items.filter(it => it.status === 'done');
     if (!done.length) return;
@@ -229,40 +275,43 @@
     done.forEach(item => {
       const base = item.file.name.replace(/\.[^/.]+$/, '');
       if (item.type === 'image') {
-        zip.file(`${base}_A4_1.jpg`, item.result.a4_1.blob);
-        zip.file(`${base}_A4_2.jpg`, item.result.a4_2.blob);
+        if (item.result.original) {
+           zip.file(`${base}_原图.jpg`, item.result.original.blob);
+        } else {
+           zip.file(`${base}_A4_1.jpg`, item.result.a4_1.blob);
+           zip.file(`${base}_A4_2.jpg`, item.result.a4_2.blob);
+        }
       } else {
         item.result.pages.forEach((p, i) => {
-          zip.file(`${base}_第${i+1}页_A4_1.jpg`, p.a4_1.blob);
-          zip.file(`${base}_第${i+1}页_A4_2.jpg`, p.a4_2.blob);
+          if (p.original) {
+             zip.file(`${base}_第${i+1}页_原图.jpg`, p.original.blob);
+          } else {
+             zip.file(`${base}_第${i+1}页_A4_1.jpg`, p.a4_1.blob);
+             zip.file(`${base}_第${i+1}页_A4_2.jpg`, p.a4_2.blob);
+          }
         });
       }
     });
 
     try {
       const content = await zip.generateAsync({ type: 'blob' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = `A4分割_${Date.now()}.zip`; a.click();
+      const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = `A4输出_${Date.now()}.zip`; a.click();
     } catch(e) { alert('打包失败'); }
     
     downloadAllBtn.textContent = '⬇️ 打包下载全部'; downloadAllBtn.disabled = false;
   };
 
-  // 【终极优化】使用 BlobUrl 和 iframe 实现极速、稳定、完整的全量打印
+  // 打印逻辑（支持原图与切分图混合打印）
   printAllBtn.onclick = () => {
     const done = items.filter(it => it.status === 'done');
     if (!done.length) return;
 
-    // 1. 创建隐藏的 iframe 容器，避免干扰当前页面的渲染进程
     const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
+    iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
     document.body.appendChild(iframe);
 
     const doc = iframe.contentWindow.document;
     doc.open();
-    // 写入专门用于打印的干净环境
     doc.write(`
       <!DOCTYPE html>
       <html>
@@ -270,21 +319,8 @@
         <style>
           @page { size: A4 portrait; margin: 0; }
           body { margin: 0; padding: 0; }
-          .print-page { 
-            page-break-after: always; 
-            page-break-inside: avoid;
-            width: 210mm; 
-            height: 297mm; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            overflow: hidden;
-          }
-          .print-page img { 
-            max-width: 100%; 
-            max-height: 100%; 
-            object-fit: contain; 
-          }
+          .print-page { page-break-after: always; page-break-inside: avoid; width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+          .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; }
         </style>
       </head>
       <body></body>
@@ -292,29 +328,29 @@
     `);
     doc.close();
 
-    // 2. 注入图片（使用 blobUrl，加载速度比 Base64 快几十倍）
     const body = doc.body;
     done.forEach(item => {
       if (item.type === 'image') {
-        body.innerHTML += `<div class="print-page"><img src="${item.result.a4_1.blobUrl}"></div>`;
-        body.innerHTML += `<div class="print-page"><img src="${item.result.a4_2.blobUrl}"></div>`;
+        if (item.result.original) {
+           body.innerHTML += `<div class="print-page"><img src="${item.result.original.blobUrl}"></div>`;
+        } else {
+           body.innerHTML += `<div class="print-page"><img src="${item.result.a4_1.blobUrl}"></div><div class="print-page"><img src="${item.result.a4_2.blobUrl}"></div>`;
+        }
       } else {
         item.result.pages.forEach(p => {
-          body.innerHTML += `<div class="print-page"><img src="${p.a4_1.blobUrl}"></div>`;
-          body.innerHTML += `<div class="print-page"><img src="${p.a4_2.blobUrl}"></div>`;
+          if (p.original) {
+             body.innerHTML += `<div class="print-page"><img src="${p.original.blobUrl}"></div>`;
+          } else {
+             body.innerHTML += `<div class="print-page"><img src="${p.a4_1.blobUrl}"></div><div class="print-page"><img src="${p.a4_2.blobUrl}"></div>`;
+          }
         });
       }
     });
 
-    // 3. 由于 blobUrl 极快，只要稍微等各图片的 onload 即可（这里用 100ms 确保万无一失）
     setTimeout(() => {
       iframe.contentWindow.focus();
-      iframe.contentWindow.print(); // 直接调用 iframe 的打印
-      
-      // 4. 打印结束后清理 iframe
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 2000);
+      iframe.contentWindow.print();
+      setTimeout(() => { document.body.removeChild(iframe); }, 2000);
     }, 100);
   };
 
