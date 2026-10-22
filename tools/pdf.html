@@ -51,14 +51,38 @@
   @keyframes spin { 100% { transform: rotate(360deg); } }
   .hidden { display: none !important; }
 
-  /* 打印专用样式 */
+  /* ========== 打印专用样式优化 ========== */
   #printArea { display: none; }
   @media print {
+    /* 强制 A4 纸张和无边距 */
+    @page { size: A4; margin: 0; }
+    body { background: #fff; margin: 0; padding: 0; }
     body * { visibility: hidden; }
     #printArea, #printArea * { visibility: visible; }
-    #printArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
-    .print-page { page-break-after: always; width: 100%; height: 100vh; display: flex; justify-content: center; align-items: center; }
-    .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    
+    #printArea { 
+      display: block !important; 
+      position: absolute; left: 0; top: 0; width: 100%; 
+    }
+    
+    /* 每一页固定尺寸为 A4，强制分页 */
+    .print-page { 
+      page-break-after: always; 
+      page-break-inside: avoid;
+      width: 210mm; 
+      height: 297mm; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      overflow: hidden;
+    }
+    
+    /* 图片按比例缩放适应页面 */
+    .print-page img { 
+      max-width: 100%; 
+      max-height: 100%; 
+      object-fit: contain; 
+    }
   }
 </style>
 </head>
@@ -139,7 +163,6 @@
       const card = document.createElement('div');
       card.className = 'file-card';
       
-      // 只保留文件名和状态，去除了所有操作按钮
       card.innerHTML = `
         <div class="file-head">
           <div class="file-info">
@@ -154,7 +177,7 @@
         <div class="status-text">
           ${item.status === 'splitting' ? '<div class="spinner"></div> 正在分割...' : 
             item.status === 'error' ? `❌ ${esc(item.errorMsg)}` : 
-            item.status === 'done' ? '✅ 已成功分割为两张高质量 JPG' : '⏳ 等待处理'}
+            item.status === 'done' ? '✅ 已成功分割' : '⏳ 等待处理'}
         </div>
       `;
       fileList.appendChild(card);
@@ -163,7 +186,6 @@
 
   function buildPreview(item, num, label, dataUrl) {
     let imgHtml = dataUrl ? `<img src="${dataUrl}">` : `<div class="placeholder">等待分割</div>`;
-    // 去掉了“打印这张”按钮
     return `<div class="preview-card">
       <div class="preview-title">${label} <span>${num === 1 ? '左/上' : '右/下'}</span></div>
       <div class="preview-img">${imgHtml}</div>
@@ -258,11 +280,12 @@
     downloadAllBtn.textContent = '⬇️ 打包下载全部'; downloadAllBtn.disabled = false;
   };
 
-  // 全局打印全部
-  printAllBtn.onclick = () => {
+  // 【优化】全局打印全部逻辑
+  printAllBtn.onclick = async () => {
     const done = items.filter(it => it.status === 'done');
     if (!done.length) return;
     
+    // 1. 构建 4 张图的 HTML
     let html = '';
     done.forEach(item => {
       if (item.type === 'image') {
@@ -276,8 +299,24 @@
     
     printArea.innerHTML = html;
     printArea.style.display = 'block'; 
+
+    // 2. 关键优化：等待所有图片完全加载完毕后再唤起打印机
+    const imgs = printArea.querySelectorAll('img');
+    const loadPromises = Array.from(imgs).map(img => {
+      return new Promise(resolve => {
+        if (img.complete) resolve();
+        else { img.onload = resolve; img.onerror = resolve; }
+      });
+    });
+
+    // 等待加载完成（大约0.5秒延迟，确保渲染完成）
+    await Promise.all(loadPromises);
+    await new Promise(r => setTimeout(r, 300)); 
+
     window.print();
-    setTimeout(() => { printArea.style.display = 'none'; printArea.innerHTML = ''; }, 500);
+    
+    // 3. 恢复页面
+    setTimeout(() => { printArea.style.display = 'none'; printArea.innerHTML = ''; }, 1000);
   };
 
   render();
