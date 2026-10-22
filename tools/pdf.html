@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A3 → A4 自动分割器（带防切字安全重叠）</title>
+<title>A3 → A4 自动分割器（智能白边检测）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -52,14 +52,14 @@
   <div class="upload-area" id="uploadArea">
     <div class="upload-icon">📄</div>
     <div class="upload-text">点击或拖拽，支持多文件批量上传</div>
-    <div class="upload-hint">自动加中缝重叠区，防切字（横图切左右，竖图切上下）</div>
+    <div class="upload-hint">智能寻找白边中缝，完美不切字、不多字</div>
     <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/jpg,application/pdf,.pdf">
   </div>
 
   <div class="toolbar">
     <div class="count" id="fileCount">0 个文件</div>
     <div class="btn-group">
-      <button class="btn btn-outline" id="downloadAllBtn" disabled>⬇️ 打包下载全部</button>
+      <button class="btn btn-outline" id="downloadAllBtn" disabled>⬇️ 打包下载</button>
       <button class="btn btn-print" id="printAllBtn" disabled>🖨️ 打印全部</button>
       <button class="btn btn-danger" id="clearAllBtn" disabled>🗑 清空全部</button>
     </div>
@@ -92,35 +92,95 @@
     return { dataUrl, blob, blobUrl };
   }
 
-  // 核心切分逻辑：增加 3% 的“中缝安全重叠区”，防止装订线偏移切断文字
-  function splitToTwo(source, isLandscape) {
+  // 🌟 核心升级：智能检测最白的中缝线（寻找黑色像素最少的那一列/行）
+  function findBestSplitPos(source, isLandscape) {
+    const w = source.width || source.naturalWidth;
+    const h = source.height || source.naturalHeight;
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(source, 0, 0);
+    
+    // 默认切在正中间
+    let bestPos = isLandscape ? Math.floor(w / 2) : Math.floor(h / 2);
+
+    try {
+      if (isLandscape) {
+        // 扫描横向 40% 到 60% 的区域
+        const startX = Math.floor(w * 0.4);
+        const endX = Math.floor(w * 0.6);
+        const scanW = endX - startX;
+        
+        const imgData = ctx.getImageData(startX, 0, scanW, h).data;
+        const stepY = Math.max(1, Math.floor(h / 300)); // 抽样扫描提高性能
+        
+        let maxWhiteness = -1;
+        for (let x = 0; x < scanW; x++) {
+          let whiteness = 0;
+          for (let y = 0; y < h; y += stepY) {
+            const idx = (y * scanW + x) * 4;
+            // 计算亮度
+            const brightness = 0.299 * imgData[idx] + 0.587 * imgData[idx+1] + 0.114 * imgData[idx+2];
+            if (brightness > 240) whiteness++; // 统计纯白像素
+          }
+          if (whiteness > maxWhiteness) {
+            maxWhiteness = whiteness;
+            bestPos = startX + x; // 记录最白的列
+          }
+        }
+      } else {
+        // 扫描纵向 40% 到 60% 的区域
+        const startY = Math.floor(h * 0.4);
+        const endY = Math.floor(h * 0.6);
+        const scanH = endY - startY;
+        
+        const imgData = ctx.getImageData(0, startY, w, scanH).data;
+        const stepX = Math.max(1, Math.floor(w / 300));
+        
+        let maxWhiteness = -1;
+        for (let y = 0; y < scanH; y++) {
+          let whiteness = 0;
+          for (let x = 0; x < w; x += stepX) {
+            const idx = (y * w + x) * 4;
+            const brightness = 0.299 * imgData[idx] + 0.587 * imgData[idx+1] + 0.114 * imgData[idx+2];
+            if (brightness > 240) whiteness++;
+          }
+          if (whiteness > maxWhiteness) {
+            maxWhiteness = whiteness;
+            bestPos = startY + y; // 记录最白的行
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("白边检测失败，退回中心切分", e);
+    }
+    return bestPos;
+  }
+
+  // 精确切割逻辑：直接切在白边处，不加重叠
+  function splitToTwo(source, splitPos, isLandscape) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
     const c1 = document.createElement('canvas'), c2 = document.createElement('canvas');
     
-    // 安全重叠区：长边的 3%
-    const overlap = isLandscape ? Math.floor(w * 0.03) : Math.floor(h * 0.03);
-
     if (isLandscape) {
-      const aw = Math.floor(w / 2);
+      const w1 = splitPos;
+      const w2 = w - splitPos;
       
-      // 左图：正常左半边，但向右多延伸一点重叠
-      c1.width = aw + overlap; c1.height = h;
-      c1.getContext('2d').drawImage(source, 0, 0, aw + overlap, h, 0, 0, aw + overlap, h);
+      c1.width = w1; c1.height = h;
+      c1.getContext('2d').drawImage(source, 0, 0, w1, h, 0, 0, w1, h);
       
-      // 右图：正常右半边，但向左多延伸一点重叠
-      c2.width = aw + overlap; c2.height = h;
-      c2.getContext('2d').drawImage(source, aw - overlap, 0, aw + overlap, h, 0, 0, aw + overlap, h);
+      c2.width = w2; c2.height = h;
+      c2.getContext('2d').drawImage(source, splitPos, 0, w2, h, 0, 0, w2, h);
     } else {
-      const ah = Math.floor(h / 2);
+      const h1 = splitPos;
+      const h2 = h - splitPos;
       
-      // 上图
-      c1.width = w; c1.height = ah + overlap;
-      c1.getContext('2d').drawImage(source, 0, 0, w, ah + overlap, 0, 0, w, ah + overlap);
+      c1.width = w; c1.height = h1;
+      c1.getContext('2d').drawImage(source, 0, 0, w, h1, 0, 0, w, h1);
       
-      // 下图
-      c2.width = w; c2.height = ah + overlap;
-      c2.getContext('2d').drawImage(source, 0, ah - overlap, w, ah + overlap, 0, 0, w, ah + overlap);
+      c2.width = w; c2.height = h2;
+      c2.getContext('2d').drawImage(source, 0, splitPos, w, h2, 0, 0, w, h2);
     }
     return { c1, c2 };
   }
@@ -157,7 +217,7 @@
               </div>
            </div>`;
         } else {
-           statusHtml = '✅ 已成功分割为两张高质量 JPG（已防切字处理）';
+           statusHtml = '✅ 已成功分割为两张高质量 JPG（智能中缝避让）';
            previewHtml = `
             <div class="preview-grid">
               ${buildPreview(item, 1, 'A4 ①', item.result?.a4_1?.dataUrl)}
@@ -210,7 +270,9 @@
            canvas.getContext('2d').drawImage(img, 0, 0);
            item.result = { original: canvasToJpg(canvas) };
         } else {
-           const { c1, c2 } = splitToTwo(img, w >= h);
+           const isLandscape = w >= h;
+           const bestPos = findBestSplitPos(img, isLandscape); // 智能找缝
+           const { c1, c2 } = splitToTwo(img, bestPos, isLandscape);
            item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
         }
       } else {
@@ -228,7 +290,9 @@
           if (Math.abs(canvas.width - canvas.height) / Math.max(canvas.width, canvas.height) < 0.1) {
             pages.push({ original: canvasToJpg(canvas) });
           } else {
-            const { c1, c2 } = splitToTwo(canvas, canvas.width >= canvas.height);
+            const isLandscape = canvas.width >= canvas.height;
+            const bestPos = findBestSplitPos(canvas, isLandscape); // 智能找缝
+            const { c1, c2 } = splitToTwo(canvas, bestPos, isLandscape);
             pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
           }
         }
@@ -300,7 +364,7 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = `A4输出_${Date.now()}.zip`; a.click();
     } catch(e) { alert('打包失败'); }
     
-    downloadAllBtn.textContent = '⬇️ 打包下载全部'; downloadAllBtn.disabled = false;
+    downloadAllBtn.textContent = '⬇️ 打包下载'; downloadAllBtn.disabled = false;
   };
 
   printAllBtn.onclick = () => {
