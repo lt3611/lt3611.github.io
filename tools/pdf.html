@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>A3 → A4 独立微调分割器（上下分离版）</title>
+<title>A3 → A4 独立微调分割器（双侧微调版）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -118,19 +118,39 @@
   /* 🌟 拖动圆心图标 */
   .fs-drag-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: #ff3b30; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
   
-  /* 🌟 顶部悬浮微调按钮 */
+  /* 🌟 极致分离的微调按钮 (全屏穿透布局) */
   .fs-top-adjust {
     position: fixed;
-    top: 70px; /* 移到屏幕中上方 */
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 30px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 10000;
+    pointer-events: none; /* 确保中间区域可以透过触摸，不影响双指缩放和拖动 */
+  }
+  
+  /* 左右切分：按钮在左右两侧垂直居中 */
+  .fs-top-adjust.lr {
+    display: flex;
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 0 15px;
+    box-sizing: border-box;
+  }
+  
+  /* 上下切分：按钮在上下两侧水平居中 */
+  .fs-top-adjust.tb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 80px 0 120px 0; /* 避开头部和底部完成按钮 */
+    box-sizing: border-box;
   }
 
   .fs-adjust-btn {
-    background: rgba(255,255,255,0.2);
+    pointer-events: auto; /* 只有按钮本身能点击 */
+    background: rgba(255,255,255,0.15);
     color: #fff;
     border: 2px solid #fff;
     width: 50px;
@@ -155,7 +175,7 @@
   /* 🌟 底部完成调整按钮 */
   .fs-finish-btn { 
     position: fixed; 
-    bottom: 40px; /* 留在最底部，与上面拉远 */
+    bottom: 30px; 
     left: 50%; 
     transform: translateX(-50%); 
     background: #1e7a1e; 
@@ -254,13 +274,13 @@
     </div>
   </div>
 
-  <!-- 🌟 微调按钮 (移到中上方) -->
-  <div class="fs-top-adjust" id="fsTopAdjust">
+  <!-- 🌟 微调按钮 (左右两侧对称分布) -->
+  <div class="fs-top-adjust lr" id="fsTopAdjust">
     <button class="fs-adjust-btn" id="fsAdjustMinus">◀</button>
     <button class="fs-adjust-btn" id="fsAdjustPlus">▶</button>
   </div>
 
-  <!-- 🌟 完成调整按钮 (留在最底部) -->
+  <!-- 🌟 完成调整按钮 (最底部) -->
   <button class="fs-finish-btn" id="fsFinishBtn">✔️ 完成调整</button>
 </div>
 
@@ -293,6 +313,7 @@
   const fsDragArea = el('fsDragArea');
   const fsZoomIn = el('fsZoomIn'), fsZoomOut = el('fsZoomOut'), fsZoomLevel = el('fsZoomLevel');
   
+  const fsTopAdjust = el('fsTopAdjust');
   const fsFinishBtn = el('fsFinishBtn');
   const fsAdjustMinus = el('fsAdjustMinus'), fsAdjustPlus = el('fsAdjustPlus');
 
@@ -442,13 +463,15 @@
     const mode = document.querySelector('input[name="splitMode"]:checked').value;
     const handle = fsSplitLine.querySelector('.fs-drag-handle');
     
-    // 根据切分方向更新拖拽图标和微调按钮图标
+    // 根据切分方向更新拖拽图标和微调按钮布局
     if (mode === 'lr') {
       handle.textContent = '↔';
+      fsTopAdjust.className = 'fs-top-adjust lr';
       fsAdjustMinus.textContent = '◀';
       fsAdjustPlus.textContent = '▶';
     } else {
       handle.textContent = '↕';
+      fsTopAdjust.className = 'fs-top-adjust tb';
       fsAdjustMinus.textContent = '▲';
       fsAdjustPlus.textContent = '▼';
     }
