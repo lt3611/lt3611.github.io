@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>A3 → A4 独立微调分割器（单点微调版）</title>
+<title>A3 → A4 独立微调分割器（上下分离版）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -105,7 +105,7 @@
   
   /* 滚动区域 */
   .fs-drag-area { flex: 1; overflow: auto; position: relative; -webkit-overflow-scrolling: touch; }
-  .fs-scroll-content { min-width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px 20px 120px 20px; box-sizing: border-box; } /* 底部留出足够的空间给操作栏 */
+  .fs-scroll-content { min-width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px 20px 120px 20px; box-sizing: border-box; }
   
   /* 缩放容器 */
   .fs-container { position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.5); user-select: none; touch-action: pan-x pan-y; flex-shrink: 0; }
@@ -118,19 +118,17 @@
   /* 🌟 拖动圆心图标 */
   .fs-drag-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: #ff3b30; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
   
-  /* 🌟 底部悬浮操作栏 */
-  .fs-bottom-controls { 
-    position: fixed; 
-    bottom: 30px; 
-    left: 50%; 
-    transform: translateX(-50%); 
+  /* 🌟 顶部悬浮微调按钮 */
+  .fs-top-adjust {
+    position: fixed;
+    top: 70px; /* 移到屏幕中上方 */
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
-    align-items: center;
-    gap: 15px;
-    z-index: 10000; 
+    gap: 30px;
+    z-index: 10000;
   }
-  
-  /* 微调按钮 */
+
   .fs-adjust-btn {
     background: rgba(255,255,255,0.2);
     color: #fff;
@@ -143,8 +141,9 @@
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     transition: background 0.2s, transform 0.1s;
+    backdrop-filter: blur(4px);
     -webkit-user-select: none;
     user-select: none;
   }
@@ -153,20 +152,25 @@
     transform: scale(0.95);
   }
 
-  /* 完成调整按钮 */
+  /* 🌟 底部完成调整按钮 */
   .fs-finish-btn { 
+    position: fixed; 
+    bottom: 40px; /* 留在最底部，与上面拉远 */
+    left: 50%; 
+    transform: translateX(-50%); 
     background: #1e7a1e; 
     color: #fff; 
     border: 2px solid #fff; 
-    padding: 12px 24px; 
+    padding: 15px 40px; 
     border-radius: 30px; 
-    font-size: 1rem; 
+    font-size: 1.1rem; 
     font-weight: bold; 
     cursor: pointer; 
     box-shadow: 0 6px 20px rgba(0,0,0,0.6); 
+    z-index: 10000; 
     transition: background 0.2s, transform 0.1s;
   }
-  .fs-finish-btn:active { background: #145014; transform: scale(0.95); }
+  .fs-finish-btn:active { background: #145014; transform: translateX(-50%) scale(0.95); }
 
   /* 上下切分时，拖拽图标位置 */
   .fs-container.vertical .fs-drag-handle { top: 50%; left: 50%; transform: translate(-50%, -50%); }
@@ -250,12 +254,14 @@
     </div>
   </div>
 
-  <!-- 🌟 底部操作栏 -->
-  <div class="fs-bottom-controls" id="fsBottomControls">
+  <!-- 🌟 微调按钮 (移到中上方) -->
+  <div class="fs-top-adjust" id="fsTopAdjust">
     <button class="fs-adjust-btn" id="fsAdjustMinus">◀</button>
-    <button class="fs-finish-btn" id="fsFinishBtn">✔️ 完成调整</button>
     <button class="fs-adjust-btn" id="fsAdjustPlus">▶</button>
   </div>
+
+  <!-- 🌟 完成调整按钮 (留在最底部) -->
+  <button class="fs-finish-btn" id="fsFinishBtn">✔️ 完成调整</button>
 </div>
 
 <div class="lightbox" id="lightbox" onclick="this.classList.remove('show')">
@@ -449,7 +455,7 @@
     
     fsImage.onload = () => {
       const areaW = fsDragArea.clientWidth - 40;
-      const areaH = fsDragArea.clientHeight - 120; // 给底部留出空间
+      const areaH = fsDragArea.clientHeight - 120;
       const imgW = fsImage.naturalWidth;
       const imgH = fsImage.naturalHeight;
       
