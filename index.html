@@ -92,8 +92,7 @@
   .grid-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    /* 这里调整了间距：上下 14px，左右 16px */
-    gap: 14px 16px; 
+    gap: 14px 16px; /* 上下14px，左右16px */
     width: 100%;
     margin-top: 4px;
   }
@@ -105,7 +104,7 @@
     justify-content: center;
     gap: 6px;
     height: 50px;
-    border-radius: 60px; /* 改为全圆角胶囊形，更美观 */
+    border-radius: 60px;
     color: #fff;
     font-weight: 500;
     font-size: 15px;
@@ -121,7 +120,7 @@
     padding: 0 10px;
   }
 
-  /* 左栏（跳转网址）按钮样式 —— 紫蓝渐变 */
+  /* 左栏（跳转网址）按钮样式 */
   .link-btn {
     background: linear-gradient(135deg, #4b6df0, #8b5cf6);
     box-shadow: 0 6px 16px -6px rgba(59, 91, 219, 0.5),
@@ -131,7 +130,7 @@
   .link-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
   .link-btn:active { transform: translateY(1px); }
 
-  /* 右栏（复制链接）按钮样式 —— 深色 */
+  /* 右栏（复制链接）按钮样式 */
   .copy-btn {
     background: #1a2b4c;
     box-shadow: 0 6px 16px -6px rgba(26, 43, 76, 0.4),
@@ -181,7 +180,6 @@
   }
   .toast-message.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* 针对窄屏幕进一步微调 */
   @media (max-width: 380px) {
     .grid-container { gap: 12px 10px; }
     .action-btn { height: 46px; font-size: 14px; gap: 4px; }
@@ -195,8 +193,8 @@
   <div class="title"><span>自用导航</span> 链接集合</div>
 
   <!-- 主页按钮 -->
-  <a class="home-btn" href="http://lt3611.ccwu.cc/" target="_blank" rel="noopener" aria-label="打开自用导航主页">
-    <svg viewBox="0 0 24 24" aria-hidden="true">
+  <a class="home-btn" id="homeBtn" href="#" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24">
       <path d="M3 9.5L12 3l9 6.5"/>
       <path d="M5 10v10h14V10"/>
       <path d="M9 20v-6h6v6"/>
@@ -206,82 +204,8 @@
 
   <p class="sub">点击图标跳转，点击按钮复制链接</p>
 
-  <!-- 2列等宽布局容器 -->
-  <div class="grid-container">
-
-    <!-- 第 1 行 -->
-    <a class="action-btn link-btn" href="http://192.168.50.1" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9"/>
-        <path d="M3.6 9h16.8"/>
-        <path d="M3.6 15h16.8"/>
-        <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
-      </svg>
-      <span>路由</span>
-    </a>
-    <button class="action-btn copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv.txt">
-      <svg viewBox="0 0 24 24">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-      </svg>
-      <span class="btn-text">电视导航</span>
-    </button>
-
-    <!-- 第 2 行 -->
-    <a class="action-btn link-btn" href="http://192.168.50.198:56789" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9"/>
-        <path d="M3.6 9h16.8"/>
-        <path d="M3.6 15h16.8"/>
-        <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
-      </svg>
-      <span>电视</span>
-    </a>
-    <button class="action-btn copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv3.txt">
-      <svg viewBox="0 0 24 24">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-      </svg>
-      <span class="btn-text">电视新闻</span>
-    </button>
-
-    <!-- 第 3 行 -->
-    <a class="action-btn link-btn" href="http://192.168.50.1:9999" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9"/>
-        <path d="M3.6 9h16.8"/>
-        <path d="M3.6 15h16.8"/>
-        <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
-      </svg>
-      <span>学习</span>
-    </a>
-    <button class="action-btn copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv1.txt">
-      <svg viewBox="0 0 24 24">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-      </svg>
-      <span class="btn-text">影视学习</span>
-    </button>
-
-    <!-- 第 4 行 -->
-    <a class="action-btn link-btn" href="http://192.168.50.1" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9"/>
-        <path d="M3.6 9h16.8"/>
-        <path d="M3.6 15h16.8"/>
-        <path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/>
-      </svg>
-      <span>调试</span>
-    </a>
-    <button class="action-btn copy-btn" data-copy="http://lt3611.ccwu.cc/tools/tv2.txt">
-      <svg viewBox="0 0 24 24">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-      </svg>
-      <span class="btn-text">影视复制</span>
-    </button>
-
-  </div>
+  <!-- 容器：按钮由 JS 自动生成，不再需要手动写 4 组 HTML -->
+  <div class="grid-container" id="gridContainer"></div>
 </div>
 
 <div class="toast-message" id="toast">✅ 链接已复制</div>
@@ -290,6 +214,78 @@
 (function () {
   'use strict';
 
+  // ==========================================
+  // ⬇️ 在这里统一配置所有按钮的文字和链接 ⬇️
+  // ==========================================
+  
+  // 1. 顶部主页按钮的链接
+  const HOME_URL = 'http://lt3611.ccwu.cc/';
+
+  // 2. 四组按钮的配置（按顺序生成上下四行）
+  const buttonConfig = [
+    {
+      name: '路由', 
+      linkUrl: 'http://192.168.50.1', // 左侧按钮：点击跳转的网址
+      copyUrl: 'http://lt3611.ccwu.cc/tools/tv.txt' // 右侧按钮：点击复制的链接
+    },
+    {
+      name: '电视', 
+      linkUrl: 'http://192.168.50.198:56789',
+      copyUrl: 'http://lt3611.ccwu.cc/tools/tv3.txt'
+    },
+    {
+      name: '学习', 
+      linkUrl: 'http://192.168.50.1:9990/ui/zashboard/#/setup?hostname=192.168.50.1&port=9990&secret=clash',
+      copyUrl: 'http://lt3611.ccwu.cc/tools/tv1.txt'
+    },
+    {
+      name: '调试', 
+      linkUrl: 'http://192.168.50.1',
+      copyUrl: 'http://lt3611.ccwu.cc/tools/tv2.txt'
+    }
+  ];
+
+  // ==========================================
+  // ⬇️ 以下是自动生成和交互逻辑，通常不需要修改 ⬇️
+  // ==========================================
+
+  // 设置主页按钮链接
+  const homeBtn = document.getElementById('homeBtn');
+  if (homeBtn) homeBtn.href = HOME_URL;
+
+  // 生成按钮的 HTML 模板
+  const gridContainer = document.getElementById('gridContainer');
+  
+  // 网址图标 SVG
+  const linkSvg = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>`;
+  
+  // 复制图标 SVG
+  const copySvg = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+
+  // 循环生成 HTML
+  let htmlContent = '';
+  buttonConfig.forEach((item, index) => {
+    // 左侧跳转按钮
+    htmlContent += `
+      <a class="action-btn link-btn" href="${item.linkUrl}" target="_blank" rel="noopener">
+        ${linkSvg}
+        <span>${item.name}</span>
+      </a>
+    `;
+    // 右侧复制按钮
+    // 注意：这里右侧按钮的文字加上了一些修饰（比如“电视导航”），您可以自由修改
+    htmlContent += `
+      <button class="action-btn copy-btn" data-copy="${item.copyUrl}">
+        ${copySvg}
+        <span class="btn-text">${item.name}导航</span>
+      </button>
+    `;
+  });
+
+  gridContainer.innerHTML = htmlContent;
+
+
+  // ===== 复制逻辑 =====
   var toastEl = document.getElementById('toast');
   var copyBtns = document.querySelectorAll('.copy-btn');
   var toastTimer = null;
