@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>A3 → A4 独立微调分割器（双侧微调版）</title>
+<title>A3 → A4 独立微调分割器（三按钮版）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -60,17 +60,22 @@
   .drag-container.vertical .mask.bottom { bottom: 0; }
   .drag-container.vertical .split-line { top: auto; bottom: auto; left: 0; right: 0; width: auto; height: 4px; transform: translateY(-50%); }
 
-  /* 工具栏 */
-  .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
-  .count { background: #d4e4ff; padding: 6px 12px; border-radius: 20px; font-size: .85rem; font-weight: 600; color: #004cbf; }
-  .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  /* 🌟 底部操作按钮组 (三按钮并排) */
+  .action-buttons { display: flex; gap: 8px; justify-content: center; margin-top: 15px; flex-wrap: nowrap; }
   
-  .btn { border: none; background: #1a5fd0; color: #fff; font-weight: 600; padding: 10px 22px; border-radius: 20px; cursor: pointer; transition: .2s; font-size: .95rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;}
+  .btn { border: none; background: #1a5fd0; color: #fff; font-weight: 600; padding: 10px 8px; border-radius: 12px; cursor: pointer; transition: .2s; font-size: .85rem; display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex: 1; white-space: nowrap;}
   .btn:disabled { background: #a6bbd9; cursor: not-allowed; opacity: .7; }
   .btn-outline { background: #fff; color: #1a5fd0; border: 1.5px solid #1a5fd0; }
   .btn-danger { background: #fff; color: #b13b3b; border: 1.5px solid #e0a0a0; }
   .btn-print { background: #1e7a1e; color: #fff; }
-  .btn-success { background: #1e7a1e; color: #fff; font-size: 1.05rem; padding: 12px 30px; box-shadow: 0 4px 10px rgba(30,122,30,.3);}
+  .btn-success { background: #1e7a1e; color: #fff; box-shadow: 0 4px 10px rgba(30,122,30,.3);}
+  .btn-auto { background: #1a5fd0; color: #fff; box-shadow: 0 4px 10px rgba(26,95,208,.3);}
+  .btn-original { background: #6f42c1; color: #fff; box-shadow: 0 4px 10px rgba(111,66,193,.3);}
+
+  /* 工具栏 */
+  .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
+  .count { background: #d4e4ff; padding: 6px 12px; border-radius: 20px; font-size: .85rem; font-weight: 600; color: #004cbf; }
+  .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
 
   /* 结果文件列表 */
   .file-card { border: 1px solid #e3ecf8; border-radius: 16px; padding: 15px; margin-bottom: 15px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,.03); }
@@ -126,10 +131,9 @@
     width: 100%;
     height: 100%;
     z-index: 10000;
-    pointer-events: none; /* 确保中间区域可以透过触摸，不影响双指缩放和拖动 */
+    pointer-events: none; 
   }
   
-  /* 左右切分：按钮在左右两侧垂直居中 */
   .fs-top-adjust.lr {
     display: flex;
     align-items: center; 
@@ -138,18 +142,17 @@
     box-sizing: border-box;
   }
   
-  /* 上下切分：按钮在上下两侧水平居中 */
   .fs-top-adjust.tb {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    padding: 80px 0 120px 0; /* 避开头部和底部完成按钮 */
+    padding: 80px 0 120px 0; 
     box-sizing: border-box;
   }
 
   .fs-adjust-btn {
-    pointer-events: auto; /* 只有按钮本身能点击 */
+    pointer-events: auto; 
     background: rgba(255,255,255,0.15);
     color: #fff;
     border: 2px solid #fff;
@@ -192,7 +195,6 @@
   }
   .fs-finish-btn:active { background: #145014; transform: translateX(-50%) scale(0.95); }
 
-  /* 上下切分时，拖拽图标位置 */
   .fs-container.vertical .fs-drag-handle { top: 50%; left: 50%; transform: translate(-50%, -50%); }
 
   /* 查看大图 */
@@ -229,8 +231,11 @@
     <!-- 垂直多页画廊 -->
     <div class="drag-gallery" id="dragGallery"></div>
     
-    <div style="text-align: center; margin-top: 15px;">
-      <button class="btn btn-success" id="startSplitBtn">✂️ 确认所有位置，开始分割</button>
+    <!-- 🌟 三个操作按钮并排 -->
+    <div class="action-buttons">
+      <button class="btn btn-auto" id="autoSplitBtn">⚡ 自动居中分割</button>
+      <button class="btn btn-success" id="startSplitBtn">✂️ 按微调位置分割</button>
+      <button class="btn btn-original" id="printOriginalBtn">🖨️ 取消分割直接打印</button>
     </div>
   </div>
 
@@ -304,7 +309,7 @@
   const uploadArea = el('uploadArea'), fileInput = el('fileInput');
   const fineTunePanel = el('fineTunePanel'), toolbar = el('toolbar'), fileList = el('fileList');
   const dragGallery = el('dragGallery');
-  const startSplitBtn = el('startSplitBtn');
+  const autoSplitBtn = el('autoSplitBtn'), startSplitBtn = el('startSplitBtn'), printOriginalBtn = el('printOriginalBtn');
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
   const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
 
@@ -463,7 +468,6 @@
     const mode = document.querySelector('input[name="splitMode"]:checked').value;
     const handle = fsSplitLine.querySelector('.fs-drag-handle');
     
-    // 根据切分方向更新拖拽图标和微调按钮布局
     if (mode === 'lr') {
       handle.textContent = '↔';
       fsTopAdjust.className = 'fs-top-adjust lr';
@@ -528,7 +532,7 @@
 
   fsAdjustMinus.onclick = (e) => {
     e.stopPropagation();
-    adjustRatio(-0.002); // 每次微调 0.2%
+    adjustRatio(-0.002);
   };
   
   fsAdjustPlus.onclick = (e) => {
@@ -631,11 +635,11 @@
     toolbar.style.display = 'flex';
     
     fileCount.textContent = `${items.length} 个文件已就绪`;
-    fileList.innerHTML = '<div class="placeholder" style="padding: 30px; color: #1a5fd0;">📌 文件已就绪，请点击缩略图放大并微调，然后点击【开始分割】。</div>';
+    fileList.innerHTML = '<div class="placeholder" style="padding: 30px; color: #1a5fd0;">📌 文件已就绪，请点击缩略图放大并微调，然后点击下方的分割按钮。</div>';
   };
 
-  // 开始分割
-  startSplitBtn.onclick = () => {
+  // 执行分割
+  function executeSplit() {
     if (items.length === 0) return;
     if (currentFsData) closeFsTuner(); 
 
@@ -684,6 +688,87 @@
       }
       renderList();
     });
+  }
+
+  // 🌟 取消分割直接打印（原图打印）
+  printOriginalBtn.onclick = async () => {
+    if (items.length === 0) return;
+    if (currentFsData) closeFsTuner(); 
+    
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @page { size: A4 portrait; margin: 0; }
+          body { margin: 0; padding: 0; }
+          .print-page { 
+            page-break-after: always; page-break-inside: avoid; 
+            width: 210mm; height: 297mm; 
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; margin: 0 auto;
+          }
+          .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        </style>
+      </head>
+      <body></body>
+      </html>
+    `);
+    doc.close();
+
+    const body = doc.body;
+    
+    // 遍历打印原图
+    for (const item of items) {
+      if (item.type === 'image') {
+        const url = await new Promise(res => {
+          const reader = new FileReader();
+          reader.onload = e => res(e.target.result);
+          reader.readAsDataURL(item.file);
+        });
+        body.innerHTML += `<div class="print-page"><img src="${url}"></div>`;
+      } else {
+        // PDF 重新按高分辨率渲染用于原图打印
+        if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 2.5 }); 
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width; canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          const url = canvas.toDataURL('image/jpeg', 0.95);
+          body.innerHTML += `<div class="print-page"><img src="${url}"></div>`;
+        }
+      }
+    }
+
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => { document.body.removeChild(iframe); }, 2000);
+    }, 100);
+  };
+
+  // 🌟 分割按钮的事件监听
+  startSplitBtn.onclick = executeSplit; // 按微调位置
+  
+  autoSplitBtn.onclick = () => {
+    // 强制重置所有图片和PDF为 0.5 (居中)，并刷新UI
+    items.forEach(item => {
+      if (item.previews) {
+        item.previews.forEach(p => p.ratio = 0.5);
+      }
+    });
+    renderTunePanel();
+    // 重置后直接开始分割
+    executeSplit();
   };
 
   function renderList() {
