@@ -11,6 +11,7 @@
   body { background: #f5f7fc; font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 20px; min-height: 100vh; }
   .card { background: #fff; max-width: 1000px; width: 100%; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,20,40,.15); padding: 30px; }
   
+  /* 上传区 */
   .upload-area { border: 2px dashed #b8cef0; border-radius: 16px; background: #fafdff; padding: 25px; text-align: center; cursor: pointer; transition: .2s; margin-bottom: 20px; }
   .upload-area:hover, .upload-area.dragover { border-color: #2d7aff; background: #f2f9ff; }
   .upload-area input { display: none; }
@@ -18,21 +19,24 @@
   .upload-text { font-weight: 600; color: #0b2b4a; font-size: 1.1rem; }
   .upload-hint { font-size: .85rem; color: #6d7e91; background: #ecf3fb; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; }
 
+  /* 顶部工具栏 */
   .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
   .count { background: #d4e4ff; padding: 6px 12px; border-radius: 20px; font-size: .85rem; font-weight: 600; color: #004cbf; }
-  .btn { border: none; background: #1a5fd0; color: #fff; font-weight: 600; padding: 8px 18px; border-radius: 20px; cursor: pointer; transition: .2s; font-size: .9rem; }
+  .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+  
+  .btn { border: none; background: #1a5fd0; color: #fff; font-weight: 600; padding: 8px 18px; border-radius: 20px; cursor: pointer; transition: .2s; font-size: .9rem; display: inline-flex; align-items: center; justify-content: center;}
   .btn:disabled { background: #a6bbd9; cursor: not-allowed; opacity: .7; }
   .btn-outline { background: #fff; color: #1a5fd0; border: 1.5px solid #1a5fd0; }
   .btn-danger { background: #fff; color: #b13b3b; border: 1.5px solid #e0a0a0; }
   .btn-print { background: #1e7a1e; color: #fff; }
-  .btn-sm { padding: 5px 10px; font-size: .8rem; }
 
+  /* 文件卡片 */
   .file-card { border: 1px solid #e3ecf8; border-radius: 16px; padding: 15px; margin-bottom: 15px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,.03); }
-  .file-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-  .file-info { display: flex; align-items: center; gap: 10px; font-weight: 500; color: #1c3b5e; font-size: .9rem; }
-  .badge { background: #d4e4ff; color: #004cbf; padding: 3px 8px; border-radius: 12px; font-size: .75rem; font-weight: bold; }
-  .file-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .file-head { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
+  .file-info { display: flex; align-items: center; gap: 10px; font-weight: 500; color: #1c3b5e; font-size: .95rem; word-break: break-all; }
+  .badge { background: #d4e4ff; color: #004cbf; padding: 3px 8px; border-radius: 12px; font-size: .75rem; font-weight: bold; flex-shrink: 0; }
   
+  /* 预览区 */
   .preview-grid { display: flex; gap: 15px; flex-wrap: wrap; }
   .preview-card { flex: 1 1 200px; max-width: 260px; background: #fbfdff; border: 1px solid #e3ecf8; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; }
   .preview-title { font-size: .85rem; font-weight: 600; color: #0c2d4b; margin-bottom: 8px; width: 100%; display: flex; justify-content: space-between; }
@@ -40,6 +44,8 @@
   .preview-img { width: 100%; min-height: 120px; background: #f4f8ff; border: 1px solid #d9e7fa; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; margin-bottom: 10px; }
   .preview-img img { width: 100%; height: auto; display: block; }
   .placeholder { color: #7c94b0; font-size: .8rem; text-align: center; }
+  
+  /* 状态提示 */
   .status-text { font-size: .8rem; color: #7a8fa8; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
   .spinner { width: 14px; height: 14px; border: 2px solid #d0e2ff; border-top: 2px solid #1a5fd0; border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -67,8 +73,9 @@
 
   <div class="toolbar">
     <div class="count" id="fileCount">0 个文件</div>
-    <div>
+    <div class="btn-group">
       <button class="btn btn-outline" id="downloadAllBtn" disabled>⬇️ 打包下载全部</button>
+      <button class="btn btn-print" id="printAllBtn" disabled>🖨️ 打印全部</button>
       <button class="btn btn-danger" id="clearAllBtn" disabled>🗑 清空全部</button>
     </div>
   </div>
@@ -88,9 +95,10 @@
 
   const el = id => document.getElementById(id);
   const uploadArea = el('uploadArea'), fileInput = el('fileInput'), fileList = el('fileList');
-  const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), clearAllBtn = el('clearAllBtn'), printArea = el('printArea');
+  const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn'), printArea = el('printArea');
 
-  // 转高质量 JPG
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
   function canvasToJpg(canvas) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
     const bstr = atob(dataUrl.split(',')[1]);
@@ -99,7 +107,6 @@
     return { dataUrl, blob: new Blob([u8], { type: 'image/jpeg' }) };
   }
 
-  // 核心分割函数
   function splitToTwo(source, isLandscape) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
@@ -118,33 +125,27 @@
     return { c1, c2 };
   }
 
-  // 渲染界面
   function render() {
     fileCount.textContent = `${items.length} 个文件`;
-    downloadAllBtn.disabled = !items.some(it => it.status === 'done');
+    
+    const anyDone = items.some(it => it.status === 'done');
+    downloadAllBtn.disabled = !anyDone;
+    printAllBtn.disabled = !anyDone;
     clearAllBtn.disabled = items.length === 0;
     
     fileList.innerHTML = items.length ? '' : '<div class="placeholder" style="padding:30px;">暂无文件</div>';
+    
     items.forEach(item => {
       const card = document.createElement('div');
       card.className = 'file-card';
       
-      // 构建按钮
-      let actionsHtml = `<button class="btn btn-sm" onclick="window.splitItem(${item.id})" ${item.status === 'splitting' ? 'disabled' : ''}>${item.status === 'done' ? '重新分割' : '分割'}</button>`;
-      if (item.status === 'done') {
-        actionsHtml += `<button class="btn btn-outline btn-sm" onclick="window.downloadItem(${item.id}, 1)">下载 A4①</button>
-                        <button class="btn btn-outline btn-sm" onclick="window.downloadItem(${item.id}, 2)">下载 A4②</button>
-                        <button class="btn btn-print btn-sm" onclick="window.printItem(${item.id})">🖨️ 打印全部</button>`;
-      }
-      actionsHtml += `<button class="btn btn-danger btn-sm" onclick="window.removeItem(${item.id})" ${item.status === 'splitting' ? 'disabled' : ''}>移除</button>`;
-
+      // 只保留文件名和状态，去除了所有操作按钮
       card.innerHTML = `
         <div class="file-head">
           <div class="file-info">
             <span class="badge">${item.type.toUpperCase()}</span>
-            <span>${item.file.name}</span>
+            <span>${esc(item.file.name)}</span>
           </div>
-          <div class="file-actions">${actionsHtml}</div>
         </div>
         <div class="preview-grid">
           ${buildPreview(item, 1, 'A4 ①', item.result?.a4_1?.dataUrl)}
@@ -152,7 +153,7 @@
         </div>
         <div class="status-text">
           ${item.status === 'splitting' ? '<div class="spinner"></div> 正在分割...' : 
-            item.status === 'error' ? `❌ ${item.errorMsg}` : 
+            item.status === 'error' ? `❌ ${esc(item.errorMsg)}` : 
             item.status === 'done' ? '✅ 已成功分割为两张高质量 JPG' : '⏳ 等待处理'}
         </div>
       `;
@@ -162,15 +163,13 @@
 
   function buildPreview(item, num, label, dataUrl) {
     let imgHtml = dataUrl ? `<img src="${dataUrl}">` : `<div class="placeholder">等待分割</div>`;
-    let btnHtml = (dataUrl && item.status === 'done') ? `<button class="btn btn-print btn-sm" style="margin-top:8px;width:100%" onclick="window.printSingle(${item.id}, ${num})">🖨️ 打印这张</button>` : '';
+    // 去掉了“打印这张”按钮
     return `<div class="preview-card">
       <div class="preview-title">${label} <span>${num === 1 ? '左/上' : '右/下'}</span></div>
       <div class="preview-img">${imgHtml}</div>
-      ${btnHtml}
     </div>`;
   }
 
-  // 处理核心逻辑
   async function processFile(id) {
     const item = items.find(it => it.id === id);
     if (!item || item.status === 'splitting') return;
@@ -185,8 +184,7 @@
           reader.readAsDataURL(item.file);
         });
         const { c1, c2 } = splitToTwo(img, img.naturalWidth >= img.naturalHeight);
-        const j1 = canvasToJpg(c1), j2 = canvasToJpg(c2);
-        item.result = { a4_1: j1, a4_2: j2 };
+        item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
       } else {
         if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
@@ -201,7 +199,6 @@
           pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
         }
         item.result = { pages, pageCount: pdf.numPages };
-        // PDF 展示第一页作为预览
         item.result.a4_1 = pages[0].a4_1;
         item.result.a4_2 = pages[0].a4_2;
       }
@@ -212,46 +209,14 @@
     render();
   }
 
-  // 挂载到 window 的全局操作
-  window.splitItem = id => processFile(id);
-  window.removeItem = id => { const idx = items.findIndex(it => it.id === id); if(idx>-1) { items.splice(idx,1); render(); } };
-  window.downloadItem = (id, num) => {
-    const item = items.find(it => it.id === id);
-    const blob = item.type === 'image' ? (num===1?item.result.a4_1.blob:item.result.a4_2.blob) : (num===1?item.result.pages[0].a4_1.blob:item.result.pages[0].a4_2.blob);
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `A4_${num}.jpg`; a.click();
-  };
-
-  // 打印功能
-  window.printSingle = (id, num) => {
-    const item = items.find(it => it.id === id);
-    const url = num === 1 ? item.result.a4_1.dataUrl : item.result.a4_2.dataUrl;
-    printArea.innerHTML = `<div class="print-page"><img src="${url}"></div>`;
-    printArea.style.display = 'block'; window.print();
-    setTimeout(() => { printArea.style.display = 'none'; printArea.innerHTML = ''; }, 500);
-  };
-  
-  window.printItem = id => {
-    const item = items.find(it => it.id === id);
-    let html = '';
-    if (item.type === 'image') {
-      html = `<div class="print-page"><img src="${item.result.a4_1.dataUrl}"></div><div class="print-page"><img src="${item.result.a4_2.dataUrl}"></div>`;
-    } else {
-      item.result.pages.forEach(p => {
-        html += `<div class="print-page"><img src="${p.a4_1.dataUrl}"></div><div class="print-page"><img src="${p.a4_2.dataUrl}"></div>`;
-      });
-    }
-    printArea.innerHTML = html;
-    printArea.style.display = 'block'; window.print();
-    setTimeout(() => { printArea.style.display = 'none'; printArea.innerHTML = ''; }, 500);
-  };
-
-  // 添加文件
   function addFiles(files) {
     Array.from(files).forEach(file => {
-      const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       if (!isPdf && !file.type.startsWith('image/')) return;
-      items.push({ id: nextId++, file, type: isPdf ? 'pdf' : 'image', status: 'pending', result: null });
-      processFile(nextId - 1); // 上传后自动分割
+      
+      const newItem = { id: nextId++, file, type: isPdf ? 'pdf' : 'image', status: 'pending', result: null };
+      items.push(newItem);
+      processFile(newItem.id);
     });
   }
 
@@ -263,8 +228,9 @@
   uploadArea.ondragleave = () => uploadArea.classList.remove('dragover');
   uploadArea.ondrop = e => { e.preventDefault(); uploadArea.classList.remove('dragover'); addFiles(e.dataTransfer.files); };
 
-  clearAllBtn.onclick = () => { if(confirm('确定清空？')) { items.length = 0; render(); } };
+  clearAllBtn.onclick = () => { if(confirm('确定清空全部文件？')) { items.length = 0; render(); } };
 
+  // 打包下载
   downloadAllBtn.onclick = async () => {
     const done = items.filter(it => it.status === 'done');
     if (!done.length) return;
@@ -284,10 +250,34 @@
       }
     });
 
-    const content = await zip.generateAsync({ type: 'blob' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = `A4分割结果_${Date.now()}.zip`; a.click();
+    try {
+      const content = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = `A4分割_${Date.now()}.zip`; a.click();
+    } catch(e) { alert('打包失败'); }
     
     downloadAllBtn.textContent = '⬇️ 打包下载全部'; downloadAllBtn.disabled = false;
+  };
+
+  // 全局打印全部
+  printAllBtn.onclick = () => {
+    const done = items.filter(it => it.status === 'done');
+    if (!done.length) return;
+    
+    let html = '';
+    done.forEach(item => {
+      if (item.type === 'image') {
+        html += `<div class="print-page"><img src="${item.result.a4_1.dataUrl}"></div><div class="print-page"><img src="${item.result.a4_2.dataUrl}"></div>`;
+      } else {
+        item.result.pages.forEach(p => {
+          html += `<div class="print-page"><img src="${p.a4_1.dataUrl}"></div><div class="print-page"><img src="${p.a4_2.dataUrl}"></div>`;
+        });
+      }
+    });
+    
+    printArea.innerHTML = html;
+    printArea.style.display = 'block'; 
+    window.print();
+    setTimeout(() => { printArea.style.display = 'none'; printArea.innerHTML = ''; }, 500);
   };
 
   render();
