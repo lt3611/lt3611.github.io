@@ -30,7 +30,7 @@
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    max-width: 520px;
+    max-width: 500px; /* 控制卡片宽度，刚好容纳 3 列 */
     width: 100%;
   }
 
@@ -88,28 +88,13 @@
     stroke-linecap: round; stroke-linejoin: round;
   }
 
-  /* ===== 左右等分大区块 ===== */
-  .main-layout {
-    display: flex;
-    gap: 12px;
+  /* ===== 三列网格容器 ===== */
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 严格 3 列 */
+    gap: 12px 10px;
     width: 100%;
     margin-top: 4px;
-  }
-
-  /* 左侧容器：放 2 列跳转按钮 */
-  .left-block {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 改成 2 列 */
-    gap: 12px 10px;
-  }
-
-  /* 右侧容器：放 2 列复制按钮 */
-  .right-block {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 改成 2 列 */
-    gap: 12px 10px;
   }
 
   /* ===== 按钮统一基础样式 ===== */
@@ -117,8 +102,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    height: 48px; /* 2列空间更充裕，高度稍微恢复 */
+    gap: 4px;
+    height: 46px;
     border-radius: 60px;
     color: #fff;
     font-weight: 500;
@@ -132,10 +117,10 @@
     font-family: inherit;
     transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease, background 0.25s ease;
     -webkit-tap-highlight-color: transparent;
-    padding: 0 6px;
+    padding: 0 4px;
   }
 
-  /* 左栏按钮（紫蓝渐变） */
+  /* 左中列（跳转网址）按钮样式 - 紫蓝渐变 */
   .link-btn {
     background: linear-gradient(135deg, #4b6df0, #8b5cf6);
     box-shadow: 0 6px 16px -6px rgba(59, 91, 219, 0.5),
@@ -145,7 +130,7 @@
   .link-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
   .link-btn:active { transform: translateY(1px); }
 
-  /* 右栏按钮（深色） */
+  /* 右列（复制链接）按钮样式 - 深色 */
   .copy-btn {
     background: #1a2b4c;
     box-shadow: 0 6px 16px -6px rgba(26, 43, 76, 0.4),
@@ -157,8 +142,8 @@
 
   /* 图标统一尺寸 */
   .action-btn svg {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
     flex-shrink: 0;
     fill: none;
     stroke: currentColor;
@@ -195,12 +180,10 @@
   }
   .toast-message.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* 极窄屏幕适配 */
   @media (max-width: 380px) {
-    .main-layout { gap: 8px; }
-    .left-block, .right-block { gap: 10px 6px; }
-    .action-btn { height: 44px; font-size: 12px; }
-    .action-btn svg { width: 13px; height: 13px; }
+    .grid-container { gap: 10px 6px; }
+    .action-btn { height: 42px; font-size: 12px; }
+    .action-btn svg { width: 12px; height: 12px; }
   }
 </style>
 </head>
@@ -219,15 +202,10 @@
     <span>主页</span>
   </a>
 
-  <p class="sub">左边点击跳转，右边点击复制</p>
+  <p class="sub">左中列点击跳转，右列点击复制</p>
 
-  <!-- 左右大区块 -->
-  <div class="main-layout">
-    <!-- 左侧容器：放两排跳转数据 -->
-    <div class="left-block" id="leftContainer"></div>
-    <!-- 右侧容器：放两排复制数据 -->
-    <div class="right-block" id="rightContainer"></div>
-  </div>
+  <!-- 3列网格容器 -->
+  <div class="grid-container" id="gridContainer"></div>
 </div>
 
 <div class="toast-message" id="toast">✅ 链接已复制</div>
@@ -237,65 +215,93 @@
   'use strict';
 
   // ==========================================
-  // ⬇️ 左侧（跳转按钮）数据配置区 ⬇️
+  // ⬇️ 数据配置区（每一行代表页面上的三个按钮） ⬇️
   // ==========================================
-  const leftData = [
-    { text: '路由', url: 'http://192.168.50.1' },
-    { text: '电视', url: 'http://192.168.50.198:56789' },
-    { text: '学习', url: 'http://192.168.50.1:9990/ui/zashboard/#/setup?hostname=192.168.50.1&port=9990&secret=clash' },
-    { text: '调试', url: 'http://192.168.50.1' },
-    { text: '开始1', url: 'http://lt3611.ccwu.cc' }
-  ];
-
-  // ==========================================
-  // ⬇️ 右侧（复制按钮）数据配置区 ⬇️
-  // ==========================================
-  const rightData = [
-    { text: '路由导航', url: 'http://lt3611.ccwu.cc/tools/tv.txt' },
-    { text: '电视导航', url: 'http://lt3611.ccwu.cc/tools/tv3.txt' },
-    { text: '学习导航', url: 'http://lt3611.ccwu.cc/tools/tv1.txt' },
-    { text: '调试导航', url: 'http://lt3611.ccwu.cc/tools/tv2.txt' },
-    { text: '开始1导航', url: 'http://lt3611.ccwu.cc' }
-  ];
-
-  // ==========================================
-  // ⬇️ 以下是自动生成和交互逻辑（无需修改） ⬇️
-  // ==========================================
-
+  
   const HOME_URL = 'http://lt3611.ccwu.cc/';
+
+  // 数组的每一项，会自动渲染成：左边紫蓝 + 中间紫蓝 + 右边深色
+  const rowData = [
+    // 第一排
+    {
+      leftText: '路由', 
+      middleText: '电视', 
+      rightText: '路由导航',
+      leftUrl: 'http://192.168.50.1',
+      middleUrl: 'http://192.168.50.198:56789',
+      rightUrl: 'http://lt3611.ccwu.cc/tools/tv.txt'
+    },
+    // 第二排
+    {
+      leftText: '学习', 
+      middleText: '调试', 
+      rightText: '电视导航',
+      leftUrl: 'http://192.168.50.1:9990/ui/zashboard/#/setup?hostname=192.168.50.1&port=9990&secret=clash',
+      middleUrl: 'http://192.168.50.1',
+      rightUrl: 'http://lt3611.ccwu.cc/tools/tv3.txt'
+    },
+    // 第三排
+    {
+      leftText: '开始1', 
+      middleText: '开始2', 
+      rightText: '学习导航',
+      leftUrl: 'http://lt3611.ccwu.cc',
+      middleUrl: 'http://lt3611.ccwu.cc',
+      rightUrl: 'http://lt3611.ccwu.cc/tools/tv1.txt'
+    },
+    // 第四排 (如果您需要加，就照着格式往下写)
+    {
+      leftText: '开始3', 
+      middleText: '开始4', 
+      rightText: '调试导航',
+      leftUrl: 'http://lt3611.ccwu.cc',
+      middleUrl: 'http://lt3611.ccwu.cc',
+      rightUrl: 'http://lt3611.ccwu.cc/tools/tv2.txt'
+    }
+  ];
+
+  // ==========================================
+  // ⬇️ 以下是自动生成和交互逻辑，通常不需要修改 ⬇️
+  // ==========================================
+
   const homeBtn = document.getElementById('homeBtn');
   if (homeBtn) homeBtn.href = HOME_URL;
 
-  const leftContainer = document.getElementById('leftContainer');
-  const rightContainer = document.getElementById('rightContainer');
+  const gridContainer = document.getElementById('gridContainer');
   
+  // 网址图标 SVG
   const linkSvg = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>`;
+  
+  // 复制图标 SVG
   const copySvg = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
 
-  // 渲染左侧（跳转）
-  let leftHtml = '';
-  leftData.forEach(item => {
-    leftHtml += `
-      <a class="action-btn link-btn" href="${item.url}" target="_blank" rel="noopener">
+  // 循环生成 HTML
+  let htmlContent = '';
+  rowData.forEach((item) => {
+    // 1. 左侧跳转按钮
+    htmlContent += `
+      <a class="action-btn link-btn" href="${item.leftUrl}" target="_blank" rel="noopener">
         ${linkSvg}
-        <span>${item.text}</span>
+        <span>${item.leftText}</span>
       </a>
     `;
-  });
-  leftContainer.innerHTML = leftHtml;
-
-  // 渲染右侧（复制）
-  let rightHtml = '';
-  rightData.forEach(item => {
-    rightHtml += `
-      <button class="action-btn copy-btn" data-copy="${item.url}">
+    // 2. 中间跳转按钮
+    htmlContent += `
+      <a class="action-btn link-btn" href="${item.middleUrl}" target="_blank" rel="noopener">
+        ${linkSvg}
+        <span>${item.middleText}</span>
+      </a>
+    `;
+    // 3. 右侧复制按钮
+    htmlContent += `
+      <button class="action-btn copy-btn" data-copy="${item.rightUrl}">
         ${copySvg}
-        <span class="btn-text">${item.text}</span>
+        <span class="btn-text">${item.rightText}</span>
       </button>
     `;
   });
-  rightContainer.innerHTML = rightHtml;
 
+  gridContainer.innerHTML = htmlContent;
 
   // ===== 复制逻辑 =====
   var toastEl = document.getElementById('toast');
