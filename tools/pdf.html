@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A3 → A4 自动分割器（非标尺寸原图输出）</title>
+<title>A3 → A4 自动分割器</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -52,7 +52,7 @@
   <div class="upload-area" id="uploadArea">
     <div class="upload-icon">📄</div>
     <div class="upload-text">点击或拖拽，支持多文件批量上传</div>
-    <div class="upload-hint">A3比例自动切分 · 非标比例直接原图输出</div>
+    <div class="upload-hint">智能识别：横图切左右，竖图切上下</div>
     <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/jpg,application/pdf,.pdf">
   </div>
 
@@ -82,13 +82,6 @@
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  // 判断是否为 A 系列比例 (1.414 左右)
-  function isA3Ratio(w, h) {
-    if (!w || !h) return false;
-    const ratio = w / h;
-    return (ratio >= 1.34 && ratio <= 1.49) || (ratio >= 0.67 && ratio <= 0.75);
-  }
-
   // 同时生成 BlobUrl（用于极速打印）和 DataUrl（用于预览）
   function canvasToJpg(canvas) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
@@ -100,6 +93,7 @@
     return { dataUrl, blob, blobUrl };
   }
 
+  // 核心切分逻辑：宽大于高切左右，高大于宽切上下
   function splitToTwo(source, isLandscape) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
@@ -136,14 +130,14 @@
       let previewHtml = '';
 
       if (item.status === 'splitting') {
-        statusHtml = '<div class="spinner"></div> 正在检测并处理...';
+        statusHtml = '<div class="spinner"></div> 正在智能切分...';
         previewHtml = `<div class="preview-grid">${buildPreview(null, '处理中...')}</div>`;
       } else if (item.status === 'error') {
         statusHtml = `❌ ${esc(item.errorMsg)}`;
       } else if (item.status === 'done') {
         if (item.result.original) {
-           // 非 A3 比例的图片，作为原图直接输出
-           statusHtml = '⚠️ 尺寸非 A3 比例，<b>保留原图直接输出</b>';
+           // 极端情况原图保留
+           statusHtml = '⚠️ 图幅接近正方形，<b>保留原图直接输出</b>';
            previewHtml = `<div class="preview-grid" style="max-width:300px;">
               <div class="preview-card" style="flex: 1 1 100%; max-width: 100%;">
                 <div class="preview-title">原图 <span>直接输出</span></div>
@@ -151,7 +145,7 @@
               </div>
            </div>`;
         } else {
-           // A3 比例，切割为两张
+           // 正常切分
            statusHtml = '✅ 已成功分割为两张高质量 JPG';
            previewHtml = `
             <div class="preview-grid">
@@ -198,16 +192,18 @@
           reader.readAsDataURL(item.file);
         });
         
-        if (isA3Ratio(img.naturalWidth, img.naturalHeight)) {
-          // 符合 A3 比例，切分
-          const { c1, c2 } = splitToTwo(img, img.naturalWidth >= img.naturalHeight);
-          item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
+        // 放宽限制：只要不是接近正方形的图，统统切分
+        const w = img.naturalWidth, h = img.naturalHeight;
+        if (Math.abs(w - h) / Math.max(w, h) < 0.1) {
+           // 接近正方形，不切
+           const canvas = document.createElement('canvas');
+           canvas.width = w; canvas.height = h;
+           canvas.getContext('2d').drawImage(img, 0, 0);
+           item.result = { original: canvasToJpg(canvas) };
         } else {
-          // 不符合比例，保留原图
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-          canvas.getContext('2d').drawImage(img, 0, 0);
-          item.result = { original: canvasToJpg(canvas) };
+           // 直接切分
+           const { c1, c2 } = splitToTwo(img, w >= h);
+           item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
         }
       } else {
         if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
@@ -221,16 +217,16 @@
           canvas.width = viewport.width; canvas.height = viewport.height;
           await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
-          if (isA3Ratio(viewport.width, viewport.height)) {
+          // PDF 页面也是同样的逻辑
+          if (Math.abs(canvas.width - canvas.height) / Math.max(canvas.width, canvas.height) < 0.1) {
+            pages.push({ original: canvasToJpg(canvas) });
+          } else {
             const { c1, c2 } = splitToTwo(canvas, canvas.width >= canvas.height);
             pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
-          } else {
-            pages.push({ original: canvasToJpg(canvas) });
           }
         }
         
         item.result = { pages, pageCount: pages.length };
-        // 提取首页用于预览
         if (pages[0].original) {
            item.result.original = pages[0].original;
         } else {
@@ -265,7 +261,6 @@
 
   clearAllBtn.onclick = () => { if(confirm('确定清空全部文件？')) { items.length = 0; render(); } };
 
-  // 打包下载逻辑（支持原图与切分图混合打包）
   downloadAllBtn.onclick = async () => {
     const done = items.filter(it => it.status === 'done');
     if (!done.length) return;
@@ -301,7 +296,6 @@
     downloadAllBtn.textContent = '⬇️ 打包下载全部'; downloadAllBtn.disabled = false;
   };
 
-  // 打印逻辑（支持原图与切分图混合打印）
   printAllBtn.onclick = () => {
     const done = items.filter(it => it.status === 'done');
     if (!done.length) return;
