@@ -44,7 +44,6 @@
   .status-text { font-size: .8rem; color: #7a8fa8; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
   .spinner { width: 14px; height: 14px; border: 2px solid #d0e2ff; border-top: 2px solid #1a5fd0; border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
-  .hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -92,7 +91,6 @@
     return { dataUrl, blob, blobUrl };
   }
 
-  // 🌟 核心升级：智能检测最白的中缝线（寻找黑色像素最少的那一列/行）
   function findBestSplitPos(source, isLandscape) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
@@ -101,42 +99,34 @@
     const ctx = canvas.getContext('2d');
     ctx.drawImage(source, 0, 0);
     
-    // 默认切在正中间
     let bestPos = isLandscape ? Math.floor(w / 2) : Math.floor(h / 2);
 
     try {
       if (isLandscape) {
-        // 扫描横向 40% 到 60% 的区域
-        const startX = Math.floor(w * 0.4);
-        const endX = Math.floor(w * 0.6);
+        const startX = Math.floor(w * 0.3);
+        const endX = Math.floor(w * 0.7);
         const scanW = endX - startX;
-        
         const imgData = ctx.getImageData(startX, 0, scanW, h).data;
-        const stepY = Math.max(1, Math.floor(h / 300)); // 抽样扫描提高性能
-        
+        const stepY = Math.max(1, Math.floor(h / 300));
         let maxWhiteness = -1;
         for (let x = 0; x < scanW; x++) {
           let whiteness = 0;
           for (let y = 0; y < h; y += stepY) {
             const idx = (y * scanW + x) * 4;
-            // 计算亮度
             const brightness = 0.299 * imgData[idx] + 0.587 * imgData[idx+1] + 0.114 * imgData[idx+2];
-            if (brightness > 240) whiteness++; // 统计纯白像素
+            if (brightness > 240) whiteness++;
           }
           if (whiteness > maxWhiteness) {
             maxWhiteness = whiteness;
-            bestPos = startX + x; // 记录最白的列
+            bestPos = startX + x;
           }
         }
       } else {
-        // 扫描纵向 40% 到 60% 的区域
-        const startY = Math.floor(h * 0.4);
-        const endY = Math.floor(h * 0.6);
+        const startY = Math.floor(h * 0.3);
+        const endY = Math.floor(h * 0.7);
         const scanH = endY - startY;
-        
         const imgData = ctx.getImageData(0, startY, w, scanH).data;
         const stepX = Math.max(1, Math.floor(w / 300));
-        
         let maxWhiteness = -1;
         for (let y = 0; y < scanH; y++) {
           let whiteness = 0;
@@ -147,7 +137,7 @@
           }
           if (whiteness > maxWhiteness) {
             maxWhiteness = whiteness;
-            bestPos = startY + y; // 记录最白的行
+            bestPos = startY + y;
           }
         }
       }
@@ -157,7 +147,6 @@
     return bestPos;
   }
 
-  // 精确切割逻辑：直接切在白边处，不加重叠
   function splitToTwo(source, splitPos, isLandscape) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
@@ -166,19 +155,15 @@
     if (isLandscape) {
       const w1 = splitPos;
       const w2 = w - splitPos;
-      
       c1.width = w1; c1.height = h;
       c1.getContext('2d').drawImage(source, 0, 0, w1, h, 0, 0, w1, h);
-      
       c2.width = w2; c2.height = h;
       c2.getContext('2d').drawImage(source, splitPos, 0, w2, h, 0, 0, w2, h);
     } else {
       const h1 = splitPos;
       const h2 = h - splitPos;
-      
       c1.width = w; c1.height = h1;
       c1.getContext('2d').drawImage(source, 0, 0, w, h1, 0, 0, w, h1);
-      
       c2.width = w; c2.height = h2;
       c2.getContext('2d').drawImage(source, 0, splitPos, w, h2, 0, 0, w, h2);
     }
@@ -187,7 +172,6 @@
 
   function render() {
     fileCount.textContent = `${items.length} 个文件`;
-    
     const anyDone = items.some(it => it.status === 'done');
     downloadAllBtn.disabled = !anyDone;
     printAllBtn.disabled = !anyDone;
@@ -198,7 +182,6 @@
     items.forEach(item => {
       const card = document.createElement('div');
       card.className = 'file-card';
-      
       let statusHtml = '';
       let previewHtml = '';
 
@@ -208,21 +191,35 @@
       } else if (item.status === 'error') {
         statusHtml = `❌ ${esc(item.errorMsg)}`;
       } else if (item.status === 'done') {
-        if (item.result.original) {
-           statusHtml = '⚠️ 图幅接近正方形，<b>保留原图直接输出</b>';
-           previewHtml = `<div class="preview-grid" style="max-width:300px;">
-              <div class="preview-card" style="flex: 1 1 100%; max-width: 100%;">
-                <div class="preview-title">原图 <span>直接输出</span></div>
-                <div class="preview-img"><img src="${item.result.original.dataUrl}"></div>
-              </div>
-           </div>`;
+        if (item.type === 'pdf') {
+          statusHtml = `✅ PDF共 ${item.result.pageCount} 页，全部分割完成`;
+          previewHtml = `<div class="preview-grid">`;
+          item.result.pages.forEach((p, idx)=>{
+            if(p.original){
+              previewHtml += buildPreview(item, '原图', `第${idx+1}页`, p.original.dataUrl);
+            }else{
+              previewHtml += buildPreview(item, '左/上', `第${idx+1}页 A4①`, p.a4_1.dataUrl);
+              previewHtml += buildPreview(item, '右/下', `第${idx+1}页 A4②`, p.a4_2.dataUrl);
+            }
+          })
+          previewHtml += `</div>`;
         } else {
-           statusHtml = '✅ 已成功分割为两张高质量 JPG（智能中缝避让）';
-           previewHtml = `
-            <div class="preview-grid">
-              ${buildPreview(item, 1, 'A4 ①', item.result?.a4_1?.dataUrl)}
-              ${buildPreview(item, 2, 'A4 ②', item.result?.a4_2?.dataUrl)}
-            </div>`;
+          if (item.result.original) {
+             statusHtml = '⚠️ 图幅接近正方形，<b>保留原图直接输出</b>';
+             previewHtml = `<div class="preview-grid" style="max-width:300px;">
+                <div class="preview-card" style="flex: 1 1 100%; max-width: 100%;">
+                  <div class="preview-title">原图 <span>直接输出</span></div>
+                  <div class="preview-img"><img src="${item.result.original.dataUrl}"></div>
+                </div>
+             </div>`;
+          } else {
+             statusHtml = '✅ 已成功分割为两张高质量 JPG（智能中缝避让）';
+             previewHtml = `
+              <div class="preview-grid">
+                ${buildPreview(item, '左/上', 'A4 ①', item.result?.a4_1?.dataUrl)}
+                ${buildPreview(item, '右/下', 'A4 ②', item.result?.a4_2?.dataUrl)}
+              </div>`;
+          }
         }
       }
 
@@ -240,11 +237,12 @@
     });
   }
 
-  function buildPreview(item, num, label, dataUrl) {
+  // 调整了参数顺序，使其更符合语义：item, 角落标识(tag), 标题(label), 图片链接(dataUrl)
+  function buildPreview(item, tag, label, dataUrl) {
     let imgHtml = dataUrl ? `<img src="${dataUrl}">` : `<div class="placeholder">${label}</div>`;
     if (!item) return `<div class="preview-card"><div class="preview-img">${imgHtml}</div></div>`;
     return `<div class="preview-card">
-      <div class="preview-title">${label} <span>${num === 1 ? '左/上' : '右/下'}</span></div>
+      <div class="preview-title">${label} <span>${tag}</span></div>
       <div class="preview-img">${imgHtml}</div>
     </div>`;
   }
@@ -271,7 +269,7 @@
            item.result = { original: canvasToJpg(canvas) };
         } else {
            const isLandscape = w >= h;
-           const bestPos = findBestSplitPos(img, isLandscape); // 智能找缝
+           const bestPos = findBestSplitPos(img, isLandscape);
            const { c1, c2 } = splitToTwo(img, bestPos, isLandscape);
            item.result = { a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) };
         }
@@ -291,19 +289,12 @@
             pages.push({ original: canvasToJpg(canvas) });
           } else {
             const isLandscape = canvas.width >= canvas.height;
-            const bestPos = findBestSplitPos(canvas, isLandscape); // 智能找缝
+            const bestPos = findBestSplitPos(canvas, isLandscape);
             const { c1, c2 } = splitToTwo(canvas, bestPos, isLandscape);
             pages.push({ a4_1: canvasToJpg(c1), a4_2: canvasToJpg(c2) });
           }
         }
-        
         item.result = { pages, pageCount: pages.length };
-        if (pages[0].original) {
-           item.result.original = pages[0].original;
-        } else {
-           item.result.a4_1 = pages[0].a4_1;
-           item.result.a4_2 = pages[0].a4_2;
-        }
       }
       item.status = 'done';
     } catch (e) {
@@ -316,7 +307,6 @@
     Array.from(files).forEach(file => {
       const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       if (!isPdf && !file.type.startsWith('image/')) return;
-      
       const newItem = { id: nextId++, file, type: isPdf ? 'pdf' : 'image', status: 'pending', result: null };
       items.push(newItem);
       processFile(newItem.id);
