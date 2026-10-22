@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>A3 → A4 独立微调分割器（悬浮按钮版）</title>
+<title>A3 → A4 独立微调分割器（单点微调版）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -105,7 +105,7 @@
   
   /* 滚动区域 */
   .fs-drag-area { flex: 1; overflow: auto; position: relative; -webkit-overflow-scrolling: touch; }
-  .fs-scroll-content { min-width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px 20px 80px 20px; box-sizing: border-box; } /* 底部留出空间给悬浮按钮 */
+  .fs-scroll-content { min-width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px 20px 120px 20px; box-sizing: border-box; } /* 底部留出足够的空间给操作栏 */
   
   /* 缩放容器 */
   .fs-container { position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.5); user-select: none; touch-action: pan-x pan-y; flex-shrink: 0; }
@@ -118,25 +118,55 @@
   /* 🌟 拖动圆心图标 */
   .fs-drag-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: #ff3b30; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
   
-  /* 🌟 完成调整按钮 (固定在底部居中) */
-  .fs-finish-btn { 
+  /* 🌟 底部悬浮操作栏 */
+  .fs-bottom-controls { 
     position: fixed; 
     bottom: 30px; 
     left: 50%; 
     transform: translateX(-50%); 
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 10000; 
+  }
+  
+  /* 微调按钮 */
+  .fs-adjust-btn {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    border: 2px solid #fff;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    transition: background 0.2s, transform 0.1s;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .fs-adjust-btn:active {
+    background: rgba(255,255,255,0.5);
+    transform: scale(0.95);
+  }
+
+  /* 完成调整按钮 */
+  .fs-finish-btn { 
     background: #1e7a1e; 
     color: #fff; 
     border: 2px solid #fff; 
-    padding: 12px 32px; 
+    padding: 12px 24px; 
     border-radius: 30px; 
-    font-size: 1.1rem; 
+    font-size: 1rem; 
     font-weight: bold; 
     cursor: pointer; 
     box-shadow: 0 6px 20px rgba(0,0,0,0.6); 
-    z-index: 10000; 
-    transition: background 0.2s, transform 0.2s;
+    transition: background 0.2s, transform 0.1s;
   }
-  .fs-finish-btn:hover { background: #145014; transform: translateX(-50%) scale(1.05); }
+  .fs-finish-btn:active { background: #145014; transform: scale(0.95); }
 
   /* 上下切分时，拖拽图标位置 */
   .fs-container.vertical .fs-drag-handle { top: 50%; left: 50%; transform: translate(-50%, -50%); }
@@ -220,8 +250,12 @@
     </div>
   </div>
 
-  <!-- 🌟 完成调整按钮 (独立固定在底部) -->
-  <button class="fs-finish-btn" id="fsFinishBtn">✔️ 完成调整</button>
+  <!-- 🌟 底部操作栏 -->
+  <div class="fs-bottom-controls" id="fsBottomControls">
+    <button class="fs-adjust-btn" id="fsAdjustMinus">◀</button>
+    <button class="fs-finish-btn" id="fsFinishBtn">✔️ 完成调整</button>
+    <button class="fs-adjust-btn" id="fsAdjustPlus">▶</button>
+  </div>
 </div>
 
 <div class="lightbox" id="lightbox" onclick="this.classList.remove('show')">
@@ -252,7 +286,9 @@
   const fsContainer = el('fsContainer'), fsMaskLeft = el('fsMaskLeft'), fsMaskRight = el('fsMaskRight'), fsSplitLine = el('fsSplitLine');
   const fsDragArea = el('fsDragArea');
   const fsZoomIn = el('fsZoomIn'), fsZoomOut = el('fsZoomOut'), fsZoomLevel = el('fsZoomLevel');
+  
   const fsFinishBtn = el('fsFinishBtn');
+  const fsAdjustMinus = el('fsAdjustMinus'), fsAdjustPlus = el('fsAdjustPlus');
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   window.showImageZoom = (url) => { lightboxImg.src = url; lightbox.classList.add('show'); };
@@ -397,13 +433,23 @@
     fsTitle.textContent = `${item.file.name} - 第${pageIndex + 1}页 放大微调`;
     fullscreenTuner.classList.add('show');
     
-    const handle = fsSplitLine.querySelector('.fs-drag-handle');
     const mode = document.querySelector('input[name="splitMode"]:checked').value;
-    handle.textContent = mode === 'lr' ? '↔' : '↕';
+    const handle = fsSplitLine.querySelector('.fs-drag-handle');
+    
+    // 根据切分方向更新拖拽图标和微调按钮图标
+    if (mode === 'lr') {
+      handle.textContent = '↔';
+      fsAdjustMinus.textContent = '◀';
+      fsAdjustPlus.textContent = '▶';
+    } else {
+      handle.textContent = '↕';
+      fsAdjustMinus.textContent = '▲';
+      fsAdjustPlus.textContent = '▼';
+    }
     
     fsImage.onload = () => {
       const areaW = fsDragArea.clientWidth - 40;
-      const areaH = fsDragArea.clientHeight - 100; // 给底部按钮留出空间
+      const areaH = fsDragArea.clientHeight - 120; // 给底部留出空间
       const imgW = fsImage.naturalWidth;
       const imgH = fsImage.naturalHeight;
       
@@ -436,6 +482,32 @@
   fsZoomIn.onclick = () => applyFsScale(fsScale + 0.3);
   fsZoomOut.onclick = () => applyFsScale(fsScale - 0.3);
 
+  // 🌟 单点微调逻辑
+  function adjustRatio(delta) {
+    if (!currentFsData) return;
+    const item = items.find(it => it.id === currentFsData.itemId);
+    if (!item) return;
+
+    let ratio = item.previews[currentFsData.pageIndex].ratio;
+    ratio = Math.max(0.1, Math.min(0.9, ratio + delta));
+    item.previews[currentFsData.pageIndex].ratio = ratio;
+
+    applyRatioToContainer(fsContainer, ratio);
+    const smallContainer = document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`);
+    if (smallContainer) applyRatioToContainer(smallContainer, ratio);
+  }
+
+  fsAdjustMinus.onclick = (e) => {
+    e.stopPropagation();
+    adjustRatio(-0.002); // 每次微调 0.2%
+  };
+  
+  fsAdjustPlus.onclick = (e) => {
+    e.stopPropagation();
+    adjustRatio(0.002);
+  };
+
+  // 双指捏合缩放
   fsDragArea.addEventListener('touchstart', (e) => {
     if (e.touches.length === 2) {
       initialPinchDist = Math.hypot(
@@ -460,6 +532,7 @@
     }
   }, { passive: false });
 
+  // 拖拽红线
   fsSplitLine.addEventListener('pointerdown', (e) => {
     if (e.touches && e.touches.length > 1) return; 
     isDragging = true;
@@ -486,9 +559,7 @@
     const item = items.find(it => it.id === currentFsData.itemId);
     if (item) {
       item.previews[currentFsData.pageIndex].ratio = ratio;
-      
       applyRatioToContainer(fsContainer, ratio); 
-      
       const smallContainer = document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`);
       if (smallContainer) applyRatioToContainer(smallContainer, ratio);
     }
@@ -496,6 +567,7 @@
 
   window.addEventListener('pointerup', () => { isDragging = false; });
 
+  // 切换方向
   document.querySelectorAll('input[name="splitMode"]').forEach(radio => {
     radio.addEventListener('change', () => {
       items.forEach(item => {
@@ -506,6 +578,7 @@
     });
   });
 
+  // 上传处理
   uploadArea.onclick = () => { fileInput.value = ''; fileInput.click(); };
   fileInput.onchange = async e => {
     const files = Array.from(e.target.files);
@@ -532,6 +605,7 @@
     fileList.innerHTML = '<div class="placeholder" style="padding: 30px; color: #1a5fd0;">📌 文件已就绪，请点击缩略图放大并微调，然后点击【开始分割】。</div>';
   };
 
+  // 开始分割
   startSplitBtn.onclick = () => {
     if (items.length === 0) return;
     if (currentFsData) closeFsTuner(); 
