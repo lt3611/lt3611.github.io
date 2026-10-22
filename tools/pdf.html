@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>A3 → A4 独立微调分割器（三按钮版）</title>
+<title>A3 → A4 独立微调分割器</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -690,11 +690,16 @@
     });
   }
 
-  // 🌟 取消分割直接打印（原图打印）
+  // 🌟 取消分割直接打印（原图打印），修复白屏问题
   printOriginalBtn.onclick = async () => {
     if (items.length === 0) return;
     if (currentFsData) closeFsTuner(); 
     
+    // 提示用户正在准备原图
+    const originalText = printOriginalBtn.textContent;
+    printOriginalBtn.textContent = '⏳ 正在载入原图...';
+    printOriginalBtn.disabled = true;
+
     const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
     document.body.appendChild(iframe);
@@ -723,18 +728,28 @@
     doc.close();
 
     const body = doc.body;
+    const imgPromises = []; // 用于记录所有需要加载的图片
     
-    // 遍历打印原图
+    // 遍历获取原图
     for (const item of items) {
       if (item.type === 'image') {
-        const url = await new Promise(res => {
-          const reader = new FileReader();
-          reader.onload = e => res(e.target.result);
-          reader.readAsDataURL(item.file);
-        });
-        body.innerHTML += `<div class="print-page"><img src="${url}"></div>`;
+        // 对于图片：直接用 Blob URL 避免 Base64 太长导致解析慢或白屏
+        const blobUrl = URL.createObjectURL(item.file);
+        const div = doc.createElement('div');
+        div.className = 'print-page';
+        const img = doc.createElement('img');
+        img.src = blobUrl;
+        
+        // 将图片的 onload 添加到 Promise 数组中等待
+        imgPromises.push(new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = resolve; // 即使失败也继续
+        }));
+        
+        div.appendChild(img);
+        body.appendChild(div);
       } else {
-        // PDF 重新按高分辨率渲染用于原图打印
+        // 对于 PDF：重新提取高清页面
         if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -744,16 +759,40 @@
           canvas.width = viewport.width; canvas.height = viewport.height;
           await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
           const url = canvas.toDataURL('image/jpeg', 0.95);
-          body.innerHTML += `<div class="print-page"><img src="${url}"></div>`;
+          
+          const div = doc.createElement('div');
+          div.className = 'print-page';
+          const img = doc.createElement('img');
+          img.src = url;
+          
+          imgPromises.push(new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          }));
+          
+          div.appendChild(img);
+          body.appendChild(div);
         }
       }
     }
 
+    // 等待所有图片完全加载并解码完成
+    await Promise.all(imgPromises);
+    
+    // 恢复按钮状态
+    printOriginalBtn.textContent = originalText;
+    printOriginalBtn.disabled = false;
+
+    // 稍微延迟一点调起打印，确保安卓 WebView 已经彻底渲染了上面的 img 标签
     setTimeout(() => {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
-      setTimeout(() => { document.body.removeChild(iframe); }, 2000);
-    }, 100);
+      
+      // 延迟清理 iframe
+      setTimeout(() => { 
+        document.body.removeChild(iframe); 
+      }, 5000); 
+    }, 200);
   };
 
   // 🌟 分割按钮的事件监听
