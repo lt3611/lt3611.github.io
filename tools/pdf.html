@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>A3 → A4 独立微调分割器（按钮跟随版）</title>
+<title>A3 → A4 独立微调分割器（双指缩放版）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -103,6 +103,8 @@
   .fs-zoom-btn:hover { background: rgba(255,255,255,0.2); }
   .fs-zoom-text { font-size: 0.8rem; font-weight: 600; min-width: 40px; text-align: center; }
   
+  .fs-close { background: #ff3b30; color: #fff; border: none; padding: 6px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.9rem;}
+  
   /* 允许滚动的拖拽区 */
   .fs-drag-area { flex: 1; overflow: auto; position: relative; display: block; padding: 40px; text-align: center; -webkit-overflow-scrolling: touch; }
   
@@ -112,19 +114,11 @@
   .fs-container img { display: block; max-width: none; pointer-events: none; }
   .fs-container .mask { background: rgba(0,0,0,0.5); }
   
-  /* 放大后的红线 */
-  .fs-container .split-line { width: 6px; background: #ff3b30; box-shadow: 0 0 10px #ff3b30; cursor: ew-resize; pointer-events: auto; }
-  
-  /* 🌟 拖动圆心图标 (放按钮的地方) */
-  .fs-drag-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: #ff3b30; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-  
-  /* 🌟 完成调整按钮 (跟随红线) */
-  .fs-finish-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, 30px); background: #1e7a1e; color: #fff; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.6); white-space: nowrap; z-index: 10; border: 2px solid #fff; transition: background 0.2s;}
-  .fs-finish-btn:hover { background: #145014; }
-
-  /* 上下切分时，调整按钮位置 */
-  .fs-container.vertical .fs-drag-handle { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-  .fs-container.vertical .fs-finish-btn { transform: translate(-50%, 30px); } /* 同样在下方 */
+  /* 放大后的红线加粗 */
+  .fs-container .split-line { width: 8px; background: #ff3b30; box-shadow: 0 0 15px #ff3b30; cursor: ew-resize; pointer-events: auto; }
+  .fs-container .split-line::after { content: '↔'; position: absolute; top: 50%; background: #ff3b30; color: #fff; font-size: 18px; width: 36px; height: 36px; line-height: 36px; border-radius: 50%; text-align: center; font-weight: bold; transform: translate(-50%, -50%); left: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.5);}
+  .fs-container.vertical .split-line { width: auto; height: 8px; cursor: ns-resize; }
+  .fs-container.vertical .split-line::after { content: '↕'; }
 
   /* 查看大图 */
   .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; cursor: zoom-out; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
@@ -185,12 +179,14 @@
 <div class="fullscreen-tuner" id="fullscreenTuner">
   <div class="fs-header">
     <div class="fs-title" id="fsTitle">放大微调</div>
+    
     <div class="fs-zoom-tools">
       <button class="fs-zoom-btn" id="fsZoomOut">-</button>
       <span class="fs-zoom-text" id="fsZoomLevel">100%</span>
       <button class="fs-zoom-btn" id="fsZoomIn">+</button>
     </div>
-    <!-- 移除了顶部的完成按钮 -->
+
+    <button class="fs-close" onclick="closeFsTuner()">✔️ 完成</button>
   </div>
   
   <div class="fs-drag-area" id="fsDragArea">
@@ -199,11 +195,7 @@
         <img id="fsImage" src="">
         <div class="mask left" id="fsMaskLeft"></div>
         <div class="mask right" id="fsMaskRight"></div>
-        <div class="split-line" id="fsSplitLine">
-          <!-- 🌟 将拖拽图标和完成按钮内嵌在红线中 -->
-          <div class="fs-drag-handle">↔</div>
-          <button class="fs-finish-btn" id="fsFinishBtn">✔️ 完成调整</button>
-        </div>
+        <div class="split-line" id="fsSplitLine"></div>
       </div>
     </div>
   </div>
@@ -219,8 +211,9 @@
   const items = [];
   let nextId = 1;
   let isDragging = false;
-  let currentFsData = null; 
+  let currentFsData = null; // { itemId, pageIndex }
 
+  // 全屏缩放状态
   let fsScale = 1;
   let initialPinchDist = 0;
   let initialPinchScale = 1;
@@ -233,11 +226,11 @@
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
   const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
 
+  // 全屏微调元素
   const fullscreenTuner = el('fullscreenTuner'), fsTitle = el('fsTitle'), fsImage = el('fsImage');
   const fsContainer = el('fsContainer'), fsMaskLeft = el('fsMaskLeft'), fsMaskRight = el('fsMaskRight'), fsSplitLine = el('fsSplitLine');
   const fsDragArea = el('fsDragArea'), fsWrapper = el('fsWrapper');
   const fsZoomIn = el('fsZoomIn'), fsZoomOut = el('fsZoomOut'), fsZoomLevel = el('fsZoomLevel');
-  const fsFinishBtn = el('fsFinishBtn');
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   window.showImageZoom = (url) => { lightboxImg.src = url; lightbox.classList.add('show'); };
@@ -252,7 +245,7 @@
     return { dataUrl, blob, blobUrl };
   }
 
-  // 统一计算并应用红线比例
+  // --- 统一计算并应用红线比例到指定容器 ---
   function applyRatioToContainer(container, ratio) {
     if (!container) return;
     const mode = document.querySelector('input[name="splitMode"]:checked').value;
@@ -279,6 +272,7 @@
     }
   }
 
+  // --- 核心切分逻辑 ---
   function splitToTwo(source, isLandscape, ratio) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
@@ -300,6 +294,7 @@
     return { c1, c2 };
   }
 
+  // --- 高清缩略图生成 ---
   async function generateThumbnails(file) {
     const previews = [];
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
@@ -325,6 +320,7 @@
     return previews;
   }
 
+  // --- 渲染微调面板 ---
   function renderTunePanel() {
     dragGallery.innerHTML = '';
     items.forEach(item => {
@@ -363,10 +359,24 @@
   }
 
   // --- 全屏弹窗逻辑 ---
+  function updateFsScale(newScale) {
+    fsScale = Math.max(0.5, Math.min(4, newScale));
+    fsZoomLevel.textContent = Math.round(fsScale * 100) + '%';
+    
+    // 使用 transform 缩放，不破坏宽高结构
+    fsWrapper.style.transform = `scale(${fsScale})`;
+    
+    // 重新调整外层宽高，确保能滚动到图片边缘
+    const rect = fsContainer.getBoundingClientRect();
+    fsWrapper.style.width = rect.width / fsScale + 'px'; // 这个在 transform 下有点复杂，换个思路
+  }
+
+  // 改用更可靠的 wrapper 尺寸设置
   function applyFsScale(scale) {
     fsScale = Math.max(0.5, Math.min(4, scale));
     fsZoomLevel.textContent = Math.round(fsScale * 100) + '%';
     
+    // 设置 wrapper 的缩放和原始尺寸
     const containerW = fsContainer.offsetWidth;
     const containerH = fsContainer.offsetHeight;
     
@@ -386,12 +396,9 @@
     fsTitle.textContent = `${item.file.name} - 第${pageIndex + 1}页 放大微调`;
     fullscreenTuner.classList.add('show');
     
-    // 调整全屏大图内文字的显示
-    const handle = fsSplitLine.querySelector('.fs-drag-handle');
-    const mode = document.querySelector('input[name="splitMode"]:checked').value;
-    handle.textContent = mode === 'lr' ? '↔' : '↕';
-    
+    // 等待图片加载完获取宽高后缩放
     fsImage.onload = () => {
+      // 默认适应屏幕大小，如果太大就缩小显示
       const viewportWidth = fsDragArea.clientWidth - 80;
       const viewportHeight = fsDragArea.clientHeight - 80;
       const imgW = fsImage.naturalWidth;
@@ -400,12 +407,14 @@
       const scaleX = viewportWidth / imgW;
       const scaleY = viewportHeight / imgH;
       
+      // 如果图片比屏幕大，默认缩放到刚好放下；否则100%
       let initScale = Math.min(scaleX, scaleY, 1);
       if (initScale < 0.3) initScale = 0.3;
       
       applyFsScale(initScale);
       applyRatioToContainer(fsContainer, item.previews[pageIndex].ratio);
       
+      // 居中滚动
       fsDragArea.scrollLeft = (fsDragArea.scrollWidth - fsDragArea.clientWidth) / 2;
       fsDragArea.scrollTop = (fsDragArea.scrollHeight - fsDragArea.clientHeight) / 2;
     };
@@ -416,15 +425,10 @@
     currentFsData = null;
   };
 
-  fsFinishBtn.onclick = (e) => {
-    e.stopPropagation(); // 防止冒泡触发拖拽
-    closeFsTuner();
-  };
-
   fsZoomIn.onclick = () => applyFsScale(fsScale + 0.3);
   fsZoomOut.onclick = () => applyFsScale(fsScale - 0.3);
 
-  // --- 双指捏合缩放 ---
+  // --- 双指捏合缩放逻辑 ---
   fsDragArea.addEventListener('touchstart', (e) => {
     if (e.touches.length === 2) {
       initialPinchDist = Math.hypot(
@@ -437,7 +441,7 @@
 
   fsDragArea.addEventListener('touchmove', (e) => {
     if (e.touches.length === 2) {
-      e.preventDefault();
+      e.preventDefault(); // 阻止页面滚动
       const dist = Math.hypot(
         e.touches[0].pageX - e.touches[1].pageX,
         e.touches[0].pageY - e.touches[1].pageY
@@ -449,11 +453,10 @@
     }
   }, { passive: false });
 
-  // --- 拖拽逻辑 ---
+  // --- 全屏大图拖拽红线事件 ---
   fsSplitLine.addEventListener('pointerdown', (e) => {
-    if (e.touches && e.touches.length > 1) return; // 多指时不拖拽
-    if (e.target === fsFinishBtn || e.target.classList.contains('fs-finish-btn')) return; // 点按钮不拖拽
-    
+    // 如果是多指触控，不触发拖拽，让缩放生效
+    if (e.touches && e.touches.length > 1) return; 
     isDragging = true;
     e.target.setPointerCapture(e.pointerId);
   });
@@ -479,8 +482,10 @@
     if (item) {
       item.previews[currentFsData.pageIndex].ratio = ratio;
       
+      // 更新全屏大图
       applyRatioToContainer(fsContainer, ratio); 
       
+      // 同步更新背后的缩略图
       const smallContainer = document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`);
       if (smallContainer) applyRatioToContainer(smallContainer, ratio);
     }
@@ -488,7 +493,7 @@
 
   window.addEventListener('pointerup', () => { isDragging = false; });
 
-  // 切换方向
+  // 切换切分方向
   document.querySelectorAll('input[name="splitMode"]').forEach(radio => {
     radio.addEventListener('change', () => {
       items.forEach(item => {
@@ -499,7 +504,7 @@
     });
   });
 
-  // --- 上传处理 ---
+  // --- 处理上传 ---
   uploadArea.onclick = () => { fileInput.value = ''; fileInput.click(); };
   fileInput.onchange = async e => {
     const files = Array.from(e.target.files);
@@ -641,7 +646,7 @@
     </div>`;
   }
 
-  // --- 其他操作 ---
+  // --- 其他操作 (清空、打包、打印) ---
   clearAllBtn.onclick = () => { 
     if(confirm('确定清空全部文件？')) { 
       items.length = 0; 
