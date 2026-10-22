@@ -235,7 +235,7 @@
     <div class="action-buttons">
       <button class="btn btn-auto" id="autoSplitBtn">⚡ 自动居中分割</button>
       <button class="btn btn-success" id="startSplitBtn">✂️ 按微调位置分割</button>
-      <button class="btn btn-original" id="printOriginalBtn">🖨️ 取消分割直接打印</button>
+      <button class="btn btn-danger" id="cancelSplitBtn">❌ 取消分割</button>
     </div>
   </div>
 
@@ -309,7 +309,7 @@
   const uploadArea = el('uploadArea'), fileInput = el('fileInput');
   const fineTunePanel = el('fineTunePanel'), toolbar = el('toolbar'), fileList = el('fileList');
   const dragGallery = el('dragGallery');
-  const autoSplitBtn = el('autoSplitBtn'), startSplitBtn = el('startSplitBtn'), printOriginalBtn = el('printOriginalBtn');
+  const autoSplitBtn = el('autoSplitBtn'), startSplitBtn = el('startSplitBtn'), cancelSplitBtn = el('cancelSplitBtn');
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
   const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
 
@@ -690,112 +690,7 @@
     });
   }
 
-  // 🌟 取消分割直接打印（原图打印），修复白屏问题
-  printOriginalBtn.onclick = async () => {
-    if (items.length === 0) return;
-    if (currentFsData) closeFsTuner(); 
-    
-    // 提示用户正在准备原图
-    const originalText = printOriginalBtn.textContent;
-    printOriginalBtn.textContent = '⏳ 正在载入原图...';
-    printOriginalBtn.disabled = true;
-
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          @page { size: A4 portrait; margin: 0; }
-          body { margin: 0; padding: 0; }
-          .print-page { 
-            page-break-after: always; page-break-inside: avoid; 
-            width: 210mm; height: 297mm; 
-            display: flex; justify-content: center; align-items: center;
-            overflow: hidden; margin: 0 auto;
-          }
-          .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
-        </style>
-      </head>
-      <body></body>
-      </html>
-    `);
-    doc.close();
-
-    const body = doc.body;
-    const imgPromises = []; // 用于记录所有需要加载的图片
-    
-    // 遍历获取原图
-    for (const item of items) {
-      if (item.type === 'image') {
-        // 对于图片：直接用 Blob URL 避免 Base64 太长导致解析慢或白屏
-        const blobUrl = URL.createObjectURL(item.file);
-        const div = doc.createElement('div');
-        div.className = 'print-page';
-        const img = doc.createElement('img');
-        img.src = blobUrl;
-        
-        // 将图片的 onload 添加到 Promise 数组中等待
-        imgPromises.push(new Promise(resolve => {
-          img.onload = resolve;
-          img.onerror = resolve; // 即使失败也继续
-        }));
-        
-        div.appendChild(img);
-        body.appendChild(div);
-      } else {
-        // 对于 PDF：重新提取高清页面
-        if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 2.5 }); 
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width; canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          const url = canvas.toDataURL('image/jpeg', 0.95);
-          
-          const div = doc.createElement('div');
-          div.className = 'print-page';
-          const img = doc.createElement('img');
-          img.src = url;
-          
-          imgPromises.push(new Promise(resolve => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          }));
-          
-          div.appendChild(img);
-          body.appendChild(div);
-        }
-      }
-    }
-
-    // 等待所有图片完全加载并解码完成
-    await Promise.all(imgPromises);
-    
-    // 恢复按钮状态
-    printOriginalBtn.textContent = originalText;
-    printOriginalBtn.disabled = false;
-
-    // 稍微延迟一点调起打印，确保安卓 WebView 已经彻底渲染了上面的 img 标签
-    setTimeout(() => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      
-      // 延迟清理 iframe
-      setTimeout(() => { 
-        document.body.removeChild(iframe); 
-      }, 5000); 
-    }, 200);
-  };
-
-  // 🌟 分割按钮的事件监听
+  // 🌟 按钮事件监听
   startSplitBtn.onclick = executeSplit; // 按微调位置
   
   autoSplitBtn.onclick = () => {
@@ -810,9 +705,31 @@
     executeSplit();
   };
 
+  // ❌ 取消分割（保留文件，展示原图，启用底部打印/下载按钮）
+  cancelSplitBtn.onclick = () => {
+    if (items.some(it => it.status === 'splitting')) {
+      alert('正在分割中，请稍候...');
+      return;
+    }
+    
+    // 隐藏微调面板
+    fineTunePanel.classList.remove('active');
+    
+    // 将文件状态全部标记为原始文件
+    items.forEach(item => {
+      item.status = 'original';
+      item.result = null;
+    });
+    
+    // 刷新下方列表
+    renderList();
+  };
+
   function renderList() {
-    const anyDone = items.some(it => it.status === 'done');
+    // 只要有已分割完成 或 原图状态的文件，就可以打印/下载
+    const anyDone = items.some(it => it.status === 'done' || it.status === 'original');
     const anySplitting = items.some(it => it.status === 'splitting');
+    
     downloadAllBtn.disabled = !anyDone || anySplitting;
     printAllBtn.disabled = !anyDone || anySplitting;
     clearAllBtn.disabled = items.length === 0 || anySplitting;
@@ -831,6 +748,19 @@
         statusHtml = '<div class="spinner"></div> 正在切分...';
       } else if (item.status === 'error') {
         statusHtml = `❌ ${esc(item.errorMsg)}`;
+      } else if (item.status === 'original') {
+        // 原图展示状态
+        statusHtml = item.type === 'pdf' ? `✅ 已取消分割（保留 PDF 全部 ${item.previews.length} 页原图）` : '✅ 已取消分割（保留原图）';
+        previewHtml = `<div class="preview-grid">`;
+        item.previews.forEach((p, idx) => {
+          previewHtml += `
+            <div class="preview-card">
+              <div class="preview-title">${item.type === 'pdf' ? `第${idx+1}页` : '原图'} <span>原图</span></div>
+              <div class="preview-img"><img src="${p.dataUrl}" onclick="window.showImageZoom(this.src)"></div>
+            </div>
+          `;
+        });
+        previewHtml += `</div>`;
       } else if (item.status === 'done') {
         if (item.type === 'pdf') {
           statusHtml = `✅ PDF共 ${item.result.pageCount} 页，全部分割完成`;
@@ -883,23 +813,46 @@
   };
 
   downloadAllBtn.onclick = async () => {
-    const done = items.filter(it => it.status === 'done');
-    if (!done.length) return;
+    const validItems = items.filter(it => it.status === 'done' || it.status === 'original');
+    if (!validItems.length) return;
     downloadAllBtn.textContent = '打包中...'; downloadAllBtn.disabled = true;
     
     const zip = new JSZip();
-    done.forEach(item => {
+    for (const item of validItems) {
       const base = item.file.name.replace(/\.[^/.]+$/, '');
-      if (item.type === 'image') {
-        zip.file(`${base}_A4_1.jpg`, item.result.a4_1.blob);
-        zip.file(`${base}_A4_2.jpg`, item.result.a4_2.blob);
+      
+      if (item.status === 'original') {
+        // 原图下载
+        if (item.type === 'image') {
+          zip.file(`${base}_原图.jpg`, item.file);
+        } else {
+          if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 2.5 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width; canvas.height = viewport.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            const bstr = atob(canvas.toDataURL('image/jpeg', 0.95).split(',')[1]);
+            let n = bstr.length; const u8 = new Uint8Array(n);
+            while (n--) u8[n] = bstr.charCodeAt(n);
+            zip.file(`${base}_第${i+1}页_原图.jpg`, new Blob([u8], { type: 'image/jpeg' }));
+          }
+        }
       } else {
-        item.result.pages.forEach((p, i) => {
-          zip.file(`${base}_第${i+1}页_A4_1.jpg`, p.a4_1.blob);
-          zip.file(`${base}_第${i+1}页_A4_2.jpg`, p.a4_2.blob);
-        });
+        // 已分割下载
+        if (item.type === 'image') {
+          zip.file(`${base}_A4_1.jpg`, item.result.a4_1.blob);
+          zip.file(`${base}_A4_2.jpg`, item.result.a4_2.blob);
+        } else {
+          item.result.pages.forEach((p, i) => {
+            zip.file(`${base}_第${i+1}页_A4_1.jpg`, p.a4_1.blob);
+            zip.file(`${base}_第${i+1}页_A4_2.jpg`, p.a4_2.blob);
+          });
+        }
       }
-    });
+    }
 
     try {
       const content = await zip.generateAsync({ type: 'blob' });
@@ -909,9 +862,14 @@
     downloadAllBtn.textContent = '⬇️ 打包下载'; downloadAllBtn.disabled = false;
   };
 
-  printAllBtn.onclick = () => {
-    const done = items.filter(it => it.status === 'done');
-    if (!done.length) return;
+  printAllBtn.onclick = async () => {
+    const validItems = items.filter(it => it.status === 'done' || it.status === 'original');
+    if (!validItems.length) return;
+
+    // 临时禁用按钮防止重复点击
+    const originalText = printAllBtn.textContent;
+    printAllBtn.textContent = '⏳ 准备打印...';
+    printAllBtn.disabled = true;
 
     const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
@@ -941,21 +899,60 @@
     doc.close();
 
     const body = doc.body;
-    done.forEach(item => {
-      if (item.type === 'image') {
-        body.innerHTML += `<div class="print-page"><img src="${item.result.a4_1.blobUrl}"></div><div class="print-page"><img src="${item.result.a4_2.blobUrl}"></div>`;
-      } else {
-        item.result.pages.forEach(p => {
-          body.innerHTML += `<div class="print-page"><img src="${p.a4_1.blobUrl}"></div><div class="print-page"><img src="${p.a4_2.blobUrl}"></div>`;
-        });
+    const imgPromises = [];
+
+    for (const item of validItems) {
+      if (item.status === 'done') {
+        if (item.type === 'image') {
+          body.innerHTML += `<div class="print-page"><img src="${item.result.a4_1.blobUrl}"></div><div class="print-page"><img src="${item.result.a4_2.blobUrl}"></div>`;
+        } else {
+          item.result.pages.forEach(p => {
+            body.innerHTML += `<div class="print-page"><img src="${p.a4_1.blobUrl}"></div><div class="print-page"><img src="${p.a4_2.blobUrl}"></div>`;
+          });
+        }
+      } else if (item.status === 'original') {
+        if (item.type === 'image') {
+          const blobUrl = URL.createObjectURL(item.file);
+          const div = doc.createElement('div');
+          div.className = 'print-page';
+          const img = doc.createElement('img');
+          img.src = blobUrl;
+          imgPromises.push(new Promise(res => img.onload = res));
+          div.appendChild(img);
+          body.appendChild(div);
+        } else {
+          if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 2.5 }); 
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width; canvas.height = viewport.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            const url = canvas.toDataURL('image/jpeg', 0.95);
+            
+            const div = doc.createElement('div');
+            div.className = 'print-page';
+            const img = doc.createElement('img');
+            img.src = url;
+            imgPromises.push(new Promise(res => img.onload = res));
+            div.appendChild(img);
+            body.appendChild(div);
+          }
+        }
       }
-    });
+    }
+
+    await Promise.all(imgPromises);
+    
+    printAllBtn.textContent = originalText;
+    printAllBtn.disabled = false;
 
     setTimeout(() => {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
-      setTimeout(() => { document.body.removeChild(iframe); }, 2000);
-    }, 100);
+      setTimeout(() => { document.body.removeChild(iframe); }, 3000);
+    }, 200);
   };
 </script>
 </body>
