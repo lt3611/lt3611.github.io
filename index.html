@@ -96,20 +96,20 @@
     margin-top: 4px;
   }
 
-  /* 左侧容器（放3列跳转按钮） */
+  /* 左侧容器：放 2 列跳转按钮 */
   .left-block {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px 8px;
+    grid-template-columns: repeat(2, 1fr); /* 改成 2 列 */
+    gap: 12px 10px;
   }
 
-  /* 右侧容器（放3列复制按钮） */
+  /* 右侧容器：放 2 列复制按钮 */
   .right-block {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px 8px;
+    grid-template-columns: repeat(2, 1fr); /* 改成 2 列 */
+    gap: 12px 10px;
   }
 
   /* ===== 按钮统一基础样式 ===== */
@@ -117,12 +117,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    height: 44px; /* 适配3列，略微变矮 */
+    gap: 6px;
+    height: 48px; /* 2列空间更充裕，高度稍微恢复 */
     border-radius: 60px;
     color: #fff;
     font-weight: 500;
-    font-size: 12px; /* 字号调小防止溢出 */
+    font-size: 13px;
     letter-spacing: 0.01em;
     white-space: nowrap;
     text-decoration: none;
@@ -132,7 +132,7 @@
     font-family: inherit;
     transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease, background 0.25s ease;
     -webkit-tap-highlight-color: transparent;
-    padding: 0 4px;
+    padding: 0 6px;
   }
 
   /* 左栏按钮（紫蓝渐变） */
@@ -157,8 +157,8 @@
 
   /* 图标统一尺寸 */
   .action-btn svg {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
     flex-shrink: 0;
     fill: none;
     stroke: currentColor;
@@ -195,11 +195,12 @@
   }
   .toast-message.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  /* 极窄屏幕适配 */
   @media (max-width: 380px) {
     .main-layout { gap: 8px; }
-    .left-block, .right-block { gap: 10px 4px; }
-    .action-btn { height: 40px; font-size: 11px; }
-    .action-btn svg { width: 12px; height: 12px; }
+    .left-block, .right-block { gap: 10px 6px; }
+    .action-btn { height: 44px; font-size: 12px; }
+    .action-btn svg { width: 13px; height: 13px; }
   }
 </style>
 </head>
@@ -222,9 +223,9 @@
 
   <!-- 左右大区块 -->
   <div class="main-layout">
-    <!-- 左侧容器：放三排跳转数据 -->
+    <!-- 左侧容器：放两排跳转数据 -->
     <div class="left-block" id="leftContainer"></div>
-    <!-- 右侧容器：放三排复制数据 -->
+    <!-- 右侧容器：放两排复制数据 -->
     <div class="right-block" id="rightContainer"></div>
   </div>
 </div>
@@ -237,19 +238,17 @@
 
   // ==========================================
   // ⬇️ 左侧（跳转按钮）数据配置区 ⬇️
-  // 每一条数据会生成一列竖排的按钮
   // ==========================================
   const leftData = [
     { text: '路由', url: 'http://192.168.50.1' },
     { text: '电视', url: 'http://192.168.50.198:56789' },
     { text: '学习', url: 'http://192.168.50.1:9990/ui/zashboard/#/setup?hostname=192.168.50.1&port=9990&secret=clash' },
     { text: '调试', url: 'http://192.168.50.1' },
-    { text: '开始1', url: 'http://lt3611.ccwu.cc' } // <--- 第三排数据在这里
+    { text: '开始1', url: 'http://lt3611.ccwu.cc' }
   ];
 
   // ==========================================
   // ⬇️ 右侧（复制按钮）数据配置区 ⬇️
-  // 每一条数据会生成一列竖排的按钮
   // ==========================================
   const rightData = [
     { text: '路由导航', url: 'http://lt3611.ccwu.cc/tools/tv.txt' },
@@ -258,7 +257,6 @@
     { text: '调试导航', url: 'http://lt3611.ccwu.cc/tools/tv2.txt' },
     { text: '开始1导航', url: 'http://lt3611.ccwu.cc' }
   ];
-
 
   // ==========================================
   // ⬇️ 以下是自动生成和交互逻辑（无需修改） ⬇️
@@ -277,7 +275,6 @@
   // 渲染左侧（跳转）
   let leftHtml = '';
   leftData.forEach(item => {
-    // 每一个数据生成一个按钮，由于外层是 grid，会自动排成 3 列并向下延伸
     leftHtml += `
       <a class="action-btn link-btn" href="${item.url}" target="_blank" rel="noopener">
         ${linkSvg}
