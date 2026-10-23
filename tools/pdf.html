@@ -327,6 +327,52 @@
   .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; cursor: zoom-out; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .lightbox.show { opacity: 1; pointer-events: auto; }
   .lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; }
+
+  /* ===== 隐藏的打印专用区域 ===== */
+  #printArea { display: none; }
+  
+  /* 打印时的 CSS 规则（核心） */
+  @media print {
+    /* 隐藏网页上的所有元素 */
+    body * { visibility: hidden; }
+    
+    /* 只显示打印区域及其子元素 */
+    #printArea, #printArea * { visibility: visible; }
+    
+    /* 让打印区域充满整个页面 */
+    #printArea { 
+      display: block !important;
+      position: absolute; 
+      left: 0; 
+      top: 0; 
+      width: 100%; 
+      margin: 0; 
+      padding: 0;
+      background: #fff;
+    }
+    
+    /* 每一页 A4 纸张的样式 */
+    .print-page { 
+      page-break-after: always; 
+      page-break-inside: avoid; 
+      width: 100%; 
+      height: 100vh; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* 图片铺满 */
+    .print-page img { 
+      max-width: 100%; 
+      max-height: 100%; 
+      object-fit: contain; 
+      display: block; 
+    }
+  }
 </style>
 </head>
 <body>
@@ -416,6 +462,9 @@
   <img id="lightboxImg" src="" alt="放大预览">
 </div>
 
+<!-- 🌟 隐藏的打印容器 -->
+<div id="printArea"></div>
+
 <script>
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -436,6 +485,7 @@
   const startSplitBtn = el('startSplitBtn'), cancelSplitBtn = el('cancelSplitBtn');
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
   const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
+  const printArea = el('printArea');
 
   // 全屏微调元素
   const fullscreenTuner = el('fullscreenTuner'), fsTitle = el('fsTitle'), fsImage = el('fsImage');
@@ -485,7 +535,7 @@
     return { dataUrl, blob, blobUrl };
   }
 
-  // 渲染小图上的红线（统一根据图片长宽比自动判断）
+  // 渲染小图上的红线
   function renderSmallLines(container, ratios) {
     const img = container.querySelector('img');
     const isLandscape = img.naturalWidth >= img.naturalHeight;
@@ -558,7 +608,7 @@
     return item.previews[currentFsData.pageIndex].ratios;
   }
 
-  // 核心切分函数 (根据源图片真实横宽自动切分)
+  // 核心切分函数
   function splitToMulti(source, ratios) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
@@ -693,7 +743,6 @@
       
       applyFsScale(initScale);
       
-      // 根据图片实际横宽自动判断并渲染
       const isLandscape = fsImage.naturalWidth >= fsImage.naturalHeight;
       fsTopAdjust.className = isLandscape ? 'fs-top-adjust lr' : 'fs-top-adjust tb';
       fsAdjustMinus.textContent = isLandscape ? '◀' : '▲';
@@ -719,11 +768,11 @@
     renderTunePanel();
   };
 
-  // 缩放比例步长
+  // 缩放比例步长调小为 5%（0.05）
   fsZoomIn.onclick = () => applyFsScale(fsScale + 0.05);
   fsZoomOut.onclick = () => applyFsScale(fsScale - 0.05);
 
-  // 🌟 反转图片（旋转90度）
+  // 反转图片（旋转90度）
   fsRotateBtn.onclick = () => {
     if (!currentFsData) return;
     
@@ -737,20 +786,16 @@
       canvas.height = img.width;
       const ctx = canvas.getContext('2d');
       
-      // 旋转90度
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(Math.PI / 2);
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
       
       const rotatedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
       
-      // 更新数据
       preview.dataUrl = rotatedDataUrl;
-      preview.ratios = [0.5]; // 旋转后重置分割线到中心，防止错位
+      preview.ratios = [0.5]; 
       
-      // 重新加载全屏图片
       fsImage.src = rotatedDataUrl;
-      // 重新加载小图
       renderTunePanel();
     };
     img.src = preview.dataUrl;
@@ -1132,6 +1177,7 @@
     downloadAllBtn.textContent = '⬇️ 打包下载'; downloadAllBtn.disabled = false;
   };
 
+  // 🌟 重写：兼容全平台的打印逻辑（不再使用 iframe，直接使用隐藏的 printArea）
   printAllBtn.onclick = async () => {
     const validItems = items.filter(it => it.status === 'done' || it.status === 'original');
     if (!validItems.length) return;
@@ -1140,54 +1186,25 @@
     printAllBtn.textContent = '⏳ 准备打印...';
     printAllBtn.disabled = true;
 
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          @page { size: A4 portrait; margin: 0; }
-          body { margin: 0; padding: 0; }
-          .print-page { page-break-after: always; page-break-inside: avoid; width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; overflow: hidden; margin: 0 auto; }
-          .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
-        </style>
-      </head>
-      <body></body>
-      </html>
-    `);
-    doc.close();
-
-    const body = doc.body;
-    const imgPromises = [];
-
+    // 1. 构建要打印的 HTML 结构
+    let html = '';
     for (const item of validItems) {
       if (item.status === 'done') {
         if (item.type === 'image') {
           item.result.slices.forEach(slice => {
-            body.innerHTML += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
+            html += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
           });
         } else {
           item.result.pages.forEach(p => {
             p.slices.forEach(slice => {
-              body.innerHTML += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
+              html += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
             });
           });
         }
       } else if (item.status === 'original') {
         if (item.type === 'image') {
           const blobUrl = URL.createObjectURL(item.file);
-          const div = doc.createElement('div');
-          div.className = 'print-page';
-          const img = doc.createElement('img');
-          img.src = blobUrl;
-          imgPromises.push(new Promise(res => img.onload = res));
-          div.appendChild(img);
-          body.appendChild(div);
+          html += `<div class="print-page"><img src="${blobUrl}"></div>`;
         } else {
           if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
@@ -1198,29 +1215,46 @@
             canvas.width = viewport.width; canvas.height = viewport.height;
             await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             const url = canvas.toDataURL('image/jpeg', 0.95);
-            
-            const div = doc.createElement('div');
-            div.className = 'print-page';
-            const img = doc.createElement('img');
-            img.src = url;
-            imgPromises.push(new Promise(res => img.onload = res));
-            div.appendChild(img);
-            body.appendChild(div);
+            html += `<div class="print-page"><img src="${url}"></div>`;
           }
         }
       }
     }
 
-    await Promise.all(imgPromises);
-    
-    printAllBtn.textContent = originalText;
-    printAllBtn.disabled = false;
+    // 2. 塞入隐藏的打印容器
+    printArea.innerHTML = html;
 
-    setTimeout(() => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      setTimeout(() => { document.body.removeChild(iframe); }, 3000);
-    }, 200);
+    // 3. 强制等待图片加载完成
+    const imgs = printArea.querySelectorAll('img');
+    const imgPromises = Array.from(imgs).map(img => {
+      return new Promise(resolve => {
+        if (img.complete) resolve();
+        else {
+          img.onload = resolve;
+          img.onerror = resolve;
+        }
+      });
+    });
+
+    try {
+      await Promise.all(imgPromises);
+      // 稍微延迟 100ms 确保浏览器渲染完毕
+      await new Promise(r => setTimeout(r, 100));
+      
+      // 4. 唤起打印
+      window.print();
+    } catch (err) {
+      console.error(err);
+      alert('准备打印图片时出错');
+    } finally {
+      // 5. 恢复按钮状态
+      printAllBtn.textContent = originalText;
+      printAllBtn.disabled = false;
+      // 延迟清理打印区
+      setTimeout(() => {
+        printArea.innerHTML = '';
+      }, 1000);
+    }
   };
 </script>
 </body>
