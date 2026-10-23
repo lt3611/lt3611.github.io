@@ -108,12 +108,36 @@
   .badge { background: #d4e4ff; color: #004cbf; padding: 3px 8px; border-radius: 12px; font-size: .75rem; font-weight: bold; flex-shrink: 0; }
   
   .preview-grid { display: flex; gap: 15px; flex-wrap: wrap; }
-  .preview-card { flex: 1 1 200px; max-width: 260px; background: #fbfdff; border: 1px solid #e3ecf8; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+  .preview-card { flex: 1 1 200px; max-width: 260px; background: #fbfdff; border: 1px solid #e3ecf8; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; position: relative; /* 为删除按钮定位 */}
   .preview-title { font-size: .85rem; font-weight: 600; color: #0c2d4b; margin-bottom: 8px; width: 100%; display: flex; justify-content: space-between; }
   .preview-title span { color: #627d9b; font-weight: normal; font-size: .75rem; background: #ecf3fb; padding: 1px 6px; border-radius: 10px; }
   .preview-img { width: 100%; height: 220px; background: #f4f8ff; border: 1px solid #d9e7fa; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; margin-bottom: 10px; }
   .preview-img img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; cursor: zoom-in; }
   
+  /* 🌟 单张切分图的删除按钮 */
+  .btn-delete-slice {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    background: rgba(255, 59, 48, 0.9);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-delete-slice:hover { background: #ff0000; }
+  .btn-delete-slice:active { transform: scale(0.9); }
+
   .placeholder { color: #7c94b0; font-size: .9rem; text-align: center; }
   .status-text { font-size: .8rem; color: #7a8fa8; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
   .spinner { width: 14px; height: 14px; border: 2px solid #d0e2ff; border-top: 2px solid #1a5fd0; border-radius: 50%; animation: spin .8s linear infinite; }
@@ -219,7 +243,7 @@
   .fs-top-adjust.lr { display: flex; align-items: center; justify-content: space-between; padding: 0 15px; box-sizing: border-box; }
   .fs-top-adjust.tb { display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 80px 0 120px 0; box-sizing: border-box; }
 
-  /* 优化左右微调按钮，使其更清晰醒目 */
+  /* 优化左右微调按钮 */
   .fs-adjust-btn { 
     pointer-events: auto; 
     background: rgba(0, 0, 0, 0.65); 
@@ -377,6 +401,33 @@
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   window.showImageZoom = (url) => { lightboxImg.src = url; lightbox.classList.add('show'); };
+
+  // 🌟 新增：单张切图删除逻辑
+  window.deleteSlice = (itemId, pageIdx, sliceIdx) => {
+    const item = items.find(it => it.id === itemId);
+    if (!item || item.status !== 'done') return;
+    
+    if (confirm('确定要删除这张切分好的图片吗？')) {
+      if (item.type === 'image') {
+        item.result.slices.splice(sliceIdx, 1);
+        // 如果图片的切片全被删光了，可以将其恢复为未分割状态
+        if (item.result.slices.length === 0) {
+          item.status = 'pending';
+          item.result = null;
+        }
+      } else {
+        item.result.pages[pageIdx].slices.splice(sliceIdx, 1);
+        // 检查如果整个文件所有页的切片都被删光了
+        let totalSlices = 0;
+        item.result.pages.forEach(p => totalSlices += p.slices.length);
+        if (totalSlices === 0) {
+          item.status = 'pending';
+          item.result = null;
+        }
+      }
+      renderList(); // 重新渲染
+    }
+  };
 
   function canvasToJpg(canvas) {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
@@ -808,7 +859,6 @@
     toolbar.style.display = 'flex';
     
     fileCount.textContent = `${items.length} 个文件已就绪`;
-    // 去掉 📌 符号，并替换为等待文字
     fileList.innerHTML = '<div class="placeholder" style="padding: 30px;">文件已准备就绪，等待分割...</div>';
   };
 
@@ -927,7 +977,7 @@
           previewHtml = `<div class="preview-grid">`;
           item.result.pages.forEach((p, pageIdx)=>{
             p.slices.forEach((slice, sliceIdx) => {
-              previewHtml += buildPreview(item, `第${pageIdx+1}页`, `图 ${sliceIdx+1}`, slice.dataUrl);
+              previewHtml += buildPreview(item, `第${pageIdx+1}页`, `图 ${sliceIdx+1}`, slice.dataUrl, pageIdx, sliceIdx);
             });
           })
           previewHtml += `</div>`;
@@ -935,7 +985,7 @@
           statusHtml = `✅ 已成功切分`;
           previewHtml = `<div class="preview-grid">`;
           item.result.slices.forEach((slice, sliceIdx) => {
-            previewHtml += buildPreview(item, `切分`, `图 ${sliceIdx+1}`, slice.dataUrl);
+            previewHtml += buildPreview(item, `切分`, `图 ${sliceIdx+1}`, slice.dataUrl, 0, sliceIdx);
           });
           previewHtml += `</div>`;
         }
@@ -955,9 +1005,11 @@
     });
   }
 
-  function buildPreview(item, tag, label, dataUrl) {
+  // 🌟 增加删除按钮渲染
+  function buildPreview(item, tag, label, dataUrl, pageIdx, sliceIdx) {
     let imgHtml = dataUrl ? `<img src="${dataUrl}" onclick="window.showImageZoom(this.src)">` : `<div class="placeholder">${label}</div>`;
     return `<div class="preview-card">
+      <button class="btn-delete-slice" onclick="deleteSlice(${item.id}, ${pageIdx}, ${sliceIdx})" title="删除这张">✕</button>
       <div class="preview-title">${label} <span>${tag}</span></div>
       <div class="preview-img">${imgHtml}</div>
     </div>`;
