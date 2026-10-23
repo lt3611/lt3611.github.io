@@ -6,8 +6,6 @@
 <title>A3 → A4 多线切割器</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<!-- 引入 jsPDF 用于生成排版好的打印版 PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; }
   body { background: #f5f7fc; font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 20px; min-height: 100vh; }
@@ -361,7 +359,7 @@
     <div class="count" id="fileCount">0 个文件</div>
     <div class="btn-group">
       <button class="btn btn-outline btn-lg" id="downloadAllBtn" disabled>⬇️ 打包下载</button>
-      <button class="btn btn-print btn-lg" id="printAllBtn" disabled>🖨️ 导出打印版 PDF</button>
+      <button class="btn btn-print btn-lg" id="printAllBtn" disabled>🖨️ 打印全部</button>
       <button class="btn btn-clear btn-lg" id="clearAllBtn" disabled>🗑 清空全部</button>
     </div>
   </div>
@@ -560,7 +558,7 @@
     return item.previews[currentFsData.pageIndex].ratios;
   }
 
-  // 核心切分函数
+  // 核心切分函数 (根据源图片真实横宽自动切分)
   function splitToMulti(source, ratios) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
@@ -695,6 +693,7 @@
       
       applyFsScale(initScale);
       
+      // 根据图片实际横宽自动判断并渲染
       const isLandscape = fsImage.naturalWidth >= fsImage.naturalHeight;
       fsTopAdjust.className = isLandscape ? 'fs-top-adjust lr' : 'fs-top-adjust tb';
       fsAdjustMinus.textContent = isLandscape ? '◀' : '▲';
@@ -720,11 +719,11 @@
     renderTunePanel();
   };
 
-  // 缩放比例步长调小为 5%（0.05）
+  // 缩放比例步长
   fsZoomIn.onclick = () => applyFsScale(fsScale + 0.05);
   fsZoomOut.onclick = () => applyFsScale(fsScale - 0.05);
 
-  // 反转图片（旋转90度）
+  // 🌟 反转图片（旋转90度）
   fsRotateBtn.onclick = () => {
     if (!currentFsData) return;
     
@@ -738,16 +737,20 @@
       canvas.height = img.width;
       const ctx = canvas.getContext('2d');
       
+      // 旋转90度
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(Math.PI / 2);
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
       
       const rotatedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
       
+      // 更新数据
       preview.dataUrl = rotatedDataUrl;
-      preview.ratios = [0.5]; 
+      preview.ratios = [0.5]; // 旋转后重置分割线到中心，防止错位
       
+      // 重新加载全屏图片
       fsImage.src = rotatedDataUrl;
+      // 重新加载小图
       renderTunePanel();
     };
     img.src = preview.dataUrl;
@@ -1129,102 +1132,95 @@
     downloadAllBtn.textContent = '⬇️ 打包下载'; downloadAllBtn.disabled = false;
   };
 
-  // 🌟 导出标准 A4 尺寸的 PDF（自动适配纸张横竖）
   printAllBtn.onclick = async () => {
     const validItems = items.filter(it => it.status === 'done' || it.status === 'original');
     if (!validItems.length) return;
 
     const originalText = printAllBtn.textContent;
-    printAllBtn.textContent = '⏳ 正在生成PDF...';
+    printAllBtn.textContent = '⏳ 准备打印...';
     printAllBtn.disabled = true;
 
-    try {
-      const { jsPDF } = window.jspdf;
-      let pdf = null;
-      let isFirst = true;
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
+    document.body.appendChild(iframe);
 
-      for (const item of validItems) {
-        let imagesList = []; 
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @page { size: A4 portrait; margin: 0; }
+          body { margin: 0; padding: 0; }
+          .print-page { page-break-after: always; page-break-inside: avoid; width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; overflow: hidden; margin: 0 auto; }
+          .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        </style>
+      </head>
+      <body></body>
+      </html>
+    `);
+    doc.close();
 
-        if (item.status === 'done') {
-          if (item.type === 'image') {
-            imagesList = item.result.slices.map(s => s.dataUrl);
-          } else {
-            item.result.pages.forEach(p => {
-              imagesList.push(...p.slices.map(s => s.dataUrl));
-            });
-          }
-        } else if (item.status === 'original') {
-          if (item.type === 'image') {
-            const url = await new Promise(res => {
-              const reader = new FileReader();
-              reader.onload = e => res(e.target.result);
-              reader.readAsDataURL(item.file);
-            });
-            imagesList.push(url);
-          } else {
-            if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
-            const pdfDoc = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
-            for (let i = 1; i <= pdfDoc.numPages; i++) {
-              const page = await pdfDoc.getPage(i);
-              const viewport = page.getViewport({ scale: 2.5 }); 
-              const canvas = document.createElement('canvas');
-              canvas.width = viewport.width; canvas.height = viewport.height;
-              await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-              imagesList.push(canvas.toDataURL('image/jpeg', 0.95));
-            }
-          }
-        }
+    const body = doc.body;
+    const imgPromises = [];
 
-        for (const dataUrl of imagesList) {
-          const img = new Image();
-          await new Promise(resolve => {
-            img.onload = resolve;
-            img.src = dataUrl;
+    for (const item of validItems) {
+      if (item.status === 'done') {
+        if (item.type === 'image') {
+          item.result.slices.forEach(slice => {
+            body.innerHTML += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
           });
-          
-          const imgW = img.width;
-          const imgH = img.height;
-          
-          // 根据图片真实宽高判断页面方向
-          const isLandscape = imgW > imgH;
-          const pageW = isLandscape ? 297 : 210;
-          const pageH = isLandscape ? 210 : 297;
-          const orientation = isLandscape ? 'l' : 'p';
-
-          if (isFirst) {
-            pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
-            isFirst = false;
-          } else {
-            pdf.addPage('a4', orientation);
+        } else {
+          item.result.pages.forEach(p => {
+            p.slices.forEach(slice => {
+              body.innerHTML += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
+            });
+          });
+        }
+      } else if (item.status === 'original') {
+        if (item.type === 'image') {
+          const blobUrl = URL.createObjectURL(item.file);
+          const div = doc.createElement('div');
+          div.className = 'print-page';
+          const img = doc.createElement('img');
+          img.src = blobUrl;
+          imgPromises.push(new Promise(res => img.onload = res));
+          div.appendChild(img);
+          body.appendChild(div);
+        } else {
+          if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 2.5 }); 
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width; canvas.height = viewport.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            const url = canvas.toDataURL('image/jpeg', 0.95);
+            
+            const div = doc.createElement('div');
+            div.className = 'print-page';
+            const img = doc.createElement('img');
+            img.src = url;
+            imgPromises.push(new Promise(res => img.onload = res));
+            div.appendChild(img);
+            body.appendChild(div);
           }
-
-          // 计算缩放比例，确保图片完整包含在页面内
-          const ratio = Math.min(pageW / imgW, pageH / imgH);
-          const drawW = imgW * ratio;
-          const drawH = imgH * ratio;
-
-          // 居中放置
-          const marginX = (pageW - drawW) / 2;
-          const marginY = (pageH - drawH) / 2;
-
-          pdf.addImage(dataUrl, 'JPEG', marginX, marginY, drawW, drawH);
         }
       }
-
-      if (pdf) {
-        pdf.save(`A4打印版_${Date.now()}.pdf`);
-      } else {
-        alert('没有生成任何可打印的内容');
-      }
-
-    } catch (error) {
-      console.error(error);
-      alert('生成PDF失败：' + error.message);
-    } finally {
-      printAllBtn.textContent = originalText;
-      printAllBtn.disabled = false;
     }
+
+    await Promise.all(imgPromises);
+    
+    printAllBtn.textContent = originalText;
+    printAllBtn.disabled = false;
+
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => { document.body.removeChild(iframe); }, 3000);
+    }, 200);
   };
 </script>
 </body>
