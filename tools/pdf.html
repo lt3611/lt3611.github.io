@@ -328,32 +328,29 @@
   .lightbox.show { opacity: 1; pointer-events: auto; }
   .lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; }
 
-  /* ===== 隐藏的打印专用区域 ===== */
-  #printArea { display: none; }
-  
-  /* 打印时的 CSS 规则（核心） */
+  /* ===== 打印专用区域（绝对定位，移出屏幕外，确保浏览器能真实渲染） ===== */
+  #printArea {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    width: 100%;
+  }
+
+  /* 打印时的 CSS 规则 */
   @media print {
-    /* 彻底隐藏网页上的所有元素，避免多出空白页 */
-    body * {
+    /* 隐藏不需要打印的 UI 元素 */
+    .card, .upload-area, .fine-tune-panel, .toolbar, .fullscreen-tuner, .lightbox {
       display: none !important;
     }
     
-    /* 只显示打印区域及其子元素 */
-    #printArea, #printArea * {
-      display: block !important;
-    }
+    body { margin: 0; padding: 0; background: #fff; }
     
+    /* 打印区域回到正常流 */
     #printArea {
-      position: absolute;
-      left: 0;
-      top: 0;
+      position: static;
       width: 100%;
-      margin: 0;
-      padding: 0;
-      background: #fff;
     }
-    
-    /* 每一页 A4 纸张的样式 */
+
     .print-page { 
       page-break-after: always; 
       page-break-inside: avoid; 
@@ -367,7 +364,6 @@
       padding: 0;
     }
     
-    /* 图片铺满 */
     .print-page img { 
       max-width: 100%; 
       max-height: 100%; 
@@ -464,7 +460,7 @@
   <img id="lightboxImg" src="" alt="放大预览">
 </div>
 
-<!-- 🌟 隐藏的打印容器 -->
+<!-- 🌟 打印容器放在屏幕外 -->
 <div id="printArea"></div>
 
 <script>
@@ -474,7 +470,7 @@
   let nextId = 1;
   let isDragging = false;
   let currentFsData = null; 
-  let activeLineIndex = 0; // 当前选中的线
+  let activeLineIndex = 0; 
 
   let fsScale = 1;
   let initialPinchDist = 0;
@@ -1179,7 +1175,7 @@
     downloadAllBtn.textContent = '⬇️ 打包下载'; downloadAllBtn.disabled = false;
   };
 
-  // 🌟 采用最基础的隐藏区域打印，彻底杜绝多出空白页
+  // 🌟 终极修复：使用纯 DataURL 和屏外绝对定位，解决打印白屏问题
   printAllBtn.onclick = async () => {
     const validItems = items.filter(it => it.status === 'done' || it.status === 'original');
     if (!validItems.length) return;
@@ -1188,25 +1184,28 @@
     printAllBtn.textContent = '⏳ 准备打印...';
     printAllBtn.disabled = true;
 
-    // 构建要打印的 HTML 结构
     let html = '';
     for (const item of validItems) {
       if (item.status === 'done') {
         if (item.type === 'image') {
           item.result.slices.forEach(slice => {
-            html += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
+            html += `<div class="print-page"><img src="${slice.dataUrl}"></div>`;
           });
         } else {
           item.result.pages.forEach(p => {
             p.slices.forEach(slice => {
-              html += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
+              html += `<div class="print-page"><img src="${slice.dataUrl}"></div>`;
             });
           });
         }
       } else if (item.status === 'original') {
         if (item.type === 'image') {
-          const blobUrl = URL.createObjectURL(item.file);
-          html += `<div class="print-page"><img src="${blobUrl}"></div>`;
+          const url = await new Promise(res => {
+            const reader = new FileReader();
+            reader.onload = e => res(e.target.result);
+            reader.readAsDataURL(item.file);
+          });
+          html += `<div class="print-page"><img src="${url}"></div>`;
         } else {
           if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
@@ -1223,10 +1222,8 @@
       }
     }
 
-    // 塞入打印容器
     printArea.innerHTML = html;
 
-    // 等待图片加载完毕
     const imgs = printArea.querySelectorAll('img');
     const imgPromises = Array.from(imgs).map(img => {
       return new Promise(resolve => {
@@ -1240,10 +1237,9 @@
 
     try {
       await Promise.all(imgPromises);
-      // 延迟 100ms 确保渲染
-      await new Promise(r => setTimeout(r, 100));
+      // 增加一点延迟，确保浏览器完全解析了屏外的 Base64 图片
+      await new Promise(r => setTimeout(r, 300));
       
-      // 唤起打印
       window.print();
     } catch (err) {
       console.error(err);
