@@ -192,10 +192,39 @@
   
   .fs-title { font-weight: 600; font-size: 0.95rem; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
   
-  /* 加线/减线/反转 */
+  /* 加线/减线 */
   .fs-tools-row { display: flex; gap: 10px; align-items: center; }
   .fs-tool-btn { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s; }
   .fs-tool-btn:hover { background: rgba(255,255,255,0.3); border-color: #888; }
+
+  /* 🌟 切分方向（重写原生单选框样式，避免安卓被放大成黑/白球） */
+  .fs-options-row { display: flex; gap: 12px; align-items: center; background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px;}
+  .fs-options-row label { font-size: 0.85rem; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 500;}
+  
+  .fs-options-row input[type="radio"] { 
+    -webkit-appearance: none; 
+    appearance: none;
+    width: 16px; 
+    height: 16px; 
+    border: 2px solid #aaa; 
+    border-radius: 50%; 
+    outline: none;
+    margin: 0;
+    position: relative;
+    cursor: pointer;
+    background: transparent;
+  }
+  .fs-options-row input[type="radio"]:checked {
+    border-color: #ff3b30;
+  }
+  .fs-options-row input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 6px; height: 6px;
+    background: #ff3b30;
+    border-radius: 50%;
+  }
 
   /* 缩放工具 */
   .fs-zoom-tools { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 20px; }
@@ -274,11 +303,11 @@
   /* 极简微调按钮 */
   .fs-top-adjust { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; pointer-events: none; }
   
-  /* 左右微调按钮往中间靠拢 */
+  /* 🌟 左右微调按钮进一步向中间靠拢，留出边缘空间防止遮挡边缘文字 */
   .fs-top-adjust.lr { display: flex; align-items: center; justify-content: space-between; padding: 0 20%; box-sizing: border-box; }
   .fs-top-adjust.tb { display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 100px 0 150px 0; box-sizing: border-box; }
 
-  /* 微调按钮样式 */
+  /* 微调按钮样式（改小、改透明底） */
   .fs-adjust-btn { 
     pointer-events: auto; 
     background: rgba(0, 0, 0, 0.4); 
@@ -303,16 +332,16 @@
     transform: scale(0.95); 
   }
 
-  /* 底部完成调整按钮 */
+  /* 🌟 底部完成调整按钮（加宽并上移，防止被系统悬浮球遮挡） */
   .fs-finish-btn { 
     position: fixed; 
-    bottom: 50px; 
+    bottom: 50px; /* 上移 */
     left: 50%; 
     transform: translateX(-50%); 
     background: #1e7a1e; 
     color: #fff; 
     border: 2px solid #fff; 
-    padding: 12px 40px; 
+    padding: 12px 40px; /* 加宽 */
     border-radius: 30px; 
     font-size: 1.05rem; 
     font-weight: bold; 
@@ -382,12 +411,15 @@
         <button class="fs-zoom-btn" id="fsZoomIn">+</button>
       </div>
     </div>
-    <!-- 加线/减线和反转在第二行，靠右对齐 -->
+    <!-- 加线/减线和切分方向在第二行，靠右对齐 -->
     <div class="fs-header-bottom">
       <div class="fs-tools-row">
-        <button class="fs-tool-btn" id="fsRotateBtn">🔄 反转图片</button>
         <button class="fs-tool-btn" id="fsAddLineBtn">➕ 添加线</button>
         <button class="fs-tool-btn" id="fsDelLineBtn">➖ 删除线</button>
+      </div>
+      <div class="fs-options-row">
+        <label><input type="radio" name="splitMode" value="lr" checked> 左右切分</label>
+        <label><input type="radio" name="splitMode" value="tb"> 上下切分</label>
       </div>
     </div>
   </div>
@@ -445,7 +477,7 @@
   const fsTopAdjust = el('fsTopAdjust');
   const fsFinishBtn = el('fsFinishBtn');
   const fsAdjustMinus = el('fsAdjustMinus'), fsAdjustPlus = el('fsAdjustPlus');
-  const fsAddLineBtn = el('fsAddLineBtn'), fsDelLineBtn = el('fsDelLineBtn'), fsRotateBtn = el('fsRotateBtn');
+  const fsAddLineBtn = el('fsAddLineBtn'), fsDelLineBtn = el('fsDelLineBtn');
 
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   window.showImageZoom = (url) => { lightboxImg.src = url; lightbox.classList.add('show'); };
@@ -485,12 +517,9 @@
     return { dataUrl, blob, blobUrl };
   }
 
-  // 渲染小图上的红线（统一根据图片长宽比自动判断）
-  function renderSmallLines(container, ratios) {
-    const img = container.querySelector('img');
-    const isLandscape = img.naturalWidth >= img.naturalHeight;
-    
-    container.classList.toggle('vertical', !isLandscape);
+  // 渲染小图上的红线
+  function renderSmallLines(container, ratios, mode) {
+    container.classList.toggle('vertical', mode === 'tb');
     
     container.querySelectorAll('.split-line').forEach(e => e.remove());
     
@@ -498,7 +527,7 @@
       const line = document.createElement('div');
       line.className = 'split-line';
       line.dataset.index = index;
-      if (isLandscape) {
+      if (mode === 'lr') {
         line.style.left = (ratio * 100) + '%';
         line.style.top = '0'; line.style.bottom = '0';
       } else {
@@ -510,9 +539,8 @@
   }
 
   // 渲染大图上的红线和遮罩
-  function renderFsLines(ratios, activeIdx) {
-    const isLandscape = fsImage.naturalWidth >= fsImage.naturalHeight;
-    fsContainer.classList.toggle('vertical', !isLandscape);
+  function renderFsLines(ratios, activeIdx, mode) {
+    fsContainer.classList.toggle('vertical', mode === 'tb');
     
     fsLinesContainer.innerHTML = '';
     
@@ -520,7 +548,7 @@
       const line = document.createElement('div');
       line.className = `split-line ${index === activeIdx ? 'active' : ''}`;
       
-      if (isLandscape) {
+      if (mode === 'lr') {
         line.style.left = (ratio * 100) + '%';
         line.style.top = '0'; line.style.bottom = '0';
       } else {
@@ -530,7 +558,7 @@
       
       const handle = document.createElement('div');
       handle.className = 'fs-drag-handle';
-      handle.textContent = isLandscape ? '↔' : '↕';
+      handle.textContent = mode === 'lr' ? '↔' : '↕';
       line.appendChild(handle);
 
       // 拖拽事件
@@ -558,11 +586,10 @@
     return item.previews[currentFsData.pageIndex].ratios;
   }
 
-  // 核心切分函数 (根据源图片真实横宽自动切分)
-  function splitToMulti(source, ratios) {
+  // 核心切分函数 (支持 N 条线，切成 N+1 块)
+  function splitToMulti(source, isLandscape, ratios) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
-    const isLandscape = w >= h;
     
     const sorted = [...ratios].sort((a,b) => a - b);
     const slices = [];
@@ -620,7 +647,7 @@
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width; canvas.height = viewport.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        previews.push({ dataUrl: canvas.toDataURL('image/jpeg', 0.9), ratios: [0.5] });
+        previews.push({ dataUrl: canvas.toDataURL('image/jpeg', 0.9), ratios: [0.5], splitMode: 'lr' });
       }
     } else {
       const url = await new Promise(res => {
@@ -628,7 +655,7 @@
         reader.onload = e => res(e.target.result);
         reader.readAsDataURL(file);
       });
-      previews.push({ dataUrl: url, ratios: [0.5] });
+      previews.push({ dataUrl: url, ratios: [0.5], splitMode: 'lr' });
     }
     return previews;
   }
@@ -643,6 +670,7 @@
         
         const pageInfo = document.createElement('div');
         pageInfo.className = 'page-info';
+        // 长文件名自动省略
         pageInfo.innerHTML = `
           <span class="file-name">${item.file.name} ${item.type === 'pdf' ? `- 第${pageIdx + 1}页` : ''}</span>
         `;
@@ -655,13 +683,15 @@
         
         // 放大按钮
         container.innerHTML = `
-          <img src="${preview.dataUrl}" onload="renderSmallLines(this.parentElement, ${JSON.stringify(preview.ratios)})">
+          <img src="${preview.dataUrl}">
           <div class="zoom-hint" onclick="event.stopPropagation(); openFsTuner(${item.id}, ${pageIdx})">🔍 点击放大</div>
         `;
         
         wrapper.appendChild(pageInfo);
         wrapper.appendChild(container);
         dragGallery.appendChild(wrapper);
+
+        renderSmallLines(container, preview.ratios, preview.splitMode);
       });
     });
   }
@@ -685,6 +715,13 @@
     fsTitle.textContent = `${item.file.name} - 第${pageIndex + 1}页 微调`;
     fullscreenTuner.classList.add('show');
     
+    const mode = item.previews[pageIndex].splitMode;
+    document.querySelector(`input[name="splitMode"][value="${mode}"]`).checked = true;
+    
+    fsTopAdjust.className = mode === 'lr' ? 'fs-top-adjust lr' : 'fs-top-adjust tb';
+    fsAdjustMinus.textContent = mode === 'lr' ? '◀' : '▲';
+    fsAdjustPlus.textContent = mode === 'lr' ? '▶' : '▼';
+    
     fsImage.onload = () => {
       const areaW = fsDragArea.clientWidth - 40;
       const areaH = fsDragArea.clientHeight - 120;
@@ -692,14 +729,7 @@
       if (initScale < 0.05) initScale = 0.05;
       
       applyFsScale(initScale);
-      
-      // 根据图片实际横宽自动判断并渲染
-      const isLandscape = fsImage.naturalWidth >= fsImage.naturalHeight;
-      fsTopAdjust.className = isLandscape ? 'fs-top-adjust lr' : 'fs-top-adjust tb';
-      fsAdjustMinus.textContent = isLandscape ? '◀' : '▲';
-      fsAdjustPlus.textContent = isLandscape ? '▶' : '▼';
-      
-      renderFsLines(item.previews[pageIndex].ratios, activeLineIndex);
+      renderFsLines(item.previews[pageIndex].ratios, activeLineIndex, mode);
       
       setTimeout(() => {
         fsDragArea.scrollLeft = (fsDragArea.scrollWidth - fsDragArea.clientWidth) / 2;
@@ -719,48 +749,16 @@
     renderTunePanel();
   };
 
-  // 缩放比例步长
+  // 缩放比例步长调小为 5%（0.05）
   fsZoomIn.onclick = () => applyFsScale(fsScale + 0.05);
   fsZoomOut.onclick = () => applyFsScale(fsScale - 0.05);
-
-  // 🌟 反转图片（旋转90度）
-  fsRotateBtn.onclick = () => {
-    if (!currentFsData) return;
-    
-    const item = items.find(it => it.id === currentFsData.itemId);
-    const preview = item.previews[currentFsData.pageIndex];
-    
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.height;
-      canvas.height = img.width;
-      const ctx = canvas.getContext('2d');
-      
-      // 旋转90度
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(Math.PI / 2);
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
-      
-      const rotatedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      
-      // 更新数据
-      preview.dataUrl = rotatedDataUrl;
-      preview.ratios = [0.5]; // 旋转后重置分割线到中心，防止错位
-      
-      // 重新加载全屏图片
-      fsImage.src = rotatedDataUrl;
-      // 重新加载小图
-      renderTunePanel();
-    };
-    img.src = preview.dataUrl;
-  };
 
   // 加线/减线
   fsAddLineBtn.onclick = () => {
     if (!currentFsData) return;
     const item = items.find(it => it.id === currentFsData.itemId);
     const ratios = item.previews[currentFsData.pageIndex].ratios;
+    const mode = item.previews[currentFsData.pageIndex].splitMode;
     
     if (ratios.length >= 6) return alert('最多只支持切分 6 条线（7 张图）哦！');
     
@@ -780,22 +778,23 @@
     ratios.sort((a,b) => a - b);
     
     activeLineIndex = ratios.indexOf(newRatio); 
-    renderFsLines(ratios, activeLineIndex);
-    renderSmallLines(document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`), ratios);
+    renderFsLines(ratios, activeLineIndex, mode);
+    renderSmallLines(document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`), ratios, mode);
   };
 
   fsDelLineBtn.onclick = () => {
     if (!currentFsData) return;
     const item = items.find(it => it.id === currentFsData.itemId);
     const ratios = item.previews[currentFsData.pageIndex].ratios;
+    const mode = item.previews[currentFsData.pageIndex].splitMode;
     
     if (ratios.length <= 1) return alert('至少需要保留 1 条分割线哦！');
     
     ratios.splice(activeLineIndex, 1);
     activeLineIndex = 0;
     
-    renderFsLines(ratios, activeLineIndex);
-    renderSmallLines(document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`), ratios);
+    renderFsLines(ratios, activeLineIndex, mode);
+    renderSmallLines(document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`), ratios, mode);
   };
 
   // 单点微调
@@ -804,7 +803,7 @@
     const item = items.find(it => it.id === currentFsData.itemId);
     const preview = item.previews[currentFsData.pageIndex];
     const ratios = preview.ratios;
-    const isLandscape = fsImage.naturalWidth >= fsImage.naturalHeight;
+    const mode = preview.splitMode;
 
     if (activeLineIndex < 0 || activeLineIndex >= ratios.length) return;
 
@@ -821,7 +820,7 @@
 
     const fsLine = fsLinesContainer.children[activeLineIndex];
     if (fsLine) {
-        if (isLandscape) fsLine.style.left = (newVal * 100) + '%';
+        if (mode === 'lr') fsLine.style.left = (newVal * 100) + '%';
         else fsLine.style.top = (newVal * 100) + '%';
     }
 
@@ -829,7 +828,7 @@
     if (smallContainer) {
         const smallLine = smallContainer.querySelectorAll('.split-line')[activeLineIndex];
         if (smallLine) {
-            if (isLandscape) smallLine.style.left = (newVal * 100) + '%';
+            if (mode === 'lr') smallLine.style.left = (newVal * 100) + '%';
             else smallLine.style.top = (newVal * 100) + '%';
         }
     }
@@ -863,7 +862,7 @@
     const item = items.find(it => it.id === currentFsData.itemId);
     const preview = item.previews[currentFsData.pageIndex];
     const ratios = preview.ratios;
-    const isLandscape = fsImage.naturalWidth >= fsImage.naturalHeight;
+    const mode = preview.splitMode;
     
     const sorted = [...ratios].sort((a,b) => a-b);
     const idxInSorted = sorted.indexOf(ratios[activeLineIndex]);
@@ -872,7 +871,7 @@
     const nextLine = idxInSorted < sorted.length - 1 ? sorted[idxInSorted + 1] : 1;
     
     let newVal;
-    if (isLandscape) {
+    if (mode === 'lr') {
       const clientX = e.clientX || e.touches[0].clientX;
       newVal = (clientX - rect.left) / rect.width;
     } else {
@@ -886,7 +885,7 @@
 
     const fsLine = fsLinesContainer.children[activeLineIndex];
     if (fsLine) {
-        if (isLandscape) fsLine.style.left = (newVal * 100) + '%';
+        if (mode === 'lr') fsLine.style.left = (newVal * 100) + '%';
         else fsLine.style.top = (newVal * 100) + '%';
     }
 
@@ -894,13 +893,35 @@
     if (smallContainer) {
         const smallLine = smallContainer.querySelectorAll('.split-line')[activeLineIndex];
         if (smallLine) {
-            if (isLandscape) smallLine.style.left = (newVal * 100) + '%';
+            if (mode === 'lr') smallLine.style.left = (newVal * 100) + '%';
             else smallLine.style.top = (newVal * 100) + '%';
         }
     }
   });
 
   window.addEventListener('pointerup', () => { isDragging = false; });
+
+  // 切换方向
+  document.querySelectorAll('input[name="splitMode"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      if (!currentFsData) return;
+      
+      const item = items.find(it => it.id === currentFsData.itemId);
+      const preview = item.previews[currentFsData.pageIndex];
+      const mode = e.target.value;
+      
+      preview.splitMode = mode; 
+      
+      fsTopAdjust.className = mode === 'lr' ? 'fs-top-adjust lr' : 'fs-top-adjust tb';
+      fsAdjustMinus.textContent = mode === 'lr' ? '◀' : '▲';
+      fsAdjustPlus.textContent = mode === 'lr' ? '▶' : '▼';
+      
+      renderFsLines(preview.ratios, activeLineIndex, mode);
+      
+      const smallContainer = document.querySelector(`.drag-container[data-id="${item.id}"][data-idx="${currentFsData.pageIndex}"]`);
+      if (smallContainer) renderSmallLines(smallContainer, preview.ratios, mode);
+    });
+  });
 
   // 上传处理
   uploadArea.onclick = () => { fileInput.value = ''; fileInput.click(); };
@@ -950,7 +971,8 @@
           });
           
           const preview = item.previews[0];
-          const slices = splitToMulti(img, preview.ratios);
+          const isLandscape = (preview.splitMode === 'lr');
+          const slices = splitToMulti(img, isLandscape, preview.ratios);
           item.result = { slices };
         } else {
           if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
@@ -965,7 +987,8 @@
             await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
             const preview = item.previews[i-1];
-            const slices = splitToMulti(canvas, preview.ratios);
+            const isLandscape = (preview.splitMode === 'lr');
+            const slices = splitToMulti(canvas, isLandscape, preview.ratios);
             pages.push({ slices });
           }
           item.result = { pages };
