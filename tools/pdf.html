@@ -327,50 +327,6 @@
   .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; cursor: zoom-out; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .lightbox.show { opacity: 1; pointer-events: auto; }
   .lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; }
-
-  /* ===== 打印专用区域（绝对定位，移出屏幕外，确保浏览器能真实渲染） ===== */
-  #printArea {
-    position: absolute;
-    left: -9999px;
-    top: 0;
-    width: 100%;
-  }
-
-  /* 打印时的 CSS 规则 */
-  @media print {
-    /* 隐藏不需要打印的 UI 元素 */
-    .card, .upload-area, .fine-tune-panel, .toolbar, .fullscreen-tuner, .lightbox {
-      display: none !important;
-    }
-    
-    body { margin: 0; padding: 0; background: #fff; }
-    
-    /* 打印区域回到正常流 */
-    #printArea {
-      position: static;
-      width: 100%;
-    }
-
-    .print-page { 
-      page-break-after: always; 
-      page-break-inside: avoid; 
-      width: 100%; 
-      height: 100vh; 
-      display: flex !important; 
-      justify-content: center; 
-      align-items: center; 
-      overflow: hidden;
-      margin: 0;
-      padding: 0;
-    }
-    
-    .print-page img { 
-      max-width: 100%; 
-      max-height: 100%; 
-      object-fit: contain; 
-      display: block !important; 
-    }
-  }
 </style>
 </head>
 <body>
@@ -460,9 +416,6 @@
   <img id="lightboxImg" src="" alt="放大预览">
 </div>
 
-<!-- 🌟 打印容器放在屏幕外 -->
-<div id="printArea"></div>
-
 <script>
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -470,7 +423,7 @@
   let nextId = 1;
   let isDragging = false;
   let currentFsData = null; 
-  let activeLineIndex = 0; 
+  let activeLineIndex = 0; // 当前选中的线
 
   let fsScale = 1;
   let initialPinchDist = 0;
@@ -483,7 +436,6 @@
   const startSplitBtn = el('startSplitBtn'), cancelSplitBtn = el('cancelSplitBtn');
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
   const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
-  const printArea = el('printArea');
 
   // 全屏微调元素
   const fullscreenTuner = el('fullscreenTuner'), fsTitle = el('fsTitle'), fsImage = el('fsImage');
@@ -533,7 +485,7 @@
     return { dataUrl, blob, blobUrl };
   }
 
-  // 渲染小图上的红线
+  // 渲染小图上的红线（统一根据图片长宽比自动判断）
   function renderSmallLines(container, ratios) {
     const img = container.querySelector('img');
     const isLandscape = img.naturalWidth >= img.naturalHeight;
@@ -606,7 +558,7 @@
     return item.previews[currentFsData.pageIndex].ratios;
   }
 
-  // 核心切分函数
+  // 核心切分函数 (根据源图片真实横宽自动切分)
   function splitToMulti(source, ratios) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
@@ -741,6 +693,7 @@
       
       applyFsScale(initScale);
       
+      // 根据图片实际横宽自动判断并渲染
       const isLandscape = fsImage.naturalWidth >= fsImage.naturalHeight;
       fsTopAdjust.className = isLandscape ? 'fs-top-adjust lr' : 'fs-top-adjust tb';
       fsAdjustMinus.textContent = isLandscape ? '◀' : '▲';
@@ -766,11 +719,11 @@
     renderTunePanel();
   };
 
-  // 缩放比例步长调小为 5%（0.05）
+  // 缩放比例步长
   fsZoomIn.onclick = () => applyFsScale(fsScale + 0.05);
   fsZoomOut.onclick = () => applyFsScale(fsScale - 0.05);
 
-  // 反转图片（旋转90度）
+  // 🌟 反转图片（旋转90度）
   fsRotateBtn.onclick = () => {
     if (!currentFsData) return;
     
@@ -784,16 +737,20 @@
       canvas.height = img.width;
       const ctx = canvas.getContext('2d');
       
+      // 旋转90度
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(Math.PI / 2);
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
       
       const rotatedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
       
+      // 更新数据
       preview.dataUrl = rotatedDataUrl;
-      preview.ratios = [0.5]; 
+      preview.ratios = [0.5]; // 旋转后重置分割线到中心，防止错位
       
+      // 重新加载全屏图片
       fsImage.src = rotatedDataUrl;
+      // 重新加载小图
       renderTunePanel();
     };
     img.src = preview.dataUrl;
@@ -1175,7 +1132,6 @@
     downloadAllBtn.textContent = '⬇️ 打包下载'; downloadAllBtn.disabled = false;
   };
 
-  // 🌟 终极修复：使用纯 DataURL 和屏外绝对定位，解决打印白屏问题
   printAllBtn.onclick = async () => {
     const validItems = items.filter(it => it.status === 'done' || it.status === 'original');
     if (!validItems.length) return;
@@ -1184,28 +1140,54 @@
     printAllBtn.textContent = '⏳ 准备打印...';
     printAllBtn.disabled = true;
 
-    let html = '';
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          @page { size: A4 portrait; margin: 0; }
+          body { margin: 0; padding: 0; }
+          .print-page { page-break-after: always; page-break-inside: avoid; width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; overflow: hidden; margin: 0 auto; }
+          .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        </style>
+      </head>
+      <body></body>
+      </html>
+    `);
+    doc.close();
+
+    const body = doc.body;
+    const imgPromises = [];
+
     for (const item of validItems) {
       if (item.status === 'done') {
         if (item.type === 'image') {
           item.result.slices.forEach(slice => {
-            html += `<div class="print-page"><img src="${slice.dataUrl}"></div>`;
+            body.innerHTML += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
           });
         } else {
           item.result.pages.forEach(p => {
             p.slices.forEach(slice => {
-              html += `<div class="print-page"><img src="${slice.dataUrl}"></div>`;
+              body.innerHTML += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
             });
           });
         }
       } else if (item.status === 'original') {
         if (item.type === 'image') {
-          const url = await new Promise(res => {
-            const reader = new FileReader();
-            reader.onload = e => res(e.target.result);
-            reader.readAsDataURL(item.file);
-          });
-          html += `<div class="print-page"><img src="${url}"></div>`;
+          const blobUrl = URL.createObjectURL(item.file);
+          const div = doc.createElement('div');
+          div.className = 'print-page';
+          const img = doc.createElement('img');
+          img.src = blobUrl;
+          imgPromises.push(new Promise(res => img.onload = res));
+          div.appendChild(img);
+          body.appendChild(div);
         } else {
           if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
@@ -1216,41 +1198,29 @@
             canvas.width = viewport.width; canvas.height = viewport.height;
             await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
             const url = canvas.toDataURL('image/jpeg', 0.95);
-            html += `<div class="print-page"><img src="${url}"></div>`;
+            
+            const div = doc.createElement('div');
+            div.className = 'print-page';
+            const img = doc.createElement('img');
+            img.src = url;
+            imgPromises.push(new Promise(res => img.onload = res));
+            div.appendChild(img);
+            body.appendChild(div);
           }
         }
       }
     }
 
-    printArea.innerHTML = html;
+    await Promise.all(imgPromises);
+    
+    printAllBtn.textContent = originalText;
+    printAllBtn.disabled = false;
 
-    const imgs = printArea.querySelectorAll('img');
-    const imgPromises = Array.from(imgs).map(img => {
-      return new Promise(resolve => {
-        if (img.complete) resolve();
-        else {
-          img.onload = resolve;
-          img.onerror = resolve;
-        }
-      });
-    });
-
-    try {
-      await Promise.all(imgPromises);
-      // 增加一点延迟，确保浏览器完全解析了屏外的 Base64 图片
-      await new Promise(r => setTimeout(r, 300));
-      
-      window.print();
-    } catch (err) {
-      console.error(err);
-      alert('准备打印图片时出错');
-    } finally {
-      printAllBtn.textContent = originalText;
-      printAllBtn.disabled = false;
-      setTimeout(() => {
-        printArea.innerHTML = '';
-      }, 1000);
-    }
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => { document.body.removeChild(iframe); }, 3000);
+    }, 200);
   };
 </script>
 </body>
