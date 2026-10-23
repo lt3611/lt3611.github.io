@@ -10,8 +10,7 @@
   * { box-sizing: border-box; margin: 0; }
   body { background: #f5f7fc; font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 20px; min-height: 100vh; }
   .card { background: #fff; max-width: 1000px; width: 100%; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,20,40,.15); padding: 30px; }
-  
-  /* 上传区 */
+
   .upload-area { border: 2px dashed #b8cef0; border-radius: 16px; background: #fafdff; padding: 20px; text-align: center; cursor: pointer; transition: .2s; margin-bottom: 15px; }
   .upload-area:hover, .upload-area.dragover { border-color: #2d7aff; background: #f2f9ff; }
   .upload-area input { display: none; }
@@ -19,24 +18,20 @@
   .upload-text { font-weight: 600; color: #0b2b4a; font-size: 1.1rem; }
   .upload-hint { font-size: .85rem; color: #6d7e91; background: #ecf3fb; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-top: 8px; }
 
-  /* 微调控制面板 */
   .fine-tune-panel { display: none; margin-bottom: 20px; }
   .fine-tune-panel.active { display: block; }
-  
-  /* 顶部提示语 */
+
   .tune-tip { font-size: 0.95rem; font-weight: 600; color: #1a5fd0; text-align: center; margin-bottom: 15px; background: #f0f6ff; padding: 8px; border-radius: 8px;}
 
-  /* 垂直多页画廊 */
   .drag-gallery { display: flex; flex-direction: column; gap: 20px; max-height: 65vh; overflow: auto; padding: 0; background: transparent; margin-bottom: 15px; }
-  
-  /* 独立卡片 */
-  .page-container-wrapper { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    width: 100%; 
-    max-width: 800px; 
-    margin: 0 auto; 
+
+  .page-container-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
     background: #fff;
     border: 1px solid #e3ecf8;
     border-radius: 12px;
@@ -44,28 +39,25 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     flex-shrink: 0;
   }
-  
-  /* 顶部信息栏 */
+
   .page-info { font-size: 0.95rem; font-weight: 600; color: #627d9b; margin-bottom: 12px; width: 100%; display: flex; align-items: center; }
   .page-info .file-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  
-  /* 小图容器 */
+
   .drag-container { position: relative; width: 100%; background: #eef2f7; border-radius: 8px; overflow: hidden; user-select: none; border: 1px solid #d0e2ff; cursor: zoom-in; }
   .drag-container img { width: 100%; display: block; pointer-events: none; }
-  
-  /* 悬浮在图片右上角的放大按钮 */
-  .zoom-hint { 
-    position: absolute; 
-    top: 10px; 
-    right: 10px; 
-    background: rgba(255, 255, 255, 0.85); 
-    color: #1a5fd0; 
-    font-size: 0.85rem; 
+
+  .zoom-hint {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #1a5fd0;
+    font-size: 0.85rem;
     font-weight: bold;
-    padding: 6px 12px; 
-    border-radius: 20px; 
+    padding: 6px 12px;
+    border-radius: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    z-index: 20; 
+    z-index: 20;
     cursor: pointer;
     transition: all 0.2s;
     backdrop-filter: blur(4px);
@@ -73,10 +65,9 @@
   }
   .zoom-hint:hover { background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
 
-  /* ===== 小图红线 ===== */
   .drag-container .split-line {
     position: absolute; top: 0; bottom: 0;
-    width: 20px; 
+    width: 20px;
     transform: translateX(-50%);
     z-index: 10;
     pointer-events: none;
@@ -90,7 +81,6 @@
     box-shadow: 0 0 3px rgba(255,59,48,0.6);
   }
 
-  /* 小图上下切分 */
   .drag-container.vertical .split-line {
     top: auto; bottom: auto; left: 0; right: 0;
     width: 100%; height: 20px;
@@ -102,57 +92,53 @@
     transform: translateY(-50%);
   }
 
-  /* 底部操作按钮组 */
   .action-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 15px; width: 100%; }
-  
-  .action-buttons .btn { 
+
+  .action-buttons .btn {
     flex: 1;
-    font-size: 0.9rem; 
-    padding: 12px 0; 
-    border-radius: 8px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    border: none; 
+    font-size: 0.9rem;
+    padding: 12px 0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
     font-weight: 600;
     cursor: pointer;
     transition: .2s;
   }
-  
+
   .action-buttons .btn-success { background: #1e7a1e; color: #fff; }
   .action-buttons .btn-danger { background: #fff !important; color: #b13b3b !important; border: 1.5px solid #e0a0a0 !important; }
   .action-buttons .btn-danger:active { background: #ffeeee !important; }
 
-  /* 工具栏 */
   .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; }
   .count { background: #d4e4ff; padding: 6px 12px; border-radius: 20px; font-size: .85rem; font-weight: 600; color: #004cbf; }
   .btn-group { display: flex; gap: 10px; flex-wrap: wrap; width: 100%; }
-  
+
   .btn { border: none; color: #fff; font-weight: 600; cursor: pointer; transition: .2s; display: inline-flex; align-items: center; justify-content: center; }
   .btn:disabled { background: #a6bbd9 !important; color: #fff !important; border-color: #a6bbd9 !important; cursor: not-allowed; opacity: .7; }
-  
+
   .btn-lg { padding: 10px 18px; font-size: 0.95rem; border-radius: 12px; flex: 1; }
   .btn-outline { background: #fff; color: #1a5fd0; border: 1.5px solid #1a5fd0; }
   .btn-print { background: #1e7a1e; }
   .btn-clear { background: #fff; color: #b13b3b; border: 1.5px solid #e0a0a0; }
 
-  /* 结果文件列表 */
   .file-card { border: 1px solid #e3ecf8; border-radius: 16px; padding: 15px; margin-bottom: 15px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,.03); }
   .file-head { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
-  
+
   .file-info { display: flex; align-items: center; gap: 10px; font-weight: 500; color: #1c3b5e; font-size: .95rem; width: 100%; }
   .file-info .file-name-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  
+
   .badge { background: #d4e4ff; color: #004cbf; padding: 3px 8px; border-radius: 12px; font-size: .75rem; font-weight: bold; flex-shrink: 0; }
-  
+
   .preview-grid { display: flex; gap: 15px; flex-wrap: wrap; }
   .preview-card { flex: 1 1 200px; max-width: 260px; background: #fbfdff; border: 1px solid #e3ecf8; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; position: relative; }
   .preview-title { font-size: .85rem; font-weight: 600; color: #0c2d4b; margin-bottom: 8px; width: 100%; display: flex; justify-content: space-between; }
   .preview-title span { color: #627d9b; font-weight: normal; font-size: .75rem; background: #ecf3fb; padding: 1px 6px; border-radius: 10px; }
   .preview-img { width: 100%; height: 220px; background: #f4f8ff; border: 1px solid #d9e7fa; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; margin-bottom: 10px; }
   .preview-img img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; cursor: zoom-in; }
-  
-  /* 单张切分图的删除按钮 */
+
   .btn-delete-slice {
     position: absolute;
     top: 8px;
@@ -180,34 +166,30 @@
   .status-text { font-size: .8rem; color: #7a8fa8; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
   .spinner { width: 14px; height: 14px; border: 2px solid #d0e2ff; border-top: 2px solid #1a5fd0; border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
-  
-  /* ===== 全屏高清微调弹窗 ===== */
+
   .fullscreen-tuner { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; display: none; flex-direction: column; overflow: hidden; }
   .fullscreen-tuner.show { display: flex; }
-  
-  /* 全屏顶部工具栏 */
+
   .fs-header { display: flex; flex-direction: column; padding: 10px 15px; background: #222; color: #fff; gap: 10px; z-index: 10;}
   .fs-header-top { display: flex; justify-content: space-between; align-items: center; width: 100%;}
   .fs-header-bottom { display: flex; justify-content: flex-end; align-items: center; width: 100%; gap: 10px; flex-wrap: wrap;}
-  
+
   .fs-title { font-weight: 600; font-size: 0.95rem; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-  
-  /* 加线/减线 */
+
   .fs-tools-row { display: flex; gap: 10px; align-items: center; }
   .fs-tool-btn { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s; }
   .fs-tool-btn:hover { background: rgba(255,255,255,0.3); border-color: #888; }
 
-  /* 🌟 切分方向（重写原生单选框样式，避免安卓被放大成黑/白球） */
   .fs-options-row { display: flex; gap: 12px; align-items: center; background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px;}
   .fs-options-row label { font-size: 0.85rem; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 500;}
-  
-  .fs-options-row input[type="radio"] { 
-    -webkit-appearance: none; 
+
+  .fs-options-row input[type="radio"] {
+    -webkit-appearance: none;
     appearance: none;
-    width: 16px; 
-    height: 16px; 
-    border: 2px solid #aaa; 
-    border-radius: 50%; 
+    width: 16px;
+    height: 16px;
+    border: 2px solid #aaa;
+    border-radius: 50%;
     outline: none;
     margin: 0;
     position: relative;
@@ -226,24 +208,20 @@
     border-radius: 50%;
   }
 
-  /* 缩放工具 */
   .fs-zoom-tools { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 20px; }
   .fs-zoom-btn { border: none; background: transparent; color: #fff; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
   .fs-zoom-btn:hover { background: rgba(255,255,255,0.2); }
   .fs-zoom-text { font-size: 0.8rem; font-weight: 600; min-width: 40px; text-align: center; }
-  
-  /* 滚动区域 */
+
   .fs-drag-area { flex: 1; overflow: auto; position: relative; -webkit-overflow-scrolling: touch; }
   .fs-scroll-content { min-width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px 20px 120px 20px; box-sizing: border-box; }
-  
-  /* 缩放容器 */
+
   .fs-container { position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.5); user-select: none; touch-action: pan-x pan-y; flex-shrink: 0; }
   .fs-container img { display: block; width: 100%; height: 100%; pointer-events: none; object-fit: fill; }
-  
-  /* ===== 大图红线 ===== */
+
   .fs-container .split-line {
     position: absolute; top: 0; bottom: 0;
-    width: 30px; 
+    width: 30px;
     transform: translateX(-50%);
     cursor: ew-resize;
     touch-action: none;
@@ -256,12 +234,11 @@
     content: '';
     position: absolute;
     top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 1.5px; 
+    width: 1.5px;
     background: #ff3b30;
     box-shadow: 0 0 3px rgba(255,59,48,0.5);
   }
 
-  /* 大图上下切分 */
   .fs-container.vertical .split-line {
     top: auto; bottom: auto; left: 0; right: 0;
     width: 100%; height: 30px;
@@ -274,85 +251,78 @@
     transform: translateY(-50%);
   }
 
-  /* 高亮选中的线 */
   .fs-container .split-line.active { z-index: 15; }
   .fs-container .split-line.active::after {
     background: #ff0000;
     box-shadow: 0 0 8px rgba(255,0,0,0.8);
   }
 
-  /* 拖动圆心图标 */
-  .fs-drag-handle { 
-    position: absolute; 
-    top: 50%; left: 50%; 
-    transform: translate(-50%, -50%); 
-    width: 14px; height: 14px; 
-    background: #ff3b30; 
-    border-radius: 50%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    color: #fff; 
-    font-size: 9px; 
-    font-weight: bold; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5); 
-    pointer-events: none; 
+  .fs-drag-handle {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px; height: 14px;
+    background: #ff3b30;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 9px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    pointer-events: none;
   }
   .fs-container .split-line.active .fs-drag-handle { background: #ff0000; box-shadow: 0 2px 6px rgba(255,0,0,0.8); }
 
-  /* 极简微调按钮 */
   .fs-top-adjust { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; pointer-events: none; }
-  
-  /* 🌟 左右微调按钮进一步向中间靠拢，留出边缘空间防止遮挡边缘文字 */
+
   .fs-top-adjust.lr { display: flex; align-items: center; justify-content: space-between; padding: 0 20%; box-sizing: border-box; }
   .fs-top-adjust.tb { display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 100px 0 150px 0; box-sizing: border-box; }
 
-  /* 微调按钮样式（改小、改透明底） */
-  .fs-adjust-btn { 
-    pointer-events: auto; 
-    background: rgba(0, 0, 0, 0.4); 
-    color: rgba(255, 255, 255, 0.9); 
-    border: 1px solid rgba(255, 255, 255, 0.6); 
-    width: 36px;  
-    height: 36px; 
-    border-radius: 50%; 
-    font-size: 1.1rem; 
+  .fs-adjust-btn {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.4);
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 1.1rem;
     font-weight: bold;
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    cursor: pointer; 
-    box-shadow: 0 2px 6px rgba(0,0,0,0.4); 
-    transition: background 0.2s, transform 0.1s; 
-    -webkit-user-select: none; 
-    user-select: none; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    transition: background 0.2s, transform 0.1s;
+    -webkit-user-select: none;
+    user-select: none;
   }
-  .fs-adjust-btn:active { 
-    background: rgba(0, 0, 0, 0.8); 
-    transform: scale(0.95); 
+  .fs-adjust-btn:active {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(0.95);
   }
 
-  /* 🌟 底部完成调整按钮（加宽并上移，防止被系统悬浮球遮挡） */
-  .fs-finish-btn { 
-    position: fixed; 
-    bottom: 50px; /* 上移 */
-    left: 50%; 
-    transform: translateX(-50%); 
-    background: #1e7a1e; 
-    color: #fff; 
-    border: 2px solid #fff; 
-    padding: 12px 40px; /* 加宽 */
-    border-radius: 30px; 
-    font-size: 1.05rem; 
-    font-weight: bold; 
-    cursor: pointer; 
-    box-shadow: 0 6px 20px rgba(0,0,0,0.6); 
-    z-index: 10000; 
+  .fs-finish-btn {
+    position: fixed;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e7a1e;
+    color: #fff;
+    border: 2px solid #fff;
+    padding: 12px 40px;
+    border-radius: 30px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    z-index: 10000;
     transition: background 0.2s, transform 0.1s;
   }
   .fs-finish-btn:active { background: #145014; transform: translateX(-50%) scale(0.95); }
 
-  /* 查看大图 */
   .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; cursor: zoom-out; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .lightbox.show { opacity: 1; pointer-events: auto; }
   .lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; }
@@ -360,7 +330,6 @@
 </head>
 <body>
 <div class="card">
-  <!-- 上传区 -->
   <div class="upload-area" id="uploadArea">
     <div class="upload-icon">📄</div>
     <div class="upload-text">点击或拖拽，支持多文件批量上传</div>
@@ -368,22 +337,15 @@
     <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/jpg,application/pdf,.pdf">
   </div>
 
-  <!-- 可视化微调面板 -->
   <div class="fine-tune-panel" id="fineTunePanel">
-    <!-- 顶部居中提示语 -->
     <div class="tune-tip">请点击缩略图放大并微调，然后点击下方的分割按钮</div>
-    
-    <!-- 垂直多页画廊 -->
     <div class="drag-gallery" id="dragGallery"></div>
-    
-    <!-- 底部按钮组 -->
     <div class="action-buttons">
       <button class="btn btn-success" id="startSplitBtn" style="flex: 2; font-size: 1.05rem;">✂️ 确定分割</button>
       <button class="btn btn-danger" id="cancelSplitBtn" style="flex: 1; font-size: 1rem;">❌ 取消分割</button>
     </div>
   </div>
 
-  <!-- 工具栏 -->
   <div class="toolbar" id="toolbar" style="display:none;">
     <div class="count" id="fileCount">0 个文件</div>
     <div class="btn-group">
@@ -393,15 +355,12 @@
     </div>
   </div>
 
-  <!-- 分割结果展示区 -->
   <div id="fileList">
     <div class="placeholder" style="padding: 30px;">请先上传文件并调整切分位置</div>
   </div>
 </div>
 
-<!-- ===== 全屏高清微调弹窗 ===== -->
 <div class="fullscreen-tuner" id="fullscreenTuner">
-  <!-- 头部：两行布局 -->
   <div class="fs-header">
     <div class="fs-header-top">
       <div class="fs-title" id="fsTitle">放大微调</div>
@@ -411,7 +370,6 @@
         <button class="fs-zoom-btn" id="fsZoomIn">+</button>
       </div>
     </div>
-    <!-- 加线/减线和切分方向在第二行，靠右对齐 -->
     <div class="fs-header-bottom">
       <div class="fs-tools-row">
         <button class="fs-tool-btn" id="fsAddLineBtn">➕ 添加线</button>
@@ -423,24 +381,21 @@
       </div>
     </div>
   </div>
-  
+
   <div class="fs-drag-area" id="fsDragArea">
     <div class="fs-scroll-content">
       <div class="fs-container" id="fsContainer">
         <img id="fsImage" src="">
-        <!-- 动态生成多条红线 -->
         <div id="fsLinesContainer"></div>
       </div>
     </div>
   </div>
 
-  <!-- 微调按钮 (左右两侧对称分布) -->
   <div class="fs-top-adjust lr" id="fsTopAdjust">
     <button class="fs-adjust-btn" id="fsAdjustMinus">◀</button>
     <button class="fs-adjust-btn" id="fsAdjustPlus">▶</button>
   </div>
 
-  <!-- 完成调整按钮 (最底部) -->
   <button class="fs-finish-btn" id="fsFinishBtn">✔️ 完成调整</button>
 </div>
 
@@ -454,12 +409,16 @@
   const items = [];
   let nextId = 1;
   let isDragging = false;
-  let currentFsData = null; 
-  let activeLineIndex = 0; // 当前选中的线
+  let isPinching = false;
+  let currentFsData = null;
+  let activeLineIndex = 0;
+  let fsOpenToken = 0;
 
   let fsScale = 1;
   let initialPinchDist = 0;
   let initialPinchScale = 1;
+
+  const activePointers = new Set();
 
   const el = id => document.getElementById(id);
   const uploadArea = el('uploadArea'), fileInput = el('fileInput');
@@ -469,7 +428,6 @@
   const fileCount = el('fileCount'), downloadAllBtn = el('downloadAllBtn'), printAllBtn = el('printAllBtn'), clearAllBtn = el('clearAllBtn');
   const lightbox = el('lightbox'), lightboxImg = el('lightboxImg');
 
-  // 全屏微调元素
   const fullscreenTuner = el('fullscreenTuner'), fsTitle = el('fsTitle'), fsImage = el('fsImage');
   const fsContainer = el('fsContainer'), fsLinesContainer = el('fsLinesContainer');
   const fsDragArea = el('fsDragArea');
@@ -482,29 +440,55 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   window.showImageZoom = (url) => { lightboxImg.src = url; lightbox.classList.add('show'); };
 
-  // 单张切图删除逻辑
+  // ===== 边界限制：按索引判断（ratios 始终保持有序）=====
+  function clampRatio(ratios, idx, raw) {
+    let lower = 0.02, upper = 0.98;
+    for (let i = 0; i < ratios.length; i++) {
+      if (i === idx) continue;
+      if (i < idx) lower = Math.max(lower, ratios[i] + 0.005);
+      else upper = Math.min(upper, ratios[i] - 0.005);
+    }
+    if (lower > upper) return (lower + upper) / 2;
+    return Math.max(lower, Math.min(upper, raw));
+  }
+
+  // ===== 安全回收 blobUrl =====
+  function revokeBlob(url) {
+    if (!url) return;
+    try { URL.revokeObjectURL(url); } catch (_) {}
+  }
+  function releaseItemBlobs(item) {
+    if (!item || !item.result) return;
+    const list = item.type === 'image'
+      ? (item.result.slices || [])
+      : (item.result.pages || []).flatMap(p => p.slices || []);
+    list.forEach(s => revokeBlob(s && s.blobUrl));
+  }
+
   window.deleteSlice = (itemId, pageIdx, sliceIdx) => {
     const item = items.find(it => it.id === itemId);
     if (!item || item.status !== 'done') return;
-    
-    if (confirm('确定要删除这张切分好的图片吗？')) {
-      if (item.type === 'image') {
-        item.result.slices.splice(sliceIdx, 1);
-        if (item.result.slices.length === 0) {
-          item.status = 'pending';
-          item.result = null;
-        }
-      } else {
-        item.result.pages[pageIdx].slices.splice(sliceIdx, 1);
-        let totalSlices = 0;
-        item.result.pages.forEach(p => totalSlices += p.slices.length);
-        if (totalSlices === 0) {
-          item.status = 'pending';
-          item.result = null;
-        }
+
+    if (!confirm('确定要删除这张切分好的图片吗？')) return;
+
+    let removed = null;
+    if (item.type === 'image') {
+      removed = item.result.slices.splice(sliceIdx, 1)[0];
+      if (item.result.slices.length === 0) {
+        item.status = 'pending';
+        item.result = null;
       }
-      renderList();
+    } else {
+      removed = item.result.pages[pageIdx].slices.splice(sliceIdx, 1)[0];
+      let totalSlices = 0;
+      item.result.pages.forEach(p => totalSlices += p.slices.length);
+      if (totalSlices === 0) {
+        item.status = 'pending';
+        item.result = null;
+      }
     }
+    if (removed) revokeBlob(removed.blobUrl);
+    renderList();
   };
 
   function canvasToJpg(canvas) {
@@ -513,20 +497,18 @@
     let n = bstr.length; const u8 = new Uint8Array(n);
     while (n--) u8[n] = bstr.charCodeAt(n);
     const blob = new Blob([u8], { type: 'image/jpeg' });
-    const blobUrl = URL.createObjectURL(blob); 
+    const blobUrl = URL.createObjectURL(blob);
     return { dataUrl, blob, blobUrl };
   }
 
-  // 渲染小图上的红线
   function renderSmallLines(container, ratios, mode) {
+    if (!container) return;
     container.classList.toggle('vertical', mode === 'tb');
-    
     container.querySelectorAll('.split-line').forEach(e => e.remove());
-    
-    ratios.forEach((ratio, index) => {
+
+    ratios.forEach((ratio) => {
       const line = document.createElement('div');
       line.className = 'split-line';
-      line.dataset.index = index;
       if (mode === 'lr') {
         line.style.left = (ratio * 100) + '%';
         line.style.top = '0'; line.style.bottom = '0';
@@ -538,16 +520,14 @@
     });
   }
 
-  // 渲染大图上的红线和遮罩
   function renderFsLines(ratios, activeIdx, mode) {
     fsContainer.classList.toggle('vertical', mode === 'tb');
-    
     fsLinesContainer.innerHTML = '';
-    
+
     ratios.forEach((ratio, index) => {
       const line = document.createElement('div');
       line.className = `split-line ${index === activeIdx ? 'active' : ''}`;
-      
+
       if (mode === 'lr') {
         line.style.left = (ratio * 100) + '%';
         line.style.top = '0'; line.style.bottom = '0';
@@ -555,43 +535,40 @@
         line.style.top = (ratio * 100) + '%';
         line.style.left = '0'; line.style.right = '0';
       }
-      
+
       const handle = document.createElement('div');
       handle.className = 'fs-drag-handle';
       handle.textContent = mode === 'lr' ? '↔' : '↕';
       line.appendChild(handle);
 
-      // 拖拽事件
       line.addEventListener('pointerdown', (e) => {
-        if (e.touches && e.touches.length > 1) return; 
+        if (isPinching) return;
+        if (e.pointerType === 'touch') {
+          if (!e.isPrimary) return;
+          if (activePointers.size > 0) return;
+          activePointers.add(e.pointerId);
+        }
         isDragging = true;
         activeLineIndex = index;
-        
+
         fsLinesContainer.querySelectorAll('.split-line').forEach((l, i) => {
-            if (i === index) l.classList.add('active');
-            else l.classList.remove('active');
+          if (i === index) l.classList.add('active');
+          else l.classList.remove('active');
         });
-        
-        e.target.setPointerCapture(e.pointerId);
+
+        try { e.target.setPointerCapture(e.pointerId); } catch (_) {}
+        e.preventDefault();
       });
 
       fsLinesContainer.appendChild(line);
     });
   }
 
-  // 获得当前图片的切分比例数组
-  function getCurrentRatios() {
-    if (!currentFsData) return [];
-    const item = items.find(it => it.id === currentFsData.itemId);
-    return item.previews[currentFsData.pageIndex].ratios;
-  }
-
-  // 核心切分函数 (支持 N 条线，切成 N+1 块)
   function splitToMulti(source, isLandscape, ratios) {
     const w = source.width || source.naturalWidth;
     const h = source.height || source.naturalHeight;
-    
-    const sorted = [...ratios].sort((a,b) => a - b);
+
+    const sorted = [...ratios].sort((a, b) => a - b);
     const slices = [];
     let lastPos = 0;
 
@@ -643,7 +620,7 @@
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 2.0 }); 
+        const viewport = page.getViewport({ scale: 2.0 });
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width; canvas.height = viewport.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
@@ -667,26 +644,24 @@
       item.previews.forEach((preview, pageIdx) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'page-container-wrapper';
-        
+
         const pageInfo = document.createElement('div');
         pageInfo.className = 'page-info';
-        // 长文件名自动省略
         pageInfo.innerHTML = `
-          <span class="file-name">${item.file.name} ${item.type === 'pdf' ? `- 第${pageIdx + 1}页` : ''}</span>
+          <span class="file-name">${esc(item.file.name)} ${item.type === 'pdf' ? `- 第${pageIdx + 1}页` : ''}</span>
         `;
-        
+
         const container = document.createElement('div');
         container.className = 'drag-container';
         container.dataset.id = item.id;
         container.dataset.idx = pageIdx;
-        container.onclick = () => openFsTuner(item.id, pageIdx); 
-        
-        // 放大按钮
+        container.onclick = () => openFsTuner(item.id, pageIdx);
+
         container.innerHTML = `
           <img src="${preview.dataUrl}">
           <div class="zoom-hint" onclick="event.stopPropagation(); openFsTuner(${item.id}, ${pageIdx})">🔍 点击放大</div>
         `;
-        
+
         wrapper.appendChild(pageInfo);
         wrapper.appendChild(container);
         dragGallery.appendChild(wrapper);
@@ -700,7 +675,6 @@
     if (!fsImage.naturalWidth) return;
     fsScale = Math.max(0.05, Math.min(5, scale));
     fsZoomLevel.textContent = Math.round(fsScale * 100) + '%';
-    
     fsContainer.style.width = (fsImage.naturalWidth * fsScale) + 'px';
     fsContainer.style.height = (fsImage.naturalHeight * fsScale) + 'px';
   }
@@ -708,78 +682,89 @@
   window.openFsTuner = (itemId, pageIndex) => {
     const item = items.find(it => it.id === itemId);
     if (!item) return;
+
+    const token = ++fsOpenToken;
     currentFsData = { itemId, pageIndex };
-    activeLineIndex = 0; 
-    
-    fsImage.src = item.previews[pageIndex].dataUrl;
+    activeLineIndex = 0;
+
     fsTitle.textContent = `${item.file.name} - 第${pageIndex + 1}页 微调`;
     fullscreenTuner.classList.add('show');
-    
+
     const mode = item.previews[pageIndex].splitMode;
     document.querySelector(`input[name="splitMode"][value="${mode}"]`).checked = true;
-    
     fsTopAdjust.className = mode === 'lr' ? 'fs-top-adjust lr' : 'fs-top-adjust tb';
     fsAdjustMinus.textContent = mode === 'lr' ? '◀' : '▲';
     fsAdjustPlus.textContent = mode === 'lr' ? '▶' : '▼';
-    
-    fsImage.onload = () => {
+
+    let handled = false;
+    const onLoaded = () => {
+      if (handled) return;
+      if (token !== fsOpenToken) return;
+      handled = true;
+
       const areaW = fsDragArea.clientWidth - 40;
       const areaH = fsDragArea.clientHeight - 120;
       let initScale = Math.min(areaW / fsImage.naturalWidth, areaH / fsImage.naturalHeight, 1);
+      if (!isFinite(initScale) || initScale <= 0) initScale = 0.5;
       if (initScale < 0.05) initScale = 0.05;
-      
+
       applyFsScale(initScale);
       renderFsLines(item.previews[pageIndex].ratios, activeLineIndex, mode);
-      
+
       setTimeout(() => {
         fsDragArea.scrollLeft = (fsDragArea.scrollWidth - fsDragArea.clientWidth) / 2;
         fsDragArea.scrollTop = (fsDragArea.scrollHeight - fsDragArea.clientHeight) / 2;
       }, 50);
     };
+
+    fsImage.onload = onLoaded;
+    fsImage.src = item.previews[pageIndex].dataUrl;
+    if (fsImage.complete && fsImage.naturalWidth > 0) onLoaded();
   };
 
   window.closeFsTuner = () => {
+    fsOpenToken++;
     fullscreenTuner.classList.remove('show');
     currentFsData = null;
   };
 
   fsFinishBtn.onclick = (e) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     closeFsTuner();
     renderTunePanel();
   };
 
-  // 缩放比例步长调小为 5%（0.05）
   fsZoomIn.onclick = () => applyFsScale(fsScale + 0.05);
   fsZoomOut.onclick = () => applyFsScale(fsScale - 0.05);
 
-  // 加线/减线
   fsAddLineBtn.onclick = () => {
     if (!currentFsData) return;
     const item = items.find(it => it.id === currentFsData.itemId);
     const ratios = item.previews[currentFsData.pageIndex].ratios;
     const mode = item.previews[currentFsData.pageIndex].splitMode;
-    
+
     if (ratios.length >= 6) return alert('最多只支持切分 6 条线（7 张图）哦！');
-    
-    const sorted = [...ratios].sort((a,b) => a - b);
+
+    const sorted = [...ratios].sort((a, b) => a - b);
     let newRatio = 0.75;
     let maxGap = 0;
 
     if (sorted[0] > maxGap) { maxGap = sorted[0]; newRatio = sorted[0] / 2; }
     for (let i = 0; i < sorted.length - 1; i++) {
-      const gap = sorted[i+1] - sorted[i];
+      const gap = sorted[i + 1] - sorted[i];
       if (gap > maxGap) { maxGap = gap; newRatio = sorted[i] + gap / 2; }
     }
     const endGap = 1 - sorted[sorted.length - 1];
     if (endGap > maxGap) { maxGap = endGap; newRatio = sorted[sorted.length - 1] + endGap / 2; }
 
     ratios.push(newRatio);
-    ratios.sort((a,b) => a - b);
-    
-    activeLineIndex = ratios.indexOf(newRatio); 
+    ratios.sort((a, b) => a - b);
+
+    activeLineIndex = ratios.indexOf(newRatio);
     renderFsLines(ratios, activeLineIndex, mode);
-    renderSmallLines(document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`), ratios, mode);
+
+    const smallContainer = document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`);
+    renderSmallLines(smallContainer, ratios, mode);
   };
 
   fsDelLineBtn.onclick = () => {
@@ -787,189 +772,207 @@
     const item = items.find(it => it.id === currentFsData.itemId);
     const ratios = item.previews[currentFsData.pageIndex].ratios;
     const mode = item.previews[currentFsData.pageIndex].splitMode;
-    
+
     if (ratios.length <= 1) return alert('至少需要保留 1 条分割线哦！');
-    
+
     ratios.splice(activeLineIndex, 1);
     activeLineIndex = 0;
-    
+
     renderFsLines(ratios, activeLineIndex, mode);
-    renderSmallLines(document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`), ratios, mode);
+    const smallContainer = document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`);
+    renderSmallLines(smallContainer, ratios, mode);
   };
 
-  // 单点微调
   function adjustRatio(delta) {
     if (!currentFsData) return;
     const item = items.find(it => it.id === currentFsData.itemId);
+    if (!item) return;
     const preview = item.previews[currentFsData.pageIndex];
     const ratios = preview.ratios;
     const mode = preview.splitMode;
 
     if (activeLineIndex < 0 || activeLineIndex >= ratios.length) return;
 
-    let newVal = ratios[activeLineIndex] + delta;
-    
-    const sorted = [...ratios].sort((a,b) => a-b);
-    const idxInSorted = sorted.indexOf(ratios[activeLineIndex]);
-    const prevLine = idxInSorted > 0 ? sorted[idxInSorted - 1] : 0;
-    const nextLine = idxInSorted < sorted.length - 1 ? sorted[idxInSorted + 1] : 1;
-    
-    newVal = Math.max(prevLine + 0.01, Math.min(nextLine - 0.01, newVal));
-    newVal = Math.max(0.05, Math.min(0.95, newVal));
+    const newVal = clampRatio(ratios, activeLineIndex, ratios[activeLineIndex] + delta);
     ratios[activeLineIndex] = newVal;
 
     const fsLine = fsLinesContainer.children[activeLineIndex];
     if (fsLine) {
-        if (mode === 'lr') fsLine.style.left = (newVal * 100) + '%';
-        else fsLine.style.top = (newVal * 100) + '%';
+      if (mode === 'lr') fsLine.style.left = (newVal * 100) + '%';
+      else fsLine.style.top = (newVal * 100) + '%';
     }
 
     const smallContainer = document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`);
     if (smallContainer) {
-        const smallLine = smallContainer.querySelectorAll('.split-line')[activeLineIndex];
-        if (smallLine) {
-            if (mode === 'lr') smallLine.style.left = (newVal * 100) + '%';
-            else smallLine.style.top = (newVal * 100) + '%';
-        }
+      const smallLine = smallContainer.querySelectorAll('.split-line')[activeLineIndex];
+      if (smallLine) {
+        if (mode === 'lr') smallLine.style.left = (newVal * 100) + '%';
+        else smallLine.style.top = (newVal * 100) + '%';
+      }
     }
   }
 
   fsAdjustMinus.onclick = (e) => { e.stopPropagation(); adjustRatio(-0.005); };
   fsAdjustPlus.onclick = (e) => { e.stopPropagation(); adjustRatio(0.005); };
 
-  // 双指捏合缩放
+  // ===== 捏合缩放（仅在双指时启用，同时阻止拖线）=====
   fsDragArea.addEventListener('touchstart', (e) => {
     if (e.touches.length === 2) {
-      initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+      isPinching = true;
+      isDragging = false;
+      initialPinchDist = Math.hypot(
+        e.touches[0].pageX - e.touches[1].pageX,
+        e.touches[0].pageY - e.touches[1].pageY
+      );
       initialPinchScale = fsScale;
     }
   }, { passive: false });
 
   fsDragArea.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 2) {
+    if (e.touches.length === 2 && isPinching) {
       e.preventDefault();
-      const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+      const dist = Math.hypot(
+        e.touches[0].pageX - e.touches[1].pageX,
+        e.touches[0].pageY - e.touches[1].pageY
+      );
       if (initialPinchDist > 0) applyFsScale(initialPinchScale * (dist / initialPinchDist));
     }
   }, { passive: false });
 
-  // 拖拽红线
+  fsDragArea.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) isPinching = false;
+  }, { passive: false });
+
+  fsDragArea.addEventListener('touchcancel', () => {
+    isPinching = false;
+  }, { passive: false });
+
+  // ===== 拖拽红线（pointermove，无 touches 依赖）=====
   window.addEventListener('pointermove', (e) => {
-    if (!isDragging || !currentFsData) return;
+    if (!isDragging || !currentFsData || isPinching) return;
     e.preventDefault();
-    
+
     const rect = fsContainer.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
     const item = items.find(it => it.id === currentFsData.itemId);
+    if (!item) return;
     const preview = item.previews[currentFsData.pageIndex];
     const ratios = preview.ratios;
     const mode = preview.splitMode;
-    
-    const sorted = [...ratios].sort((a,b) => a-b);
-    const idxInSorted = sorted.indexOf(ratios[activeLineIndex]);
-    
-    const prevLine = idxInSorted > 0 ? sorted[idxInSorted - 1] : 0;
-    const nextLine = idxInSorted < sorted.length - 1 ? sorted[idxInSorted + 1] : 1;
-    
-    let newVal;
-    if (mode === 'lr') {
-      const clientX = e.clientX || e.touches[0].clientX;
-      newVal = (clientX - rect.left) / rect.width;
-    } else {
-      const clientY = e.clientY || e.touches[0].clientY;
-      newVal = (clientY - rect.top) / rect.height;
-    }
-    newVal = Math.max(prevLine + 0.01, Math.min(nextLine - 0.01, newVal));
-    newVal = Math.max(0.05, Math.min(0.95, newVal));
-    
+
+    if (activeLineIndex < 0 || activeLineIndex >= ratios.length) return;
+
+    const raw = mode === 'lr'
+      ? (e.clientX - rect.left) / rect.width
+      : (e.clientY - rect.top) / rect.height;
+
+    const newVal = clampRatio(ratios, activeLineIndex, raw);
     ratios[activeLineIndex] = newVal;
 
     const fsLine = fsLinesContainer.children[activeLineIndex];
     if (fsLine) {
-        if (mode === 'lr') fsLine.style.left = (newVal * 100) + '%';
-        else fsLine.style.top = (newVal * 100) + '%';
+      if (mode === 'lr') fsLine.style.left = (newVal * 100) + '%';
+      else fsLine.style.top = (newVal * 100) + '%';
     }
 
     const smallContainer = document.querySelector(`.drag-container[data-id="${currentFsData.itemId}"][data-idx="${currentFsData.pageIndex}"]`);
     if (smallContainer) {
-        const smallLine = smallContainer.querySelectorAll('.split-line')[activeLineIndex];
-        if (smallLine) {
-            if (mode === 'lr') smallLine.style.left = (newVal * 100) + '%';
-            else smallLine.style.top = (newVal * 100) + '%';
-        }
+      const smallLine = smallContainer.querySelectorAll('.split-line')[activeLineIndex];
+      if (smallLine) {
+        if (mode === 'lr') smallLine.style.left = (newVal * 100) + '%';
+        else smallLine.style.top = (newVal * 100) + '%';
+      }
     }
+  }, { passive: false });
+
+  window.addEventListener('pointerup', (e) => {
+    isDragging = false;
+    if (e.pointerId !== undefined) activePointers.delete(e.pointerId);
+  });
+  window.addEventListener('pointercancel', (e) => {
+    isDragging = false;
+    if (e.pointerId !== undefined) activePointers.delete(e.pointerId);
   });
 
-  window.addEventListener('pointerup', () => { isDragging = false; });
-
-  // 切换方向
   document.querySelectorAll('input[name="splitMode"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
       if (!currentFsData) return;
-      
+
       const item = items.find(it => it.id === currentFsData.itemId);
       const preview = item.previews[currentFsData.pageIndex];
       const mode = e.target.value;
-      
-      preview.splitMode = mode; 
-      
+
+      preview.splitMode = mode;
+
       fsTopAdjust.className = mode === 'lr' ? 'fs-top-adjust lr' : 'fs-top-adjust tb';
       fsAdjustMinus.textContent = mode === 'lr' ? '◀' : '▲';
       fsAdjustPlus.textContent = mode === 'lr' ? '▶' : '▼';
-      
+
       renderFsLines(preview.ratios, activeLineIndex, mode);
-      
+
       const smallContainer = document.querySelector(`.drag-container[data-id="${item.id}"][data-idx="${currentFsData.pageIndex}"]`);
       if (smallContainer) renderSmallLines(smallContainer, preview.ratios, mode);
     });
   });
 
-  // 上传处理
+  // ===== 上传 =====
   uploadArea.onclick = () => { fileInput.value = ''; fileInput.click(); };
   fileInput.onchange = async e => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-    
+
     uploadArea.style.opacity = '0.5';
-    
+
     for (const file of files) {
       const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       if (!isPdf && !file.type.startsWith('image/')) continue;
-      
-      const previews = await generateThumbnails(file);
-      items.push({ 
-        id: nextId++, file, type: isPdf ? 'pdf' : 'image', status: 'pending', result: null, previews
-      });
+
+      try {
+        const previews = await generateThumbnails(file);
+        items.push({
+          id: nextId++, file, type: isPdf ? 'pdf' : 'image', status: 'pending', result: null, previews
+        });
+      } catch (err) {
+        alert(`读取文件失败：${file.name}\n${err.message || err}`);
+      }
     }
-    
+
     uploadArea.style.opacity = '1';
     renderTunePanel();
     fineTunePanel.classList.add('active');
     toolbar.style.display = 'flex';
-    
+
     fileCount.textContent = `${items.length} 个文件已就绪`;
     fileList.innerHTML = '<div class="placeholder" style="padding: 30px;">文件已准备就绪，等待分割...</div>';
+    updateButtons();
   };
 
-  // 执行分割
+  // ===== 执行分割 =====
   function executeSplit() {
     if (items.length === 0) return;
-    if (currentFsData) closeFsTuner(); 
+    if (currentFsData) closeFsTuner();
 
     fineTunePanel.classList.remove('active');
     renderList();
 
     items.forEach(async (item) => {
-      if (item.status === 'done') return;
+      if (item.status === 'done' || item.status === 'splitting') return;
       item.status = 'splitting'; renderList();
 
       try {
         if (item.type === 'image') {
           const img = await new Promise((res, rej) => {
             const reader = new FileReader();
-            reader.onload = e => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = e.target.result; };
+            reader.onload = e => {
+              const i = new Image();
+              i.onload = () => res(i);
+              i.onerror = rej;
+              i.src = e.target.result;
+            };
             reader.readAsDataURL(item.file);
           });
-          
+
           const preview = item.previews[0];
           const isLandscape = (preview.splitMode === 'lr');
           const slices = splitToMulti(img, isLandscape, preview.ratios);
@@ -978,15 +981,15 @@
           if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
           const pages = [];
-          
+
           for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 2.5 }); 
+            const viewport = page.getViewport({ scale: 2.5 });
             const canvas = document.createElement('canvas');
             canvas.width = viewport.width; canvas.height = viewport.height;
             await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
-            const preview = item.previews[i-1];
+            const preview = item.previews[i - 1];
             const isLandscape = (preview.splitMode === 'lr');
             const slices = splitToMulti(canvas, isLandscape, preview.ratios);
             pages.push({ slices });
@@ -994,17 +997,16 @@
           item.result = { pages };
         }
         item.status = 'done';
-      } catch (e) {
-        item.status = 'error'; item.errorMsg = e.message || '处理失败';
+      } catch (err) {
+        item.status = 'error';
+        item.errorMsg = err.message || '处理失败';
       }
       renderList();
     });
   }
 
-  // 按钮事件监听
-  startSplitBtn.onclick = executeSplit; 
-  
-  // 取消分割
+  startSplitBtn.onclick = executeSplit;
+
   cancelSplitBtn.onclick = () => {
     if (items.some(it => it.status === 'splitting')) {
       alert('正在分割中，请稍候...');
@@ -1012,22 +1014,25 @@
     }
     fineTunePanel.classList.remove('active');
     items.forEach(item => {
+      releaseItemBlobs(item);   // ← 回收已切分 slices 的 blobUrl
       item.status = 'original';
       item.result = null;
     });
     renderList();
   };
 
-  function renderList() {
+  function updateButtons() {
     const anyDone = items.some(it => it.status === 'done' || it.status === 'original');
     const anySplitting = items.some(it => it.status === 'splitting');
-    
     downloadAllBtn.disabled = !anyDone || anySplitting;
     printAllBtn.disabled = !anyDone || anySplitting;
     clearAllBtn.disabled = items.length === 0 || anySplitting;
+  }
 
+  function renderList() {
+    updateButtons();
     fileList.innerHTML = '';
-    
+
     items.forEach(item => {
       const card = document.createElement('div');
       card.className = 'file-card';
@@ -1046,7 +1051,7 @@
         item.previews.forEach((p, idx) => {
           previewHtml += `
             <div class="preview-card">
-              <div class="preview-title">${item.type === 'pdf' ? `第${idx+1}页` : '原图'} <span>原图</span></div>
+              <div class="preview-title">${item.type === 'pdf' ? `第${idx + 1}页` : '原图'} <span>原图</span></div>
               <div class="preview-img"><img src="${p.dataUrl}" onclick="window.showImageZoom(this.src)"></div>
             </div>
           `;
@@ -1056,17 +1061,17 @@
         if (item.type === 'pdf') {
           statusHtml = `✅ PDF共 ${item.result.pages.length} 页，全部分割完成`;
           previewHtml = `<div class="preview-grid">`;
-          item.result.pages.forEach((p, pageIdx)=>{
+          item.result.pages.forEach((p, pageIdx) => {
             p.slices.forEach((slice, sliceIdx) => {
-              previewHtml += buildPreview(item, `第${pageIdx+1}页`, `图 ${sliceIdx+1}`, slice.dataUrl, pageIdx, sliceIdx);
+              previewHtml += buildPreview(item, `第${pageIdx + 1}页`, `图 ${sliceIdx + 1}`, slice.blobUrl, pageIdx, sliceIdx);
             });
-          })
+          });
           previewHtml += `</div>`;
         } else {
           statusHtml = `✅ 已成功切分`;
           previewHtml = `<div class="preview-grid">`;
           item.result.slices.forEach((slice, sliceIdx) => {
-            previewHtml += buildPreview(item, `切分`, `图 ${sliceIdx+1}`, slice.dataUrl, 0, sliceIdx);
+            previewHtml += buildPreview(item, `切分`, `图 ${sliceIdx + 1}`, slice.blobUrl, 0, sliceIdx);
           });
           previewHtml += `</div>`;
         }
@@ -1086,8 +1091,10 @@
     });
   }
 
-  function buildPreview(item, tag, label, dataUrl, pageIdx, sliceIdx) {
-    let imgHtml = dataUrl ? `<img src="${dataUrl}" onclick="window.showImageZoom(this.src)">` : `<div class="placeholder">${label}</div>`;
+  function buildPreview(item, tag, label, url, pageIdx, sliceIdx) {
+    const imgHtml = url
+      ? `<img src="${url}" onclick="window.showImageZoom(this.src)">`
+      : `<div class="placeholder">${label}</div>`;
     return `<div class="preview-card">
       <button class="btn-delete-slice" onclick="deleteSlice(${item.id}, ${pageIdx}, ${sliceIdx})" title="删除这张">✕</button>
       <div class="preview-title">${label} <span>${tag}</span></div>
@@ -1095,66 +1102,83 @@
     </div>`;
   }
 
-  clearAllBtn.onclick = () => { 
-    if(confirm('确定清空全部文件？')) { 
-      items.length = 0; 
-      fileCount.textContent = '0 个文件';
-      fineTunePanel.classList.remove('active');
-      toolbar.style.display = 'none';
-      fileList.innerHTML = '<div class="placeholder" style="padding: 30px;">暂无文件</div>';
-    } 
+  clearAllBtn.onclick = () => {
+    if (!confirm('确定清空全部文件？')) return;
+    items.forEach(item => releaseItemBlobs(item));
+    items.length = 0;
+    nextId = 1;
+    fileCount.textContent = '0 个文件';
+    fineTunePanel.classList.remove('active');
+    toolbar.style.display = 'none';
+    fileList.innerHTML = '<div class="placeholder" style="padding: 30px;">暂无文件</div>';
+    updateButtons();
   };
 
+  // ===== 打包下载 =====
   downloadAllBtn.onclick = async () => {
     const validItems = items.filter(it => it.status === 'done' || it.status === 'original');
     if (!validItems.length) return;
-    downloadAllBtn.textContent = '打包中...'; downloadAllBtn.disabled = true;
-    
-    const zip = new JSZip();
-    for (const item of validItems) {
-      const base = item.file.name.replace(/\.[^/.]+$/, '');
-      
-      if (item.status === 'original') {
-        if (item.type === 'image') {
-          zip.file(`${base}_原图.jpg`, item.file);
-        } else {
-          if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
-          const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 2.5 });
-            const canvas = document.createElement('canvas');
-            canvas.width = viewport.width; canvas.height = viewport.height;
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-            const bstr = atob(canvas.toDataURL('image/jpeg', 0.95).split(',')[1]);
-            let n = bstr.length; const u8 = new Uint8Array(n);
-            while (n--) u8[n] = bstr.charCodeAt(n);
-            zip.file(`${base}_第${i+1}页_原图.jpg`, new Blob([u8], { type: 'image/jpeg' }));
-          }
-        }
-      } else {
-        if (item.type === 'image') {
-          item.result.slices.forEach((slice, i) => {
-            zip.file(`${base}_图${i+1}.jpg`, slice.blob);
-          });
-        } else {
-          item.result.pages.forEach((p, pageIdx) => {
-            p.slices.forEach((slice, sliceIdx) => {
-              zip.file(`${base}_第${pageIdx+1}页_图${sliceIdx+1}.jpg`, slice.blob);
-            });
-          });
-        }
-      }
-    }
+
+    const originalText = downloadAllBtn.textContent;
+    downloadAllBtn.textContent = '打包中...';
+    downloadAllBtn.disabled = true;
 
     try {
+      const zip = new JSZip();
+      for (const item of validItems) {
+        const base = item.file.name.replace(/\.[^/.]+$/, '');
+
+        if (item.status === 'original') {
+          if (item.type === 'image') {
+            const m = item.file.name.match(/\.([^.]+)$/);
+            const ext = m ? m[1] : 'jpg';
+            zip.file(`${base}_原图.${ext}`, item.file);
+          } else {
+            if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const viewport = page.getViewport({ scale: 2.5 });
+              const canvas = document.createElement('canvas');
+              canvas.width = viewport.width; canvas.height = viewport.height;
+              await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+              const bstr = atob(canvas.toDataURL('image/jpeg', 0.95).split(',')[1]);
+              let n = bstr.length; const u8 = new Uint8Array(n);
+              while (n--) u8[n] = bstr.charCodeAt(n);
+              zip.file(`${base}_第${i + 1}页_原图.jpg`, new Blob([u8], { type: 'image/jpeg' }));
+            }
+          }
+        } else {
+          if (item.type === 'image') {
+            item.result.slices.forEach((slice, i) => {
+              zip.file(`${base}_图${i + 1}.jpg`, slice.blob);
+            });
+          } else {
+            item.result.pages.forEach((p, pageIdx) => {
+              p.slices.forEach((slice, sliceIdx) => {
+                zip.file(`${base}_第${pageIdx + 1}页_图${sliceIdx + 1}.jpg`, slice.blob);
+              });
+            });
+          }
+        }
+      }
+
       const content = await zip.generateAsync({ type: 'blob' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = `A4输出_${Date.now()}.zip`; a.click();
-    } catch(e) { alert('打包失败'); }
-    
-    downloadAllBtn.textContent = '⬇️ 打包下载'; downloadAllBtn.disabled = false;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(content);
+      a.download = `A4输出_${Date.now()}.zip`;
+      a.click();
+      setTimeout(() => revokeBlob(a.href), 10000);
+    } catch (err) {
+      alert('打包失败：' + (err.message || err));
+    } finally {
+      downloadAllBtn.textContent = originalText;
+      downloadAllBtn.disabled = false;
+      updateButtons();
+    }
   };
 
+  // ===== 打印（修复图片加载竞态）=====
   printAllBtn.onclick = async () => {
     const validItems = items.filter(it => it.status === 'done' || it.status === 'original');
     if (!validItems.length) return;
@@ -1164,13 +1188,12 @@
     printAllBtn.disabled = true;
 
     const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
+    iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;';
     document.body.appendChild(iframe);
 
     const doc = iframe.contentWindow.document;
     doc.open();
-    doc.write(`
-      <!DOCTYPE html>
+    doc.write(`<!DOCTYPE html>
       <html>
       <head>
         <style>
@@ -1181,69 +1204,76 @@
         </style>
       </head>
       <body></body>
-      </html>
-    `);
+      </html>`);
     doc.close();
 
     const body = doc.body;
     const imgPromises = [];
+    const tmpUrls = [];
 
-    for (const item of validItems) {
-      if (item.status === 'done') {
-        if (item.type === 'image') {
-          item.result.slices.forEach(slice => {
-            body.innerHTML += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
-          });
-        } else {
-          item.result.pages.forEach(p => {
-            p.slices.forEach(slice => {
-              body.innerHTML += `<div class="print-page"><img src="${slice.blobUrl}"></div>`;
-            });
-          });
-        }
-      } else if (item.status === 'original') {
-        if (item.type === 'image') {
-          const blobUrl = URL.createObjectURL(item.file);
-          const div = doc.createElement('div');
-          div.className = 'print-page';
-          const img = doc.createElement('img');
-          img.src = blobUrl;
-          imgPromises.push(new Promise(res => img.onload = res));
-          div.appendChild(img);
-          body.appendChild(div);
+    const appendPage = (src) => {
+      const div = doc.createElement('div');
+      div.className = 'print-page';
+      const img = doc.createElement('img');
+      img.src = src;
+      const p = img.complete
+        ? Promise.resolve()
+        : new Promise(res => { img.onload = img.onerror = res; });
+      imgPromises.push(p);
+      div.appendChild(img);
+      body.appendChild(div);
+    };
+
+    try {
+      for (const item of validItems) {
+        if (item.status === 'done') {
+          if (item.type === 'image') {
+            item.result.slices.forEach(s => appendPage(s.blobUrl));
+          } else {
+            item.result.pages.forEach(p => p.slices.forEach(s => appendPage(s.blobUrl)));
+          }
+        } else if (item.type === 'image') {
+          const u = URL.createObjectURL(item.file);
+          tmpUrls.push(u);
+          appendPage(u);
         } else {
           if (!item.pdfData) item.pdfData = await item.file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: item.pdfData }).promise;
           for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 2.5 }); 
+            const viewport = page.getViewport({ scale: 2.5 });
             const canvas = document.createElement('canvas');
             canvas.width = viewport.width; canvas.height = viewport.height;
             await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-            const url = canvas.toDataURL('image/jpeg', 0.95);
-            
-            const div = doc.createElement('div');
-            div.className = 'print-page';
-            const img = doc.createElement('img');
-            img.src = url;
-            imgPromises.push(new Promise(res => img.onload = res));
-            div.appendChild(img);
-            body.appendChild(div);
+            appendPage(canvas.toDataURL('image/jpeg', 0.95));
           }
         }
       }
+
+      await Promise.all(imgPromises);
+
+      printAllBtn.textContent = originalText;
+      printAllBtn.disabled = false;
+
+      setTimeout(() => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch (err) {
+          alert('调用打印失败：' + (err.message || err));
+        }
+        setTimeout(() => {
+          if (document.body.contains(iframe)) document.body.removeChild(iframe);
+          tmpUrls.forEach(revokeBlob);
+        }, 3000);
+      }, 200);
+    } catch (err) {
+      if (document.body.contains(iframe)) document.body.removeChild(iframe);
+      tmpUrls.forEach(revokeBlob);
+      printAllBtn.textContent = originalText;
+      printAllBtn.disabled = false;
+      alert('准备打印失败：' + (err.message || err));
     }
-
-    await Promise.all(imgPromises);
-    
-    printAllBtn.textContent = originalText;
-    printAllBtn.disabled = false;
-
-    setTimeout(() => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      setTimeout(() => { document.body.removeChild(iframe); }, 3000);
-    }, 200);
   };
 </script>
 </body>
