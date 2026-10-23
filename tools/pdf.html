@@ -440,7 +440,6 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   window.showImageZoom = (url) => { lightboxImg.src = url; lightbox.classList.add('show'); };
 
-  // 边界限制
   function clampRatio(ratios, idx, raw) {
     let lower = 0.02, upper = 0.98;
     for (let i = 0; i < ratios.length; i++) {
@@ -452,7 +451,6 @@
     return Math.max(lower, Math.min(upper, raw));
   }
 
-  // 回收 blobUrl
   function revokeBlob(url) {
     if (!url) return;
     try { URL.revokeObjectURL(url); } catch (_) {}
@@ -491,15 +489,28 @@
     renderList();
   };
 
-  // 修改 canvasToJpg，增加宽高记录
+  // ===== 核心：生成图片并自动转向 =====
   function canvasToJpg(canvas) {
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    let finalCanvas = canvas;
+    
+    // 如果宽大于高（横向），顺时针旋转90度变成竖向
+    if (canvas.width > canvas.height) {
+      finalCanvas = document.createElement('canvas');
+      finalCanvas.width = canvas.height;
+      finalCanvas.height = canvas.width;
+      const ctx = finalCanvas.getContext('2d');
+      ctx.translate(finalCanvas.width / 2, finalCanvas.height / 2);
+      ctx.rotate((90 * Math.PI) / 180);
+      ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    }
+
+    const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.95);
     const bstr = atob(dataUrl.split(',')[1]);
     let n = bstr.length; const u8 = new Uint8Array(n);
     while (n--) u8[n] = bstr.charCodeAt(n);
     const blob = new Blob([u8], { type: 'image/jpeg' });
     const blobUrl = URL.createObjectURL(blob);
-    return { dataUrl, blob, blobUrl, width: canvas.width, height: canvas.height };
+    return { dataUrl, blob, blobUrl, width: finalCanvas.width, height: finalCanvas.height };
   }
 
   function renderSmallLines(container, ratios, mode) {
@@ -1174,7 +1185,6 @@
     }
   };
 
-  // ===== 打印逻辑（更新：自动适应横向/纵向） =====
   printAllBtn.onclick = async () => {
     const validItems = items.filter(it => it.status === 'done' || it.status === 'original');
     if (!validItems.length) return;
@@ -1183,41 +1193,20 @@
     printAllBtn.textContent = '⏳ 准备打印...';
     printAllBtn.disabled = true;
 
-    // 智能判断打印方向：检查第一张已切分图的宽高
-    let isLandscape = false;
-    for (const item of validItems) {
-      if (item.status === 'done') {
-        let firstSlice = null;
-        if (item.type === 'image' && item.result.slices.length > 0) {
-          firstSlice = item.result.slices[0];
-        } else if (item.type === 'pdf' && item.result.pages.length > 0 && item.result.pages[0].slices.length > 0) {
-          firstSlice = item.result.pages[0].slices[0];
-        }
-        
-        if (firstSlice && firstSlice.width && firstSlice.height) {
-          isLandscape = firstSlice.width > firstSlice.height;
-          break; 
-        }
-      }
-    }
-
     const iframe = document.createElement('iframe');
     iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;';
     document.body.appendChild(iframe);
 
     const doc = iframe.contentWindow.document;
-    const pageSize = isLandscape ? 'A4 landscape' : 'A4 portrait';
-    const pageW = isLandscape ? '297mm' : '210mm';
-    const pageH = isLandscape ? '210mm' : '297mm';
-
+    // 回归固定 A4 纵向（Portrait），依赖底层切图时已自动旋转为竖向
     doc.open();
     doc.write(`<!DOCTYPE html>
       <html>
       <head>
         <style>
-          @page { size: ${pageSize}; margin: 0; }
+          @page { size: A4 portrait; margin: 0; }
           body { margin: 0; padding: 0; }
-          .print-page { page-break-after: always; page-break-inside: avoid; width: ${pageW}; height: ${pageH}; display: flex; justify-content: center; align-items: center; overflow: hidden; margin: 0 auto; }
+          .print-page { page-break-after: always; page-break-inside: avoid; width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; overflow: hidden; margin: 0 auto; }
           .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
         </style>
       </head>
