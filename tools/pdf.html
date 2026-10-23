@@ -326,6 +326,48 @@
   .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; cursor: zoom-out; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .lightbox.show { opacity: 1; pointer-events: auto; }
   .lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; }
+
+  /* ===== 打印专用样式 ===== */
+  @media print {
+    @page { size: A4 portrait; margin: 0; }
+    body { 
+      margin: 0; 
+      padding: 0; 
+      background: #fff; 
+      display: block; /* 覆盖 body 的 flex 布局 */
+    }
+    /* 隐藏主界面的所有内容 */
+    body > *:not(#printContainer) {
+      display: none !important;
+    }
+    /* 强制显示打印容器 */
+    #printContainer {
+      display: block !important;
+      width: 100%;
+    }
+    .print-page { 
+      page-break-after: always; 
+      page-break-inside: avoid; 
+      width: 100%; 
+      height: 100vh; /* 在移动端用 100vh 铺满效果最好 */
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      overflow: hidden; 
+      margin: 0;
+      padding: 0;
+    }
+    .print-page img { 
+      max-width: 100%; 
+      max-height: 100%; 
+      object-fit: contain; 
+      display: block; 
+    }
+    /* 避免最后多出空白页 */
+    .print-page:last-child {
+      page-break-after: auto;
+    }
+  }
 </style>
 </head>
 <body>
@@ -489,7 +531,6 @@
     renderList();
   };
 
-  // ===== 核心：生成图片并自动转向 =====
   function canvasToJpg(canvas) {
     let finalCanvas = canvas;
     
@@ -1185,6 +1226,7 @@
     }
   };
 
+  // ===== 打印逻辑（完美兼容手机浏览器的 window.print） =====
   printAllBtn.onclick = async () => {
     const validItems = items.filter(it => it.status === 'done' || it.status === 'original');
     if (!validItems.length) return;
@@ -1193,42 +1235,29 @@
     printAllBtn.textContent = '⏳ 准备打印...';
     printAllBtn.disabled = true;
 
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:absolute;width:0;height:0;border:none;';
-    document.body.appendChild(iframe);
+    // 创建或获取打印专用容器
+    let printContainer = document.getElementById('printContainer');
+    if (!printContainer) {
+      printContainer = document.createElement('div');
+      printContainer.id = 'printContainer';
+      document.body.appendChild(printContainer);
+    }
+    printContainer.innerHTML = ''; // 清空上一次的缓存
 
-    const doc = iframe.contentWindow.document;
-    // 回归固定 A4 纵向（Portrait），依赖底层切图时已自动旋转为竖向
-    doc.open();
-    doc.write(`<!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          @page { size: A4 portrait; margin: 0; }
-          body { margin: 0; padding: 0; }
-          .print-page { page-break-after: always; page-break-inside: avoid; width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; overflow: hidden; margin: 0 auto; }
-          .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
-        </style>
-      </head>
-      <body></body>
-      </html>`);
-    doc.close();
-
-    const body = doc.body;
     const imgPromises = [];
     const tmpUrls = [];
 
     const appendPage = (src) => {
-      const div = doc.createElement('div');
+      const div = document.createElement('div');
       div.className = 'print-page';
-      const img = doc.createElement('img');
+      const img = document.createElement('img');
       img.src = src;
       const p = img.complete
         ? Promise.resolve()
         : new Promise(res => { img.onload = img.onerror = res; });
       imgPromises.push(p);
       div.appendChild(img);
-      body.appendChild(div);
+      printContainer.appendChild(div);
     };
 
     try {
@@ -1262,23 +1291,26 @@
       printAllBtn.textContent = originalText;
       printAllBtn.disabled = false;
 
+      // 调用主窗口打印
       setTimeout(() => {
-        try {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-        } catch (err) {
-          alert('调用打印失败：' + (err.message || err));
-        }
-        setTimeout(() => {
-          if (document.body.contains(iframe)) document.body.removeChild(iframe);
+        window.print();
+
+        // 打印后清理现场
+        const cleanup = () => {
+          printContainer.innerHTML = '';
           tmpUrls.forEach(revokeBlob);
-        }, 3000);
-      }, 200);
+          window.removeEventListener('afterprint', cleanup);
+        };
+        window.addEventListener('afterprint', cleanup);
+        // 兜底清理：部分移动端可能不触发 afterprint
+        setTimeout(cleanup, 5000);
+      }, 100);
+
     } catch (err) {
-      if (document.body.contains(iframe)) document.body.removeChild(iframe);
-      tmpUrls.forEach(revokeBlob);
       printAllBtn.textContent = originalText;
       printAllBtn.disabled = false;
+      printContainer.innerHTML = '';
+      tmpUrls.forEach(revokeBlob);
       alert('准备打印失败：' + (err.message || err));
     }
   };
