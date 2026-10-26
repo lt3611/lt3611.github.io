@@ -4,25 +4,29 @@ import os, sys, re, subprocess
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(WORK_DIR, "zhibo.txt")
 
-# 🌟 只保留经过国内网友长期验证、可用率极高的顶级源
+# 🌟 国内 Gitee 最强的高频更新源 + GitHub 优质备用源
+# 这些源里包含了国内专人维护的央视、卫视、地方台，全是国内直连
 SOURCES = [
-    # ① Guovin 的每日测速结果（剔除海外不可用，国内极速）
-    "https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.txt",
-    # ② 经典的国内 IPv4 优选源（专为国内网络优化）
-    "https://raw.githubusercontent.com/vbskycn/iptv/master/tv/iptv4.txt",
-    # ③ YanG 的精选聚合（备用）
-    "https://raw.githubusercontent.com/YanG-1989/m3u/main/Gather.m3u"
+    "https://gitee.com/why006/TV/raw/master/output/result.txt",          # Gitee 知名高频更新
+    "https://gitee.com/ganquanemail/iptv-api/raw/master/output/result.m3u", # Gitee 极速央视/卫视
+    "https://gitee.com/wj0321/tvlive/raw/main/tvlive.txt",                # Gitee 经典源
+    "https://raw.githubusercontent.com/YanG-1989/m3u/main/Gather.m3u",    # 全网最全聚合
+    "https://raw.githubusercontent.com/vbskycn/iptv/master/tv/iptv4.txt" # 经典 IPv4
 ]
 
 def download(url):
+    print(f"正在拉取: {url}")
     cmd = ["curl", "-s", "-L", "--connect-timeout", "10", "--max-time", "30", "-A", "Mozilla/5.0", url]
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=35)
-        return r.stdout.decode("utf-8", errors="replace")
-    except:
+        text = r.stdout.decode("utf-8", errors="replace")
+        return text
+    except Exception as e:
+        print(f"  拉取失败: {e}")
         return ""
 
 def parse_content(text):
+    """直接提取流地址，不做任何测速限制"""
     lines = set()
     if not text: return lines
     
@@ -31,6 +35,7 @@ def parse_content(text):
         for line in text.split('\n'):
             line = line.strip()
             if line.startswith("#EXTINF"):
+                # 提取频道名
                 match = re.search(r',([^,]+)$', line)
                 if match: current_name = match.group(1).strip()
             elif line.startswith("http") and current_name:
@@ -46,14 +51,13 @@ def parse_content(text):
     return lines
 
 def main():
-    print(">>> 开始拉取高质量纯净源...")
+    print(">>> 开始全量拉取（无测速过滤模式）...")
     all_lines = set()
 
     for url in SOURCES:
-        print(f"正在下载: {url}")
         text = download(url)
         extracted = parse_content(text)
-        print(f"  提取到 {len(extracted)} 条")
+        print(f"  ✅ 提取到 {len(extracted)} 条")
         all_lines.update(extracted)
 
     print(f">>> 共聚合了 {len(all_lines)} 条源，开始分类...")
@@ -62,9 +66,6 @@ def main():
     
     for line in all_lines:
         name = line.split(',')[0].upper()
-        # 强制清洗掉名字里乱码或者乱七八糟的源
-        if not re.search(r'[\u4e00-\u9fa5A-Za-z0-9]', name): continue
-        
         if "CCTV" in name or "央视" in name:
             cctv.add(line)
         elif "卫视" in name:
@@ -75,7 +76,6 @@ def main():
             other.add(line)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        # 把央视和卫视放在最前面
         f.write("央视频道,#genre#\n")
         for l in sorted(list(cctv)): f.write(f"{l}\n")
         f.write("\n卫视频道,#genre#\n")
