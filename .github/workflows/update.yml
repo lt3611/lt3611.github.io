@@ -2,17 +2,35 @@ name: Live Source Auto Update
 
 on:
   schedule:
-    - cron: "0 */6 * * *"
-  workflow_dispatch:
+    - cron: "0 */6 * * *"    # 每天 0, 6, 12, 18 点自动运行
+  workflow_dispatch:          # 允许手动点击运行
 
 permissions:
-  contents: write
+  contents: write             # 必须：允许机器人写入文件
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 15      # 👈 加上这一行，超时15分钟强制终止
+    timeout-minutes: 15       # 防止卡死，最多跑15分钟
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-# ... 下面的代码保持不变
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Collector
+        run: python zhibo_collector.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add zhibo.txt
+          git diff --quiet && git diff --staged --quiet && exit 0
+          git commit -m "auto: update zhibo.txt $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git pull --rebase origin main
+          git push
