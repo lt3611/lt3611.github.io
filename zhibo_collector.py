@@ -1,30 +1,25 @@
 #!/usr/bin/env python3
 """
-TVBox 直播源自动采集与深度提取
-功能：
-  1. 从 tvbox.clbug.com 获取源列表
-  2. 提取 lives 列表
-  3. 深度解析：如果遇到套娃列表(txt/m3u)，自动下载并解析出里面真正的 .m3u8 流地址
-  4. 生成纯粹的 zhibo.txt
+TVBox 直播源极速采集版 (限制源数量，高并发，极短超时)
 """
 import json, sys, re, subprocess, os, time
 import concurrent.futures
-import urllib.parse
-from urllib.parse import urljoin, urlparse
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(WORK_DIR, "zhibo.txt")
 
-def curl_cmd(url, timeout=10, extra_args=None):
-    cmd = ["curl", "-s", "-L", "--connect-timeout", str(timeout), "--max-time", str(timeout*2), "-A", "Mozilla/5.0"]
-    if extra_args:
-        cmd.extend(extra_args)
-    cmd.append(url)
+# 核心限制参数（想抓更多源可以改这里）
+MAX_SOURCES = 30       # 只抓取最快的30个源，防止卡死
+TIMEOUT_SEC = 5        # 连接超时5秒
+MAX_WORKERS = 100      # 测活并发100
+
+def curl_cmd(url, timeout=TIMEOUT_SEC):
+    cmd = ["curl", "-s", "-L", "--connect-timeout", str(timeout), "--max-time", str(timeout*1.5), 
+           "-A", "Mozilla/5.0", "--max-filesize", "500000", url]
     try:
-        r = subprocess.run(cmd, capture_output=True, timeout=timeout*2+5)
+        r = subprocess.run(cmd, capture_output=True, timeout=timeout*2)
         return r.stdout.decode("utf-8", errors="replace")
-    except:
-        return ""
+    except: return ""
 
 def parse_json(raw):
     if not raw: return None
@@ -37,151 +32,108 @@ def parse_json(raw):
             except: pass
     return None
 
-def check_url_speed(url, timeout=5):
+def check_speed(url):
     cmd = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code},%{time_total}",
-           "--connect-timeout", str(timeout), "--max-time", str(timeout*2),
-           "-L", "-A", "Mozilla/5.0", url]
+           "--connect-timeout", "3", "--max-time", "5", "-L", "-A", "Mozilla/5.0", url]
     try:
-        r = subprocess.run(cmd, capture_output=True, timeout=timeout*2+2)
+        r = subprocess.run(cmd, capture_output=True, timeout=6)
         res = r.stdout.decode().strip().split(",")
         if len(res) == 2 and res[0].startswith("2"):
             return int(float(res[1]) * 1000)
     except: pass
     return 99999
 
-def extract_stream_urls(text, base_url):
-    """
-    从文本中提取真正的 m3u8/flv/mp4 地址及对应频道名
-    兼容 M3U 格式 和 TXT(频道名,url) 格式
-    """
-    results = []
-    lines = text.strip().split('\n')
-    
-    # 1. 如果是标准的 M3U 格式
-    if '#EXTINF' in text:
-        current_name = "未知频道"
-        for line in lines:
-            line = line.strip()
-            if line.startswith('#EXTINF'):
-                name_match = re.search(r',([^,]+)$', line)
-                if name_match:
-                    current_name = name_match.group(1).strip()
-            elif line.startswith('http'):
-                results.append((current_name, line))
-                
-    # 2. 如果是 TXT 格式 (频道名,url) 或直接是 url
-    else:
-        for line in lines:
-            line = line.strip()
-            if not line or line.startswith('#'): continue
-            if ',' in line:
-                parts = line.split(',', 1)
-                name = parts[0].strip()
-                url = parts[1].strip()
-                if url.startswith('http') and any(ext in url.lower() for ext in ['.m3u8', '.flv', '.mp4', '.ts']):
-                    results.append((name, url))
-            elif line.startswith('http') and any(ext in line.lower() for ext in ['.m3u8', '.flv', '.mp4']):
-                results.append(("未知频道", line))
-                
-    # 3. 如果以上都没提取到，直接用正则去文本里暴力抓 m3u8
-    if not results:
-        urls = re.findall(r'(https?://[^\s"\'<>]+?\.(?:m3u8|flv|mp4))', text)
-        for u in urls:
-            results.append(("未知频道", u))
-            
-    return results
+def extract_urls(text):
+    """从套娃文本中精准提取真实 m3u8/flv/mp4，剔除内网IP"""
+    urls = set()
+    # 兼容 m3u8 和 txt 格式
+    matches = re.findall(r'(https?://[^\s"\'<>]+?\.(?:m3u8|flv|mp4|ts)[^\s"\'<>]*)', text, re.I)
+    for u in matches:
+        if not any(ip in u for ip in ['192.168.', '127.0.0.', '10.', '172.16.']):
+            urls.add(u)
+    return list(urls)
 
-def resolve_live_source(item):
-    """解析单条直播源，如果是套娃则深度提取"""
+def resolve_live(item):
     url = item.get("url", "")
     name = item.get("name", "未知频道")
     group = item.get("group", "未分组")
     
-    # 如果本身就是视频流，直接返回
+    # 本身是流，直接返回
     if any(ext in url.lower() for ext in ['.m3u8', '.flv', '.mp4', '.ts']):
         return [{"name": name, "url": url, "group": group}]
         
-    # 如果是 txt 或 m3u 套娃
-    if url.endswith('.txt') or url.endswith('.m3u') or url.endswith('.php') or '?' in url:
-        content = curl_cmd(url, timeout=10)
-        if content and ('#EXTINF' in content or 'http' in content):
-            extracted = extract_stream_urls(content, url)
-            return [{"name": n, "url": u, "group": group} for n, u in extracted]
-            
+    # 是套娃，快速拉取解析
+    if any(k in url.lower() for k in ['.txt', '.m3u', '.php', '?']):
+        content = curl_cmd(url, timeout=6)
+        if content:
+            real_urls = extract_urls(content)
+            if real_urls:
+                return [{"name": name, "url": u, "group": group} for u in real_urls[:5]] # 每个套娃最多取5个
     return []
 
-def test_live_stream(live_item):
-    url = live_item.get("url", "")
+def test_live(live):
+    url = live.get("url", "")
     if not url.startswith("http"): return None
-    
-    # 测试流是否存活（读前2KB）
     cmd = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
-           "-r", "0-2048", "--connect-timeout", "4", "--max-time", "6", "-A", "Mozilla/5.0", url]
+           "-r", "0-1024", "--connect-timeout", "3", "--max-time", "5", "-A", "Mozilla/5.0", url]
     try:
-        r = subprocess.run(cmd, capture_output=True, timeout=8)
-        code = r.stdout.decode().strip()
-        if code.startswith("2"):
-            return live_item
+        r = subprocess.run(cmd, capture_output=True, timeout=6)
+        if r.stdout.decode().strip().startswith("2"): return live
     except: pass
     return None
 
 def main():
     print("开始采集...")
-    # 获取源列表
-    html = curl_cmd("https://tvbox.clbug.com/user.php", timeout=15)
+    # 1. 抓源
+    html = curl_cmd("https://tvbox.clbug.com/user.php", timeout=10)
     src_urls = re.findall(r'data-url="([^"]+)"', html)
     src_names = re.findall(r'<td class="td-name">([^<]+)</td>', html)
     sources = [(n.strip(), u.strip().replace("&amp;", "&")) for n, u in zip(src_names, src_urls) if u.strip()]
 
-    # 测活 JSON
+    # 2. 并发测速，排序，截断
     available = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as pool:
-        futures = {pool.submit(check_url_speed, url): (name, url) for name, url in sources}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=30) as pool:
+        futures = {pool.submit(check_speed, url): (name, url) for name, url in sources}
         for future in concurrent.futures.as_completed(futures):
             name, url = futures[future]
-            if future.result() < 99999:
-                available.append((name, url))
-    print(f"可用 JSON 接口: {len(available)}")
+            lat = future.result()
+            if lat < 99999: available.append((name, url, lat))
+    
+    # 只保留最快的前 N 个
+    available.sort(key=lambda x: x[2])
+    available = available[:MAX_SOURCES]
+    print(f"筛选出最快的 {len(available)} 个源进行解析...")
 
-    # 提取初始 lives
+    # 3. 解析 lives
     raw_lives = {}
-    for name, url in available:
+    for name, url, lat in available:
         data = parse_json(curl_cmd(url))
         if not data: continue
         for l in (data.get("lives") or []):
             u = l.get("url", "").strip()
             if u.startswith("http") and u not in raw_lives:
-                raw_lives[u] = {
-                    "name": l.get("name", "未知"),
-                    "url": u,
-                    "group": l.get("group") or "未分组"
-                }
+                raw_lives[u] = {"name": l.get("name", "未知"), "url": u, "group": l.get("group") or "未分组"}
+    
+    print(f"提取到 {len(raw_lives)} 个直播条目，开始深度解析与测活...")
 
-    print(f"获取到 {len(raw_lives)} 个初始直播条目，开始深度解析...")
-
-    # 深度解析套娃
+    # 4. 深度解析
     final_lives = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=30) as pool:
-        futures = [pool.submit(resolve_live_source, item) for item in raw_lives.values()]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as pool:
+        futures = [pool.submit(resolve_live, item) for item in raw_lives.values()]
         for future in concurrent.futures.as_completed(futures):
-            res_list = future.result()
-            for res in res_list:
+            for res in future.result():
                 if res["url"] not in final_lives:
                     final_lives[res["url"]] = res
 
-    print(f"深度解析后，得到 {len(final_lives)} 个真实视频流，正在测活...")
-
-    # 测活真实视频流
+    # 5. 测活真实流
     valid_lives = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as pool:
-        futures = [pool.submit(test_live_stream, l) for l in final_lives.values()]
-        for i, future in enumerate(concurrent.futures.as_completed(futures), 1):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        futures = [pool.submit(test_live, l) for l in final_lives.values()]
+        for future in concurrent.futures.as_completed(futures):
             res = future.result()
-            if res:
-                valid_lives.append(res)
-            if i % 100 == 0: print(f"进度: {i}/{len(final_lives)} (可用: {len(valid_lives)})")
+            if res: valid_lives.append(res)
 
-    # 写入 TXT
+    # 6. 写入文件
     grouped = {}
     for live in valid_lives:
         g = re.sub(r'[,\n\r]', '', live["group"]).strip() or "未分组"
@@ -196,7 +148,7 @@ def main():
                 f.write(f"{line}\n")
             f.write("\n")
 
-    print(f"\n采集完成！共 {len(valid_lives)} 个真实播放源。")
+    print(f"\n采集完成！共提取 {len(valid_lives)} 个可用直链。")
 
 if __name__ == "__main__":
     main()
