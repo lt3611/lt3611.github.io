@@ -1,19 +1,5 @@
-未分组,#genre#
-南风直播源,http://120.76.248.139/live/bfgd/4200000122.m3u8
-南风直播源,http://8.138.7.223/tv/cctv7.m3u8
-zwrt,http://live.mycamtv.com/brunette.m3u8
-zwrt,http://cdn.adultiptv.net/russian.m3u8
-LIVEfl,https://vip2.slbfsl.com/20230410/1wuMOXeu/index.m3u8
-YY轮播,https://cdn.jsdelivr.net/gh/feiyang666999/testvideo/hlg4kvideo/playlist.m3u8
-南风直播源,http://newcntv.qcloudcdn.com/asp/hls/1200/0303000a/3/default/0c3c388b10ad4cf78f312c6d6620f1e0/1200.m3u8
-YY轮播,https://cdn.jsdelivr.net/gh/feiyang666999/testvideo/sdr4kvideo/playlist.m3u8
-LIVEfl,https://vip1.slbfsl.com/20220818/4sh8OxxN/index.m3u8
-YY轮播,https://cdn.jsdelivr.net/gh/feiyang666999/testvideo/time/time.mp4
-zwrt,http://live.mycamtv.com/skinny.m3u8
-LIVE_home,https://raw.githubusercontent.com/joevess/IPTV/refs/heads/main/home.m3u8
-zwrt,http://cdn.adultiptv.net/hardcore.m3u8
-LIVE,https://event.pull.hebtv.com/jishi/cp1.m3u8
-zwrt,http://cdn.adultiptv.net/pov.m3u8
-南风直播源,http://newcntv.qcloudcdn.com/asp/hls/1200/0303000a/3/default/a6ec4d0475e1453e8ede023e346c2350/1200.m3u8
-LIVEfl,https://vip2.slbfsl.com/20230206/7QVTjX8h/index.m3u8
+央视,#genre#
 
+卫视,#genre#
+
+其他,#genre#
