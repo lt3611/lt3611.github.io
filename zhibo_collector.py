@@ -1,154 +1,137 @@
 #!/usr/bin/env python3
 """
-TVBox 直播源极速采集版 (限制源数量，高并发，极短超时)
+从 Gitee 自动搜索最新 TV 源并测速
 """
-import json, sys, re, subprocess, os, time
+import os, sys, re, json, subprocess
 import concurrent.futures
+import urllib.parse
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(WORK_DIR, "zhibo.txt")
+GITEE_TOKEN = os.environ.get("2a2b48d0b3e088ecfbac9bdbdf50c362", "")
 
-# 核心限制参数（想抓更多源可以改这里）
-MAX_SOURCES = 30       # 只抓取最快的30个源，防止卡死
-TIMEOUT_SEC = 5        # 连接超时5秒
-MAX_WORKERS = 100      # 测活并发100
-
-def curl_cmd(url, timeout=TIMEOUT_SEC):
-    cmd = ["curl", "-s", "-L", "--connect-timeout", str(timeout), "--max-time", str(timeout*1.5), 
-           "-A", "Mozilla/5.0", "--max-filesize", "500000", url]
+def curl_cmd(url, timeout=10, extra_args=None):
+    cmd = ["curl", "-s", "-L", "--connect-timeout", str(timeout), "--max-time", str(timeout*2), "-A", "Mozilla/5.0"]
+    if extra_args:
+        cmd.extend(extra_args)
+    cmd.append(url)
     try:
-        r = subprocess.run(cmd, capture_output=True, timeout=timeout*2)
+        r = subprocess.run(cmd, capture_output=True, timeout=timeout*2+5)
         return r.stdout.decode("utf-8", errors="replace")
     except: return ""
 
-def parse_json(raw):
-    if not raw: return None
-    raw = raw.lstrip('﻿'); raw = re.sub(r',(\s*[}\]])', r'\1', raw)
-    try: return json.loads(raw, strict=False)
-    except:
-        s, e = raw.find('{'), raw.rfind('}')
-        if s >= 0 and e > s:
-            try: return json.loads(raw[s:e+1], strict=False)
-            except: pass
-    return None
+def search_gitee():
+    """调用 Gitee API 搜索 TV 并获取最近更新的仓库"""
+    print("正在搜索 Gitee 最新更新的 TV 仓库...")
+    if not GITEE_TOKEN:
+        print("⚠️ 未配置 GITEE_TOKEN，使用默认高质量静态源...")
+        return ["https://raw.githubusercontent.com/vbskycn/iptv/master/tv/iptv4.txt"] # 兜底源
 
-def check_speed(url):
-    cmd = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code},%{time_total}",
-           "--connect-timeout", "3", "--max-time", "5", "-L", "-A", "Mozilla/5.0", url]
-    try:
-        r = subprocess.run(cmd, capture_output=True, timeout=6)
-        res = r.stdout.decode().strip().split(",")
-        if len(res) == 2 and res[0].startswith("2"):
-            return int(float(res[1]) * 1000)
-    except: pass
-    return 99999
-
-def extract_urls(text):
-    """从套娃文本中精准提取真实 m3u8/flv/mp4，剔除内网IP"""
-    urls = set()
-    # 兼容 m3u8 和 txt 格式
-    matches = re.findall(r'(https?://[^\s"\'<>]+?\.(?:m3u8|flv|mp4|ts)[^\s"\'<>]*)', text, re.I)
-    for u in matches:
-        if not any(ip in u for ip in ['192.168.', '127.0.0.', '10.', '172.16.']):
-            urls.add(u)
-    return list(urls)
-
-def resolve_live(item):
-    url = item.get("url", "")
-    name = item.get("name", "未知频道")
-    group = item.get("group", "未分组")
+    # 搜索 q=tv, 按 updated 降序
+    api_url = f"https://gitee.com/api/v5/search/repositories?q=tv&sort=updated&direction=desc&per_page=10&access_token={GITEE_TOKEN}"
+    resp = curl_cmd(api_url)
     
-    # 本身是流，直接返回
-    if any(ext in url.lower() for ext in ['.m3u8', '.flv', '.mp4', '.ts']):
-        return [{"name": name, "url": url, "group": group}]
-        
-    # 是套娃，快速拉取解析
-    if any(k in url.lower() for k in ['.txt', '.m3u', '.php', '?']):
-        content = curl_cmd(url, timeout=6)
-        if content:
-            real_urls = extract_urls(content)
-            if real_urls:
-                return [{"name": name, "url": u, "group": group} for u in real_urls[:5]] # 每个套娃最多取5个
-    return []
+    try:
+        repos = json.loads(resp)
+        if not isinstance(repos, list):
+            print("Gitee API 返回异常，可能 Token 错误或请求受限")
+            return []
+    except:
+        print("Gitee API 解析失败")
+        return []
 
-def test_live(live):
-    url = live.get("url", "")
-    if not url.startswith("http"): return None
+    source_urls = []
+    # 遍历搜出来的前几个仓库，去里面碰运气找常见的直播源文件名
+    for repo in repos[:5]:
+        owner = repo.get("namespace", {}).get("path")
+        name = repo.get("path")
+        branch = repo.get("default_branch", "master")
+        
+        # 常见的开源直播源命名
+        possible_files = ["live.txt", "iptv.txt", "tv.txt", "zhibo.txt", "live.m3u", "iptv.m3u"]
+        for f in possible_files:
+            raw_url = f"https://gitee.com/{owner}/{name}/raw/{branch}/{f}"
+            # 试探性请求，看看文件存不存在
+            code = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", raw_url], capture_output=True).stdout.decode()
+            if code == "200":
+                print(f"✅ 找到源文件: {owner}/{name}/{f}")
+                source_urls.append(raw_url)
+                break # 找到一个就不找其他的了
+    return source_urls
+
+def test_stream(line):
+    if ',' not in line: return None
+    url = line.split(',')[1].strip()
     cmd = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
            "-r", "0-1024", "--connect-timeout", "3", "--max-time", "5", "-A", "Mozilla/5.0", url]
     try:
-        r = subprocess.run(cmd, capture_output=True, timeout=6)
-        if r.stdout.decode().strip().startswith("2"): return live
+        r = subprocess.run(cmd, capture_output=True, timeout=7)
+        if r.stdout.decode().strip() in ["200", "206"]:
+            return line
     except: pass
     return None
 
 def main():
-    print("开始采集...")
-    # 1. 抓源
-    html = curl_cmd("https://tvbox.clbug.com/user.php", timeout=10)
-    src_urls = re.findall(r'data-url="([^"]+)"', html)
-    src_names = re.findall(r'<td class="td-name">([^<]+)</td>', html)
-    sources = [(n.strip(), u.strip().replace("&amp;", "&")) for n, u in zip(src_names, src_urls) if u.strip()]
+    sources = search_gitee()
+    if not sources:
+        print("❌ 没找到任何可用源，任务结束。")
+        return
 
-    # 2. 并发测速，排序，截断
-    available = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=30) as pool:
-        futures = {pool.submit(check_speed, url): (name, url) for name, url in sources}
-        for future in concurrent.futures.as_completed(futures):
-            name, url = futures[future]
-            lat = future.result()
-            if lat < 99999: available.append((name, url, lat))
-    
-    # 只保留最快的前 N 个
-    available.sort(key=lambda x: x[2])
-    available = available[:MAX_SOURCES]
-    print(f"筛选出最快的 {len(available)} 个源进行解析...")
+    print(f"共找到 {len(sources)} 个源文件，开始抓取解析...")
+    all_lines = set()
 
-    # 3. 解析 lives
-    raw_lives = {}
-    for name, url, lat in available:
-        data = parse_json(curl_cmd(url))
-        if not data: continue
-        for l in (data.get("lives") or []):
-            u = l.get("url", "").strip()
-            if u.startswith("http") and u not in raw_lives:
-                raw_lives[u] = {"name": l.get("name", "未知"), "url": u, "group": l.get("group") or "未分组"}
-    
-    print(f"提取到 {len(raw_lives)} 个直播条目，开始深度解析与测活...")
+    for src in sources:
+        content = curl_cmd(src)
+        if not content: continue
+        
+        # 解析 M3U
+        if "#EXTM3U" in content:
+            current_name = ""
+            for line in content.split('\n'):
+                line = line.strip()
+                if line.startswith("#EXTINF"):
+                    match = re.search(r',([^,]+)$', line)
+                    if match: current_name = match.group(1).strip()
+                elif line.startswith("http") and current_name:
+                    all_lines.add(f"{current_name},{line}")
+                    current_name = ""
+        # 解析 TXT
+        else:
+            for line in content.split('\n'):
+                line = line.strip()
+                if line.startswith("http") and ',' in line:
+                    all_lines.add(line)
 
-    # 4. 深度解析
-    final_lives = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as pool:
-        futures = [pool.submit(resolve_live, item) for item in raw_lives.values()]
-        for future in concurrent.futures.as_completed(futures):
-            for res in future.result():
-                if res["url"] not in final_lives:
-                    final_lives[res["url"]] = res
+    print(f"共提取 {len(all_lines)} 条源，开始并发测速...")
 
-    # 5. 测活真实流
-    valid_lives = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
-        futures = [pool.submit(test_live, l) for l in final_lives.values()]
+    valid_lines = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as pool:
+        futures = [pool.submit(test_stream, line) for line in all_lines]
         for future in concurrent.futures.as_completed(futures):
             res = future.result()
-            if res: valid_lives.append(res)
+            if res: valid_lines.append(res)
 
-    # 6. 写入文件
-    grouped = {}
-    for live in valid_lives:
-        g = re.sub(r'[,\n\r]', '', live["group"]).strip() or "未分组"
-        if g not in grouped: grouped[g] = set()
-        name = re.sub(r'[,\n\r]', '', live["name"]).strip()
-        grouped[g].add(f"{name},{live['url']}")
+    print(f"测速完成，存活 {len(valid_lines)} 条。写入文件...")
+
+    cctv, weishi, other = [], [], []
+    for line in valid_lines:
+        name = line.split(',')[0]
+        if "CCTV" in name.upper() or "央视" in name:
+            cctv.append(line)
+        elif "卫视" in name:
+            weishi.append(line)
+        else:
+            other.append(line)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        for group, lines in grouped.items():
-            f.write(f"{group},#genre#\n")
-            for line in lines:
-                f.write(f"{line}\n")
-            f.write("\n")
+        f.write("央视,#genre#\n")
+        for l in sorted(list(set(cctv))): f.write(f"{l}\n")
+        f.write("\n卫视,#genre#\n")
+        for l in sorted(list(set(weishi))): f.write(f"{l}\n")
+        f.write("\n其他,#genre#\n")
+        for l in sorted(list(set(other))): f.write(f"{l}\n")
 
-    print(f"\n采集完成！共提取 {len(valid_lives)} 个可用直链。")
+    print("✅ 搞定！")
 
 if __name__ == "__main__":
     main()
