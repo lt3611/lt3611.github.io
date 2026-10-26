@@ -2,16 +2,16 @@ name: Live Source Auto Update
 
 on:
   schedule:
-    - cron: "0 */6 * * *"    # 每天 0, 6, 12, 18 点自动运行
-  workflow_dispatch:          # 允许手动点击运行
+    - cron: "0 */6 * * *"    # 每 6 小时自动运行一次
+  workflow_dispatch:          # 允许在网页上手动点击运行
 
 permissions:
-  contents: write             # 必须：允许机器人写入文件
+  contents: write             # 必须：允许 Actions 写入文件到仓库
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 15       # 防止卡死，最多跑15分钟
+    timeout-minutes: 20       # 防止死链太多卡死，最多跑20分钟
 
     steps:
       - name: Checkout
@@ -23,6 +23,9 @@ jobs:
           python-version: "3.11"
 
       - name: Run Collector
+        env:
+          # 关键：将你在 GitHub Secrets 里配置的 Gitee Token 传递给 Python 脚本
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: python zhibo_collector.py
 
       - name: Commit and push
@@ -30,7 +33,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add zhibo.txt
+          # 如果没有更新则直接退出，不产生空提交
           git diff --quiet && git diff --staged --quiet && exit 0
           git commit -m "auto: update zhibo.txt $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # 关键：拉取最新代码，防止冲突导致 push 失败
           git pull --rebase origin main
           git push
