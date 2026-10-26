@@ -4,78 +4,91 @@ import os, sys, re, subprocess
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(WORK_DIR, "zhibo.txt")
 
-# 更换为目前国内极速、非常稳定的知名源
-SOURCES = [
-    "https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.txt",
-    "https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv4.m3u",
-    "https://raw.githubusercontent.com/YanG-1989/m3u/main/Gather.m3u",
-    "https://gitee.com/why006/TV/raw/master/output/result.txt"
+# 🌟 纯正的 Gitee 优质源（包含国内高频维护的央视、卫视）
+GITEE_SOURCES = [
+    "https://gitee.com/lwr851/live/raw/master/live.txt",
+    "https://gitee.com/hyx2230/IPTV/raw/master/tv.m3u",
+    "https://gitee.com/why006/TV/raw/master/output/result.txt",
+    "https://gitee.com/ganquanemail/iptv-api/raw/master/output/result.txt"
 ]
 
-def download(url):
+def download_gitee(url):
     print(f"\n[尝试下载] {url}")
-    # 加入更完整的请求头，防止被源站拦截
-    cmd = ["curl", "-s", "-L", "--connect-timeout", "10", "--max-time", "30", 
-           "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-           "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-           url]
+    
+    # 伪装的请求头，绕过 Gitee 的基础限制
+    headers = [
+        "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "-H", "Referer: https://gitee.com/",
+        "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+    ]
+    
+    # 1. 先尝试直连
+    cmd = ["curl", "-s", "-L", "--connect-timeout", "10", "--max-time", "30"] + headers + [url]
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=35)
         text = r.stdout.decode("utf-8", errors="replace")
-        print(f"[诊断] 下载返回字符数: {len(text)}")
-        if len(text) < 100:
-            print(f"[诊断] 警告: 字符太少，可能被拦截或源失效。内容: {text[:50]}")
+        
+        # 如果内容太短，说明被 Gitee 拦截了
+        if len(text) < 1000 or "violation" in text or "403" in text or "404" in text:
+            print(f"  [诊断] Gitee 直连被拦截(长度:{len(text)})，启用代理强穿...")
+            
+            # 2. 走 ghproxy 代理（国内常用的加速节点，能完美绕过 Gitee 封锁）
+            proxy_url = "https://ghproxy.net/" + url
+            cmd_proxy = ["curl", "-s", "-L", "--connect-timeout", "10", "--max-time", "30"] + headers + [proxy_url]
+            r_proxy = subprocess.run(cmd_proxy, capture_output=True, timeout=35)
+            text_proxy = r_proxy.stdout.decode("utf-8", errors="replace")
+            
+            if len(text_proxy) > len(text):
+                print(f"  [诊断] 代理强穿成功，获取字符数: {len(text_proxy)}")
+                return text_proxy
+                
+        print(f"  [诊断] 下载成功，获取字符数: {len(text)}")
         return text
     except Exception as e:
-        print(f"[诊断] 下载失败异常: {e}")
+        print(f"  [错误] 下载失败: {e}")
         return ""
 
 def parse_content(text):
+    """极其暴力的解析：无论格式多乱，只要包含 http 就抓出来"""
     lines = set()
     if not text: return lines
     
-    # 放宽正则，只要是 http 开头的，并且包含流媒体后缀，或者带有 .m3u8
-    pattern = r'(https?://[^\s"\'<>]+?(?:\.m3u8|\.flv|\.mp4|\.ts)[^\s"\'<>]*)'
+    current_name = "未知频道"
+    for line in text.split('\n'):
+        line = line.strip()
+        if not line: continue
+        
+        # 如果遇到 #EXTINF 标签，提取频道名
+        if line.startswith("#EXTINF"):
+            match = re.search(r',([^,]+)$', line)
+            if match: current_name = match.group(1).strip()
+            continue
+            
+        # 查找 URL
+        url_match = re.search(r'(https?://[^\s"\'<>]+)', line)
+        if url_match:
+            url = url_match.group(1)
+            # 如果这行还有别的内容，把它当频道名（兼容 频道名,url 和 url,频道名）
+            if not line.startswith("http"):
+                name_candidate = line.replace(url, '').replace(',', '').strip()
+                if name_candidate: current_name = name_candidate
+                
+            lines.add(f"{current_name},{url}")
+            current_name = "未知频道"
     
-    if "#EXTM3U" in text:
-        current_name = ""
-        for line in text.split('\n'):
-            line = line.strip()
-            if line.startswith("#EXTINF"):
-                match = re.search(r',([^,]+)$', line)
-                if match: current_name = match.group(1).strip()
-            elif line.startswith("http") and current_name:
-                if re.search(pattern, line, re.I):
-                    lines.add(f"{current_name},{line}")
-                current_name = ""
-    else:
-        for line in text.split('\n'):
-            line = line.strip()
-            if ',' in line and line.startswith("http"):
-                if re.search(pattern, line, re.I):
-                    lines.add(line)
-            elif line.startswith("http") and re.search(pattern, line, re.I):
-                lines.add(f"未知频道,{line}")
     return lines
 
 def main():
-    print(">>> 开始运行测试...")
+    print(">>> 开始 Gitee 强力采集...")
     all_lines = set()
 
-    for url in SOURCES:
-        text = download(url)
+    for url in GITEE_SOURCES:
+        text = download_gitee(url)
         extracted = parse_content(text)
-        print(f"[诊断] 成功提取: {len(extracted)} 条")
+        print(f"  [诊断] 成功提取: {len(extracted)} 条")
         all_lines.update(extracted)
 
-    if len(all_lines) == 0:
-        print("❌ 致命错误：没有提取到任何源，请检查上面的诊断信息。")
-        # 写入一个警告信息供用户查看
-        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-            f.write("未获取到源,#genre#\n请查看GitHub Actions日志,https://github.com\n")
-        return
-
-    print(f"\n>>> 总计聚合了 {len(all_lines)} 条源，开始分类...")
+    print(f"\n>>> 共聚合了 {len(all_lines)} 条源，开始分类...")
 
     cctv, weishi, difang, other = set(), set(), set(), set()
     
@@ -85,6 +98,8 @@ def main():
             cctv.add(line)
         elif "卫视" in name:
             weishi.add(line)
+        elif any(k in name for k in ["北京", "上海", "广东", "深圳", "湖南", "浙江", "江苏"]):
+            difang.add(line)
         else:
             other.add(line)
 
@@ -93,10 +108,12 @@ def main():
         for l in sorted(list(cctv)): f.write(f"{l}\n")
         f.write("\n卫视频道,#genre#\n")
         for l in sorted(list(weishi)): f.write(f"{l}\n")
+        f.write("\n地方频道,#genre#\n")
+        for l in sorted(list(difang)): f.write(f"{l}\n")
         f.write("\n其他频道,#genre#\n")
         for l in sorted(list(other)): f.write(f"{l}\n")
 
-    print(f"✅ 生成完毕！央视 {len(cctv)} 个，卫视 {len(weishi)} 个。")
+    print(f"✅ 生成完毕！央视提取到 {len(cctv)} 个，卫视 {len(weishi)} 个。")
 
 if __name__ == "__main__":
     main()
