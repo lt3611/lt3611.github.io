@@ -1,63 +1,55 @@
 #!/usr/bin/env python3
 import os, sys, re, subprocess
 import concurrent.futures
-import urllib.request
-import urllib.parse
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(WORK_DIR, "zhibo.txt")
 
-# 🌟 终极稳定源（包含国内大牛日常维护的优质央视/卫视源）
-# 如果以后失效，可以替换这里
+# 国内公认最优质的三个源
 SOURCES = [
-    "https://raw.githubusercontent.com/YanG-1989/m3u/main/Gather.m3u",  # 最全、更新最快
-    "https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.m3u", # 知名项目输出
-    "https://raw.githubusercontent.com/vbskycn/iptv/master/tv/iptv4.txt"     # 经典源
+    "https://raw.githubusercontent.com/YanG-1989/m3u/main/Gather.m3u",
+    "https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/result.m3u",
+    "https://raw.githubusercontent.com/vbskycn/iptv/master/tv/iptv4.txt"
 ]
 
-def fetch_url(url):
-    """使用 urllib 自带重试机制下载"""
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    req = urllib.request.Request(url, headers=headers)
+def download(url):
+    """用 curl 下载文本，最稳定，不会报 Python 环境错误"""
+    print(f"正在下载: {url}")
+    cmd = ["curl", "-s", "-L", "--connect-timeout", "10", "--max-time", "30", "-A", "Mozilla/5.0", url]
     try:
-        # 先试直连
-        with urllib.request.urlopen(req, timeout=15) as response:
-            return response.read().decode('utf-8', errors='ignore')
+        r = subprocess.run(cmd, capture_output=True, timeout=35)
+        text = r.stdout.decode("utf-8", errors="replace")
+        print(f"  下载完成，长度: {len(text)} 字符")
+        return text
     except Exception as e:
-        print(f"    直连失败: {e}，尝试代理...")
-        # 如果直连失败，走 GitHub 加速代理
-        proxy_url = "https://ghproxy.net/" + url
-        req_proxy = urllib.request.Request(proxy_url, headers=headers)
-        try:
-            with urllib.request.urlopen(req_proxy, timeout=15) as response:
-                return response.read().decode('utf-8', errors='ignore')
-        except:
-            return ""
+        print(f"  下载失败: {e}")
+        return ""
 
-def parse_content(text):
+def parse_text(text):
+    """提取直链"""
     lines = set()
     if not text: return lines
     if "#EXTM3U" in text:
-        current_name = ""
+        current_name = "未知频道"
         for line in text.split('\n'):
             line = line.strip()
             if line.startswith("#EXTINF"):
                 match = re.search(r',([^,]+)$', line)
                 if match: current_name = match.group(1).strip()
             elif line.startswith("http") and current_name:
-                if any(ext in line.lower() for ext in ['.m3u8', '.flv', '.mp4']):
+                if ".m3u8" in line or ".flv" in line:
                     lines.add(f"{current_name},{line}")
-                current_name = ""
+                current_name = "未知频道"
     else:
         for line in text.split('\n'):
             line = line.strip()
             if ',' in line and line.startswith("http"):
-                url = line.split(',', 1)[1].strip()
-                if any(ext in url.lower() for ext in ['.m3u8', '.flv', '.mp4']):
+                if ".m3u8" in line or ".flv" in line:
                     lines.add(line)
     return lines
 
 def test_stream(line):
+    """测速"""
     if ',' not in line: return None
     url = line.split(',')[1].strip()
     cmd = ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
@@ -70,29 +62,26 @@ def test_stream(line):
     return None
 
 def main():
-    print(">>> 1. 开始拉取顶级源站...")
+    print(">>> 开始运行...")
     all_lines = set()
 
     for url in SOURCES:
-        print(f"    拉取: {url[:60]}...")
-        content = fetch_url(url)
-        extracted = parse_content(content)
-        print(f"      提取到 {len(extracted)} 条")
+        text = download(url)
+        extracted = parse_text(text)
+        print(f"  提取到 {len(extracted)} 条源")
         all_lines.update(extracted)
 
     all_lines = list(all_lines)
-    print(f">>> 2. 共提取到 {len(all_lines)} 条流，开始测速...")
+    print(f">>> 共需测试 {len(all_lines)} 条源，开始并发测速...")
 
     valid_lines = []
-    # 开启 50 个并发测速，速度飞快
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as pool:
         futures = [pool.submit(test_stream, line) for line in all_lines]
-        for i, future in enumerate(concurrent.futures.as_completed(futures), 1):
+        for future in concurrent.futures.as_completed(futures):
             res = future.result()
             if res: valid_lines.append(res)
-            if i % 100 == 0: print(f"      进度: {i}/{len(all_lines)} (可用: {len(valid_lines)})")
 
-    print(f">>> 3. 测速完成，存活 {len(valid_lines)} 条。开始分类...")
+    print(f">>> 测速完成，存活 {len(valid_lines)} 条。开始分类...")
 
     cctv, weishi, other = [], [], []
     for line in valid_lines:
@@ -104,7 +93,6 @@ def main():
         else:
             other.append(line)
 
-    # 去重并写入
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write("央视频道,#genre#\n")
         for l in sorted(list(set(cctv))): f.write(f"{l}\n")
