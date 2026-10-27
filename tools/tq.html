@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>宁陵县天气 & 倒计时日历</title>
-    <!-- 引入农历计算库 -->
+    <title>定位天气 & 日历看板</title>
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.js"></script>
     <style>
         :root {
@@ -17,375 +16,216 @@
             --border-color: #e5e7eb;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
 
         body {
             background-color: var(--bg-color);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 12px 10px; /* 缩小页面边距 */
+            display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh; padding: 12px 10px;
         }
 
-        .container {
-            width: 100%;
-            max-width: 420px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px; /* 缩小卡片间距 */
+        .container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; }
+
+        /* 通用卡片点击反馈 */
+        .clickable { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .clickable:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+
+        /* 详情小标签 */
+        .detail-hint {
+            font-size: 10px;
+            color: #6b7280;
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 6px;
+            white-space: nowrap;
+            font-weight: normal;
         }
 
         /* ================= 1. 天气卡片 ================= */
         .weather-card {
             background: linear-gradient(135deg, #ffffff 0%, #f3f8ff 100%);
-            border-radius: 16px;
-            padding: 16px 20px;
+            border-radius: 16px; padding: 16px 20px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             border: 1px solid var(--border-color);
+            display: flex; flex-direction: column; gap: 14px;
         }
 
-        .weather-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .weather-icon {
-            font-size: 44px; /* 稍微缩小图标 */
-            line-height: 1;
-        }
-
+        .weather-main { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .weather-left { display: flex; align-items: center; gap: 12px; }
+        .weather-icon { font-size: 44px; line-height: 1; }
         .weather-temp {
-            font-size: 38px; /* 稍微缩小温度 */
-            font-weight: bold;
-            color: var(--text-main);
-            line-height: 1;
-            font-family: "DIN Alternate", "Helvetica Neue", sans-serif;
-            white-space: nowrap;
+            font-size: 38px; font-weight: bold; color: var(--text-main);
+            line-height: 1; font-family: "DIN Alternate", "Helvetica Neue", sans-serif; white-space: nowrap;
         }
+        .weather-temp span { font-size: 18px; vertical-align: top; }
+        
+        .weather-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; overflow: hidden; }
+        
+        .title-row {
+            display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+        }
+        .title-row h3 { font-size: 16px; color: var(--text-main); font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 150px; }
+        
+        .weather-right .desc { font-size: 13px; color: var(--text-sub); line-height: 1.3; }
 
-        .weather-temp span {
-            font-size: 18px;
-            vertical-align: top;
+        /* 一周预报 */
+        .weather-forecast {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; padding-top: 12px; border-top: 1px dashed var(--border-color);
         }
-
-        .weather-right {
-            text-align: right;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        .weather-right h3 {
-            font-size: 16px;
-            color: var(--text-main);
-            margin-bottom: 4px;
-            font-weight: 600;
-            white-space: nowrap; /* 强制不换行 */
-            text-overflow: ellipsis;
-            overflow: hidden;
-        }
-
-        .weather-right .desc {
-            font-size: 13px;
-            color: var(--text-sub);
-            line-height: 1.3;
-        }
+        .forecast-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+        .f-day { font-size: 11px; color: var(--text-sub); white-space: nowrap; }
+        .f-icon { font-size: 20px; line-height: 1; }
+        .f-temp { font-size: 12px; font-weight: 600; color: var(--text-main); white-space: nowrap; font-family: "DIN Alternate", sans-serif; }
+        .f-min { font-weight: normal; color: var(--text-sub); font-size: 11px; }
 
         /* ================= 2. 倒计时与阴历卡片 ================= */
         .summary-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 16px;
+            background: var(--card-bg); border-radius: 16px; padding: 16px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid var(--border-color);
-            gap: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid var(--border-color); gap: 10px;
         }
 
-        .lunar-area {
-            text-align: left;
-            flex: 1;
-            overflow: hidden;
-        }
+        .lunar-area { text-align: left; flex: 1; overflow: hidden; }
+        .lunar-area .solar-date { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; white-space: nowrap; }
+        .lunar-area .lunar-date { font-size: 18px; font-weight: bold; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; }
+        .lunar-area .ganzhi-date { font-size: 11px; color: var(--text-sub); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 
-        .lunar-area .solar-date {
-            font-size: 12px;
-            color: var(--text-sub);
-            margin-bottom: 4px;
-            white-space: nowrap;
-        }
-
-        .lunar-area .lunar-date {
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--text-main);
-            margin-bottom: 4px;
-            white-space: nowrap;
-        }
-
-        .lunar-area .ganzhi-date {
-            font-size: 11px;
-            color: var(--text-sub);
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            overflow: hidden;
-        }
-
-        .countdown-area {
-            text-align: right;
-            padding-left: 12px;
-            border-left: 1px dashed var(--border-color);
-            flex-shrink: 0; /* 防止倒计时被挤压 */
-        }
-
-        .countdown-label {
-            font-size: 12px;
-            color: var(--text-sub);
-            margin-bottom: 2px;
-        }
-
-        .countdown-val {
-            display: flex;
-            align-items: baseline;
-            justify-content: flex-end;
-            color: var(--primary-color);
-        }
-
-        .countdown-number {
-            font-size: 32px;
-            font-weight: 800;
-            line-height: 1;
-            font-family: "DIN Alternate", "Helvetica Neue", sans-serif;
-        }
-
-        .countdown-unit {
-            font-size: 13px;
-            margin-left: 2px;
-            font-weight: bold;
+        .countdown-area { text-align: right; padding-left: 12px; border-left: 1px dashed var(--border-color); flex-shrink: 0; }
+        .countdown-label { font-size: 12px; color: var(--text-sub); margin-bottom: 2px; }
+        .countdown-val { display: flex; align-items: baseline; justify-content: flex-end; color: var(--primary-color); }
+        .countdown-number { font-size: 32px; font-weight: 800; line-height: 1; font-family: "DIN Alternate", "Helvetica Neue", sans-serif; }
+        .countdown-unit { font-size: 13px; margin-left: 2px; font-weight: bold; }
+        
+        .countdown-target-date { 
+            font-size: 11px; color: var(--text-sub); margin-top: 6px; 
+            display: flex; justify-content: flex-end; align-items: center; gap: 6px;
         }
 
         /* ================= 3. 日历卡片 ================= */
         .calendar-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 16px;
+            background: var(--card-bg); border-radius: 16px; padding: 16px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--border-color);
-            position: relative;
+            border: 1px solid var(--border-color); position: relative;
         }
-
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .calendar-header h2 {
-            font-size: 18px;
-            color: var(--text-main);
-            font-weight: 600;
-            white-space: nowrap; /* 防止年月换行 */
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 6px;
-        }
-
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .calendar-header h2 { font-size: 18px; color: var(--text-main); font-weight: 600; white-space: nowrap; }
+        .btn-group { display: flex; gap: 6px; }
         .btn-group button {
-            background: none;
-            border: 1px solid var(--border-color);
-            padding: 4px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            color: var(--text-main);
-            font-size: 12px; /* 缩小按钮字体 */
-            transition: all 0.2s;
-            white-space: nowrap;
+            background: none; border: 1px solid var(--border-color);
+            padding: 4px 10px; border-radius: 6px; cursor: pointer;
+            color: var(--text-main); font-size: 12px; transition: all 0.2s; white-space: nowrap;
         }
+        .btn-group button:hover { background: #f9fafb; }
 
-        .btn-group button:hover {
-            background: #f9fafb;
-        }
-
-        .weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            text-align: center;
-            font-size: 12px;
-            color: var(--text-sub);
-            margin-bottom: 8px;
-        }
-
-        .days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            row-gap: 4px;
-        }
-
+        .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; color: var(--text-sub); margin-bottom: 8px; }
+        .days { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 4px; }
         .day-cell {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 46px; /* 缩小单元格高度 */
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s;
-            border: 1.5px solid transparent;
-            position: relative;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 46px; border-radius: 8px; cursor: pointer; transition: background 0.2s;
+            border: 1.5px solid transparent; position: relative;
+        }
+        .day-cell:hover { background-color: #f3f4f6; }
+        .day-cell .solar { font-size: 15px; font-weight: 500; color: var(--text-main); }
+        .day-cell .lunar { font-size: 9px; color: var(--text-sub); margin-top: 1px; transform: scale(0.95); white-space: nowrap; }
+        .day-cell.other-month .solar, .day-cell.other-month .lunar { color: #d1d5db; }
+        .day-cell.weekend .solar { color: var(--weekend-color); }
+        .day-cell.today .solar, .day-cell.today .lunar { color: var(--primary-color); font-weight: bold; }
+        .day-cell.selected { background-color: var(--primary-color); box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
+        .day-cell.selected .solar, .day-cell.selected .lunar { color: #fff; }
+        .day-cell .lunar.festival { color: var(--weekend-color); }
+        .day-cell.selected .lunar.festival { color: #fff; }
+
+        /* ================== 通用弹窗样式 ================== */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999; opacity: 0; visibility: hidden; transition: all 0.3s;
+            padding: 20px;
+        }
+        .modal.show { opacity: 1; visibility: visible; }
+
+        .modal-content {
+            background: #ffffff; width: 100%; max-width: 380px;
+            border-radius: 24px; padding: 24px; position: relative;
+            transform: translateY(20px); transition: transform 0.3s;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .modal.show .modal-content { transform: translateY(0); }
+
+        .modal-close {
+            position: absolute; top: 16px; right: 16px;
+            width: 28px; height: 28px; background: #f1f5f9; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            color: #64748b; font-size: 18px; cursor: pointer; border: none;
+            z-index: 10;
         }
 
-        .day-cell:hover {
-            background-color: #f3f4f6;
-        }
+        .modal-header { text-align: center; margin-bottom: 20px; }
+        .modal-header h2 { font-size: 20px; color: var(--text-main); margin-bottom: 6px; }
+        .modal-header p { font-size: 13px; color: var(--text-sub); }
 
-        .day-cell .solar {
-            font-size: 15px;
-            font-weight: 500;
-            color: var(--text-main);
-        }
+        .detail-section { margin-bottom: 20px; }
+        .detail-section h4 { font-size: 14px; color: var(--text-main); margin-bottom: 12px; font-weight: 600; border-left: 3px solid var(--primary-color); padding-left: 8px; }
 
-        .day-cell .lunar {
-            font-size: 9px;
-            color: var(--text-sub);
-            margin-top: 1px;
-            transform: scale(0.95);
-            white-space: nowrap;
+        /* 横向滚动 */
+        .hourly-forecast {
+            display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none;
         }
+        .hourly-forecast::-webkit-scrollbar { display: none; }
+        .hourly-item {
+            flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
+            background: #f8fafc; padding: 10px 14px; border-radius: 12px; gap: 6px;
+        }
+        .hourly-time { font-size: 11px; color: var(--text-sub); }
+        .hourly-icon { font-size: 20px; }
+        .hourly-temp { font-size: 14px; font-weight: bold; color: var(--text-main); }
+        .hourly-rain { font-size: 10px; color: #3b82f6; }
 
-        .day-cell.other-month .solar,
-        .day-cell.other-month .lunar {
-            color: #d1d5db;
+        /* 网格 */
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .detail-box {
+            background: #f8fafc; padding: 12px; border-radius: 12px;
+            display: flex; flex-direction: column; gap: 4px;
         }
+        .detail-box .label { font-size: 12px; color: var(--text-sub); }
+        .detail-box .value { font-size: 15px; font-weight: bold; color: var(--text-main); }
 
-        .day-cell.weekend .solar {
-            color: var(--weekend-color);
+        /* ================== 历史事件列表专用 ================== */
+        .history-list { list-style: none; }
+        .history-list li {
+            padding: 12px 0; border-bottom: 1px dashed var(--border-color);
+            display: flex; flex-direction: column; gap: 6px;
         }
-
-        .day-cell.today .solar,
-        .day-cell.today .lunar {
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        .day-cell.selected {
-            background-color: var(--primary-color);
-            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
-        }
-        .day-cell.selected .solar,
-        .day-cell.selected .lunar {
-            color: #fff;
-        }
-
-        .day-cell .lunar.festival {
-            color: var(--weekend-color);
-        }
-        .day-cell.selected .lunar.festival {
-            color: #fff;
-        }
-
-        /* ================= 历史气泡 ================= */
-        .history-popover {
-            position: absolute;
-            z-index: 100;
-            background-color: #1e293b;
-            color: #ffffff;
-            padding: 12px 14px;
-            border-radius: 10px;
-            font-size: 12px;
-            line-height: 1.5;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            width: max-content;
-            max-width: 240px; /* 缩小最大宽度适应小屏 */
-            word-break: break-word;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.15s, transform 0.15s;
-            transform: translateY(4px);
-            pointer-events: none;
-        }
-
-        .history-popover.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        .history-popover::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: var(--arrow-left, 50%);
-            margin-left: -6px;
-            border-width: 6px;
-            border-style: solid;
-            border-color: #1e293b transparent transparent transparent;
-        }
-
-        .history-popover.bottom-arrow::after {
-            top: auto;
-            bottom: 100%;
-            border-color: transparent transparent #1e293b transparent;
-        }
-
-        .history-popover .popover-title {
-            color: #93c5fd;
-            font-weight: bold;
-            margin-bottom: 6px;
-            font-size: 11px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 4px;
-        }
-
-        .history-popover .popover-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .history-popover .popover-list li {
-            display: flex;
-            gap: 6px;
-            align-items: flex-start;
-        }
-
-        .history-popover .popover-list li:not(:last-child) {
-            margin-bottom: 6px;
-        }
-
-        .history-popover .popover-year {
-            color: #fbbf24;
-            font-weight: 600;
-            flex-shrink: 0;
+        .history-list li:last-child { border-bottom: none; }
+        .history-year {
+            font-size: 14px; font-weight: bold; color: #f59e0b;
             font-family: "DIN Alternate", monospace;
         }
+        .history-event { font-size: 14px; color: var(--text-main); line-height: 1.5; }
 
-        /* 极小屏幕适配 (小于 360px) */
+        /* ================== 倒计时详情专用 ================== */
+        .big-countdown { text-align: center; margin: 30px 0; }
+        .big-countdown .num { font-size: 64px; font-weight: 800; color: var(--primary-color); line-height: 1; font-family: "DIN Alternate"; }
+        .big-countdown .unit { font-size: 16px; color: var(--text-sub); }
+        .big-countdown .date { font-size: 14px; color: var(--text-sub); margin-top: 10px; }
+        
+        .progress-container { background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 10px; }
+        .progress-bar { background: var(--primary-color); height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
+
         @media (max-width: 360px) {
             .weather-icon { font-size: 36px; }
             .weather-temp { font-size: 32px; }
-            .weather-right h3 { font-size: 14px; }
+            .title-row h3 { font-size: 14px; max-width: 120px; }
             .lunar-area .lunar-date { font-size: 16px; }
             .countdown-number { font-size: 28px; }
             .calendar-header h2 { font-size: 16px; }
             .btn-group button { padding: 3px 6px; font-size: 11px; }
             .day-cell { height: 42px; }
+            .f-day, .f-temp, .f-min { font-size: 10px; }
+            .f-icon { font-size: 18px; }
         }
     </style>
 </head>
@@ -393,37 +233,51 @@
 
 <div class="container">
     <!-- 天气模块 -->
-    <div class="weather-card">
-        <div class="weather-left">
-            <div class="weather-icon" id="weather-icon">⛅</div>
-            <div class="weather-temp">
-                <span id="temp">--</span><span>°C</span>
+    <div class="weather-card clickable" onclick="openWeatherModal()">
+        <div class="weather-main">
+            <div class="weather-left">
+                <div class="weather-icon" id="weather-icon">⛅</div>
+                <div class="weather-temp">
+                    <span id="temp">--</span><span>°C</span>
+                </div>
+            </div>
+            <div class="weather-right">
+                <div class="title-row">
+                    <!-- 城市名称将动态更新 -->
+                    <h3 id="city-name">正在定位...</h3>
+                    <span class="detail-hint">详情 ›</span>
+                </div>
+                <div class="desc" id="weather-desc">天气获取中...</div>
             </div>
         </div>
-        <div class="weather-right">
-            <h3>商丘 · 宁陵县</h3>
-            <div class="desc" id="weather-desc">网络超时<br>请稍后刷新</div>
+        
+        <div class="weather-forecast" id="weather-forecast">
+            <div style="width:100%; text-align:center; font-size:12px; color:#999;">加载预报中...</div>
         </div>
     </div>
 
     <!-- 倒计时与阴历模块 -->
-    <div class="summary-card">
+    <div class="summary-card clickable" onclick="openCountdownModal()">
         <div class="lunar-area">
             <div class="solar-date" id="detail-solar">2026年10月28日 星期三</div>
             <div class="lunar-date" id="detail-lunar">农历 九月十九</div>
             <div class="ganzhi-date" id="detail-ganzhi">丙午 [马] 年 戊戌月 乙亥日</div>
         </div>
         <div class="countdown-area">
-            <div class="countdown-label">距离新年</div>
+            <div class="countdown-label">距离春节</div>
             <div class="countdown-val">
                 <span class="countdown-number" id="countdown-days">--</span>
                 <span class="countdown-unit">天</span>
+            </div>
+            <div class="countdown-target-date">
+                <span>2027年2月6日</span>
+                <span class="detail-hint">详情 ›</span>
             </div>
         </div>
     </div>
 
     <!-- 日历模块 -->
-    <div class="calendar-card" id="calendar-card">
+    <div class="calendar-card">
         <div class="calendar-header">
             <h2 id="year-month">2026年10月</h2>
             <div class="btn-group">
@@ -437,70 +291,311 @@
             <div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div><div>日</div>
         </div>
 
-        <div class="days" id="calendar-days">
-            <!-- 动态生成 -->
+        <div class="days" id="calendar-days"></div>
+    </div>
+</div>
+
+<!-- ================== 1. 天气详情弹窗 ================== -->
+<div class="modal" id="weather-modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('weather-modal')">×</button>
+        <div class="modal-header">
+            <h2 id="modal-weather-title">天气详情</h2>
+            <p id="modal-update-time">更新中...</p>
         </div>
 
-        <!-- 历史气泡容器 -->
-        <div id="history-popover" class="history-popover">
-            <div class="popover-title" id="popover-title">历史上的今天</div>
-            <ul class="popover-list" id="popover-list"></ul>
+        <div class="detail-section">
+            <h4>未来 12 小时预报</h4>
+            <div class="hourly-forecast" id="hourly-container"></div>
+        </div>
+
+        <div class="detail-section">
+            <h4>详细气象指标</h4>
+            <div class="detail-grid">
+                <div class="detail-box">
+                    <div class="label">体感温度</div>
+                    <div class="value" id="modal-feels">-- °C</div>
+                </div>
+                <div class="detail-box">
+                    <div class="label">露点温度</div>
+                    <div class="value" id="modal-dew">-- °C</div>
+                </div>
+                <div class="detail-box">
+                    <div class="label">最大阵风</div>
+                    <div class="value" id="modal-gust">-- km/h</div>
+                </div>
+                <div class="detail-box">
+                    <div class="label">能见度</div>
+                    <div class="value" id="modal-visibility">-- km</div>
+                </div>
+                <div class="detail-box">
+                    <div class="label">日出 / 日落</div>
+                    <div class="value" id="modal-sun">-- / --</div>
+                </div>
+                <div class="detail-box">
+                    <div class="label">气压 / 湿度</div>
+                    <div class="value" id="modal-pressure">-- / --</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- ================== 2. 倒计时详情弹窗 ================== -->
+<div class="modal" id="countdown-modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('countdown-modal')">×</button>
+        <div class="modal-header">
+            <h2>节日倒计时</h2>
+            <p>今天：<span id="countdown-today"></span></p>
+        </div>
+
+        <div class="big-countdown">
+            <div class="num" id="modal-countdown-days">--</div>
+            <div class="unit">距离 2027 年春节</div>
+            <div class="date">2027年02月06日</div>
+        </div>
+
+        <div class="detail-section">
+            <h4>今年进度</h4>
+            <div class="progress-container">
+                <div class="progress-bar" id="year-progress-bar"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:#6b7280;">
+                <span id="year-passed">已过 0 天</span>
+                <span id="year-remain">剩 0 天</span>
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h4>其他节日</h4>
+            <div class="detail-grid" id="other-festivals"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ================== 3. 历史事件详情弹窗 ================== -->
+<div class="modal" id="history-modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('history-modal')">×</button>
+        <div class="modal-header">
+            <h2 id="history-modal-date">历史上的今天</h2>
+            <p id="history-modal-lunar">农历信息</p>
+        </div>
+        <ul class="history-list" id="history-modal-list"></ul>
+    </div>
+</div>
+
 <script>
-    /* ================= 1. 倒计时逻辑 ================= */
-    function updateCountdown() {
-        const now = new Date();
-        let targetYear = now.getFullYear() + 1;
-        const targetDate = new Date(targetYear, 0, 1, 0, 0, 0); 
-        
-        const diffTime = targetDate - now;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        document.getElementById('countdown-days').innerText = diffDays;
+    /* ================= 1. 定位与天气数据获取 ================= */
+    let weatherData = null; 
+    let currentCity = "未知位置";
+
+    // 获取当前定位并初始化天气
+    function initLocationAndWeather() {
+        if (!navigator.geolocation) {
+            document.getElementById('city-name').innerText = "不支持定位";
+            document.getElementById('weather-desc').innerText = "当前浏览器不支持定位";
+            // 降级到默认位置(宁陵县)
+            fetchWeather(34.46, 115.31);
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                
+                // 逆地理编码获取城市名
+                try {
+                    // 使用免费、支持CORS的反向地理编码接口
+                    const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh`);
+                    const geoData = await res.json();
+                    // 依次尝试取市、区、镇，都没有就显示“当前位置”
+                    currentCity = geoData.city || geoData.locality || geoData.principalSubdivision || "当前位置";
+                    document.getElementById('city-name').innerText = currentCity;
+                } catch (e) {
+                    console.warn('反向地理编码失败', e);
+                    document.getElementById('city-name').innerText = "当前位置";
+                }
+
+                // 拿着真实经纬度请求天气
+                fetchWeather(lat, lon);
+            },
+            (error) => {
+                console.warn("定位失败或拒绝授权", error);
+                document.getElementById('city-name').innerText = "宁陵县(默认)";
+                // 定位失败时，兜底请求宁陵县天气
+                fetchWeather(34.46, 115.31);
+            },
+            { timeout: 8000, maximumAge: 600000, enableHighAccuracy: false }
+        );
     }
 
-    /* ================= 2. 天气获取 (带超时处理) ================= */
-    async function fetchWeather() {
-        // 5秒超时机制
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+    function getWeatherInfo(code) {
+        if (code === 0) return { desc: "晴", icon: "☀️" };
+        if ([1, 2].includes(code)) return { desc: "多云", icon: "🌤️" };
+        if (code === 3) return { desc: "阴", icon: "☁️" };
+        if ([45, 48].includes(code)) return { desc: "雾", icon: "🌫️" };
+        if (code >= 51 && code <= 57) return { desc: "毛毛雨", icon: "🌦️" };
+        if (code >= 61 && code <= 67) return { desc: "雨", icon: "🌧️" };
+        if (code >= 71 && code <= 77) return { desc: "雪", icon: "❄️" };
+        if (code >= 80 && code <= 82) return { desc: "阵雨", icon: "🌧️" };
+        if (code >= 85 && code <= 86) return { desc: "阵雪", icon: "❄️" };
+        if (code >= 95) return { desc: "雷暴", icon: "⛈️" };
+        return { desc: "多云", icon: "⛅" };
+    }
 
+    async function fetchWeather(lat, lon) {
         try {
-            const response = await fetch('https://api.vvhan.com/api/weather?city=宁陵县', {
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,dew_point_2m,is_day,weather_code,pressure_msl,wind_speed_10m,wind_gusts_10m,visibility&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto&forecast_days=7`;
             
+            const response = await fetch(url);
             const data = await response.json();
-            if(data.success && data.info) {
-                const info = data.info;
-                document.getElementById('temp').innerText = info.tem;
-                document.getElementById('weather-desc').innerHTML = `${info.weather} ${info.wind}<br>${info.winp}`;
+
+            if (data && data.current && data.daily && data.hourly) {
+                weatherData = data; 
                 
-                let icon = "🌤️";
-                if (info.weather.includes("晴")) icon = "☀️";
-                else if (info.weather.includes("云") || info.weather.includes("阴")) icon = "☁️";
-                else if (info.weather.includes("雨")) icon = "🌧️";
-                else if (info.weather.includes("雪")) icon = "❄️";
-                document.getElementById('weather-icon').innerText = icon;
-            } else {
-                showWeatherFallback();
+                const current = data.current;
+                const currentInfo = getWeatherInfo(current.weather_code);
+
+                document.getElementById('temp').innerText = Math.round(current.temperature_2m);
+                document.getElementById('weather-icon').innerText = currentInfo.icon;
+                document.getElementById('weather-desc').innerHTML = `${currentInfo.desc}<br>湿度 ${current.relative_humidity_2m}%`;
+
+                const daily = data.daily;
+                const container = document.getElementById('weather-forecast');
+                container.innerHTML = '';
+                const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+                for (let i = 0; i < daily.time.length; i++) {
+                    const date = new Date(daily.time[i]);
+                    const dayText = i === 0 ? '今天' : weekDays[date.getDay()];
+                    const info = getWeatherInfo(daily.weather_code[i]);
+                    const max = Math.round(daily.temperature_2m_max[i]);
+                    const min = Math.round(daily.temperature_2m_min[i]);
+
+                    container.innerHTML += `
+                        <div class="forecast-item">
+                            <div class="f-day">${dayText}</div>
+                            <div class="f-icon">${info.icon}</div>
+                            <div class="f-temp">${max}°<span class="f-min">/${min}°</span></div>
+                        </div>
+                    `;
+                }
             }
         } catch (error) {
-            showWeatherFallback();
+            console.error('天气请求异常:', error);
+            document.getElementById('weather-desc').innerHTML = '获取失败<br>请检查网络';
         }
     }
 
-    function showWeatherFallback() {
-        document.getElementById('temp').innerText = '--';
-        document.getElementById('weather-desc').innerHTML = '获取超时<br>请点击刷新';
-        document.getElementById('weather-icon').innerText = '⛅';
+    function openWeatherModal() {
+        if (!weatherData) return alert("天气数据尚未加载完成");
+        document.getElementById('weather-modal').classList.add('show');
+        document.getElementById('modal-weather-title').innerText = `${currentCity} 天气详情`;
+        
+        const now = new Date();
+        document.getElementById('modal-update-time').innerText = `更新于 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+
+        const hourlyContainer = document.getElementById('hourly-container');
+        hourlyContainer.innerHTML = '';
+        const currentHourStr = now.toISOString().slice(0, 13) + ":00";
+        let startIndex = weatherData.hourly.time.findIndex(t => t.startsWith(currentHourStr));
+        if (startIndex === -1) startIndex = 0;
+
+        for (let i = startIndex; i < startIndex + 12; i++) {
+            if (!weatherData.hourly.time[i]) break;
+            const time = new Date(weatherData.hourly.time[i]);
+            const hourText = `${time.getHours().toString().padStart(2, '0')}:00`;
+            const temp = Math.round(weatherData.hourly.temperature_2m[i]);
+            const info = getWeatherInfo(weatherData.hourly.weather_code[i]);
+            const pop = weatherData.hourly.precipitation_probability[i] || 0;
+
+            hourlyContainer.innerHTML += `
+                <div class="hourly-item">
+                    <div class="hourly-time">${hourText}</div>
+                    <div class="hourly-icon">${info.icon}</div>
+                    <div class="hourly-temp">${temp}°</div>
+                    <div class="hourly-rain">💧${pop}%</div>
+                </div>
+            `;
+        }
+
+        const cur = weatherData.current;
+        const day = weatherData.daily;
+        
+        document.getElementById('modal-feels').innerText = `${Math.round(cur.apparent_temperature)} °C`;
+        document.getElementById('modal-dew').innerText = `${Math.round(cur.dew_point_2m)} °C`;
+        document.getElementById('modal-gust').innerText = `${Math.round(cur.wind_gusts_10m)} km/h`;
+        document.getElementById('modal-visibility').innerText = `${(cur.visibility / 1000).toFixed(1)} km`;
+        
+        document.getElementById('modal-sun').innerText = `${day.sunrise[0].split('T')[1]} / ${day.sunset[0].split('T')[1]}`;
+        document.getElementById('modal-pressure').innerText = `${Math.round(cur.pressure_msl)} hPa / ${cur.relative_humidity_2m}%`;
     }
 
-    /* ================= 3. 历史事件数据 ================= */
+    /* ================= 2. 倒计时及节日计算 ================= */
+    function updateCountdown() {
+        const now = new Date();
+        const targetDate = new Date('2027-02-06T00:00:00'); 
+        const diffTime = targetDate - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        document.getElementById('countdown-days').innerText = diffDays > 0 ? diffDays : 0;
+        document.getElementById('modal-countdown-days').innerText = diffDays > 0 ? diffDays : 0;
+
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        const endOfYear = new Date(now.getFullYear(), 11, 31);
+        const totalDays = Math.ceil((endOfYear - startOfYear) / (1000 * 60 * 60 * 24));
+        const passedDays = Math.ceil((now - startOfYear) / (1000 * 60 * 60 * 24));
+        const remainDays = totalDays - passedDays;
+        const percent = (passedDays / totalDays) * 100;
+
+        document.getElementById('year-progress-bar').style.width = `${percent}%`;
+        document.getElementById('year-passed').innerText = `已过 ${passedDays} 天`;
+        document.getElementById('year-remain').innerText = `剩 ${remainDays} 天`;
+
+        document.getElementById('countdown-today').innerText = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+    }
+
+    function openCountdownModal() {
+        document.getElementById('countdown-modal').classList.add('show');
+        
+        const now = new Date();
+        const thisYear = now.getFullYear();
+        const nextYear = thisYear + 1;
+
+        const festivals = [
+            { name: '元旦', date: new Date(nextYear, 0, 1) },
+            { name: '清明节', date: new Date(nextYear, 3, 4) },
+            { name: '劳动节', date: new Date(nextYear, 4, 1) },
+            { name: '端午节', date: new Date(nextYear, 5, 9) },
+            { name: '中秋节', date: new Date(nextYear, 8, 15) },
+            { name: '国庆节', date: new Date(nextYear, 9, 1) }
+        ];
+
+        let html = '';
+        festivals.forEach(f => {
+            let target = f.date;
+            if (f.date.getFullYear() === nextYear) {
+                const thisYearDate = new Date(thisYear, f.date.getMonth(), f.date.getDate());
+                if (thisYearDate > now) target = thisYearDate;
+            }
+            
+            const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+            if (diff >= 0) {
+                html += `
+                    <div class="detail-box">
+                        <div class="label">距离${f.name}</div>
+                        <div class="value">${diff} <span style="font-size:12px;font-weight:normal;color:#6b7280;">天</span></div>
+                    </div>
+                `;
+            }
+        });
+        document.getElementById('other-festivals').innerHTML = html;
+    }
+
+    /* ================= 3. 日历与历史事件 ================= */
     const HISTORY_DATA = {
         1: [{ year: '1949年', event: '中华人民共和国中央人民政府成立，开国大典举行。' }, { year: '1890年', event: '美国国会正式通过设立优胜美地国家公园。' }],
         2: [{ year: '1949年', event: '“中国保卫世界和平大会”在北京开幕。' }, { year: '1869年', event: '印度民族运动领袖甘地诞生。' }],
@@ -535,10 +630,8 @@
         31: [{ year: '1517年', event: '马丁·路德张贴《九十五条论纲》，标志着宗教改革的开端。' }, { year: '1984年', event: '邓小平会见缅甸总统吴山友。' }]
     };
 
-    /* ================= 4. 日历渲染 ================= */
     let currentDate = new Date(); 
     let selectedDate = new Date(); 
-    let activeCell = null; 
 
     function renderCalendar() {
         const year = currentDate.getFullYear();
@@ -547,7 +640,6 @@
 
         const daysContainer = document.getElementById('calendar-days');
         daysContainer.innerHTML = ''; 
-        hidePopover(); 
 
         const firstDay = new Date(year, month, 1).getDay();
         const startOffset = firstDay === 0 ? 6 : firstDay - 1; 
@@ -617,111 +709,17 @@
             if (isOtherMonth) {
                 currentDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
                 renderCalendar(); 
-                setTimeout(() => showPopoverForDate(dateObj), 10);
+                setTimeout(() => openHistoryModal(dateObj), 50);
                 return;
             }
             renderCalendar();
             updateDetailBox(dateObj);
-            showPopoverForDate(dateObj, cell);
+            openHistoryModal(dateObj);
         };
 
         return cell;
     }
 
-    /* ================= 5. 气泡控制 ================= */
-    function showPopoverForDate(dateObj, cellElement = null) {
-        const month = dateObj.getMonth() + 1;
-        const day = dateObj.getDate();
-        
-        if (month !== 10) {
-            hidePopover();
-            return;
-        }
-
-        const events = HISTORY_DATA[day];
-        if (!events || events.length === 0) {
-            hidePopover();
-            return;
-        }
-
-        if (!cellElement) {
-            const allCells = document.querySelectorAll('.day-cell');
-            for (let c of allCells) {
-                if (c.querySelector('.solar').innerText == day && !c.classList.contains('other-month')) {
-                    cellElement = c;
-                    break;
-                }
-            }
-        }
-
-        if (!cellElement) return;
-
-        const popover = document.getElementById('history-popover');
-        const title = document.getElementById('popover-title');
-        const list = document.getElementById('popover-list');
-
-        title.innerText = `历史上的今天 · ${month}月${day}日`;
-        list.innerHTML = '';
-        
-        events.forEach(item => {
-            const li = document.createElement('li');
-            li.innerHTML = `<span class="popover-year">${item.year}</span><span>${item.event}</span>`;
-            list.appendChild(li);
-        });
-
-        popover.classList.add('show');
-        
-        const cardRect = document.getElementById('calendar-card').getBoundingClientRect();
-        const cellRect = cellElement.getBoundingClientRect();
-        
-        const popWidth = popover.offsetWidth;
-        const cardWidth = cardRect.width;
-        const margin = 10;
-
-        const cellCenterX = cellRect.left - cardRect.left + cellRect.width / 2;
-        let left = cellCenterX - popWidth / 2;
-
-        if (left < margin) left = margin;
-        if (left + popWidth > cardWidth - margin) left = cardWidth - margin - popWidth;
-
-        let arrowLeft = cellCenterX - left;
-        if (arrowLeft < 12) arrowLeft = 12;
-        if (arrowLeft > popWidth - 12) arrowLeft = popWidth - 12;
-
-        popover.style.left = `${left}px`;
-        popover.style.setProperty('--arrow-left', `${arrowLeft}px`);
-
-        let top = cellRect.top - cardRect.top - popover.offsetHeight - 8;
-        let isBottom = false;
-
-        if (top < 10) {
-            top = cellRect.top - cardRect.top + cellRect.height + 8;
-            isBottom = true;
-        }
-
-        popover.style.top = `${top}px`;
-
-        if (isBottom) popover.classList.add('bottom-arrow');
-        else popover.classList.remove('bottom-arrow');
-        
-        activeCell = cellElement;
-    }
-
-    function hidePopover() {
-        document.getElementById('history-popover').classList.remove('show');
-        activeCell = null;
-    }
-
-    document.addEventListener('click', (e) => {
-        const popover = document.getElementById('history-popover');
-        if (popover.classList.contains('show')) {
-            if (!popover.contains(e.target) && e.target !== activeCell && !activeCell?.contains(e.target)) {
-                hidePopover();
-            }
-        }
-    });
-
-    /* ================= 6. 更新阴历详情 ================= */
     function updateDetailBox(dateObj) {
         document.getElementById('detail-solar').innerText = 
             `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日 星期${['日','一','二','三','四','五','六'][dateObj.getDay()]}`;
@@ -730,22 +728,50 @@
             const lunar = Lunar.fromDate(dateObj);
             const lunarMonth = lunar.getMonthInChinese();
             const lunarDay = lunar.getDayInChinese();
-            
             document.getElementById('detail-lunar').innerText = `农历 ${lunarMonth}月${lunarDay}`;
             
             const ganZhiYear = lunar.getYearInGanZhi();
             const zodiac = lunar.getYearShengXiao();
             const ganZhiMonth = lunar.getMonthInGanZhi();
             const ganZhiDay = lunar.getDayInGanZhi();
-
             document.getElementById('detail-ganzhi').innerText = 
                 `${ganZhiYear} [${zodiac}] 年 ${ganZhiMonth}月 ${ganZhiDay}日`;
+        } catch (e) {}
+    }
+
+    function openHistoryModal(dateObj) {
+        const month = dateObj.getMonth() + 1;
+        const day = dateObj.getDate();
+        
+        document.getElementById('history-modal').classList.add('show');
+        document.getElementById('history-modal-date').innerText = `历史上的今天 · ${month}月${day}日`;
+        
+        try {
+            const lunar = Lunar.fromDate(dateObj);
+            document.getElementById('history-modal-lunar').innerText = `农历 ${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
         } catch (e) {
-            document.getElementById('detail-lunar').innerText = '农历信息获取失败';
+            document.getElementById('history-modal-lunar').innerText = '';
+        }
+
+        const list = document.getElementById('history-modal-list');
+        list.innerHTML = '';
+        
+        const events = HISTORY_DATA[day];
+        if (events && events.length > 0) {
+            events.forEach(item => {
+                list.innerHTML += `
+                    <li>
+                        <div class="history-year">${item.year}</div>
+                        <div class="history-event">${item.event}</div>
+                    </li>
+                `;
+            });
+        } else {
+            list.innerHTML = `<div style="text-align:center; color:#999; font-size:14px; padding:20px 0;">暂未收录该日期的重大历史事件</div>`;
         }
     }
 
-    /* ================= 7. 交互控制 ================= */
+    /* ================= 4. 通用交互 ================= */
     function changeMonth(offset) {
         currentDate.setMonth(currentDate.getMonth() + offset);
         renderCalendar();
@@ -756,17 +782,26 @@
         selectedDate = new Date();
         renderCalendar();
         updateDetailBox(selectedDate);
-        if (selectedDate.getMonth() === 9) {
-            setTimeout(() => showPopoverForDate(selectedDate), 50);
-        }
+        openHistoryModal(selectedDate);
     }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('show');
+    }
+
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(this.id);
+        });
+    });
 
     // 初始化
     window.onload = () => {
-        fetchWeather();
+        // 启动定位并获取天气
+        initLocationAndWeather();
         updateCountdown();
         
-        // 演示用，锁定到指定日期
+        // 锁定到 2026年10月28日 用于演示
         currentDate = new Date(2026, 9, 1);
         selectedDate = new Date(2026, 9, 28);
 
@@ -774,11 +809,14 @@
         updateDetailBox(selectedDate); 
         
         setInterval(() => {
-            fetchWeather();
+            // 定时刷新（注意：频繁请求定位容易引起反感，所以定时器内只刷新天气，保留之前的经纬度）
+            // 为了简单起见，如果已有 weatherData，我们就不重新定位了，或者重新走一次静默定位
+            if(weatherData && weatherData.latitude) {
+                 fetchWeather(weatherData.latitude, weatherData.longitude);
+            }
             updateCountdown();
         }, 600000);
     };
-
 </script>
 </body>
 </html>
