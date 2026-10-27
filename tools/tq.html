@@ -71,8 +71,17 @@
         .title-row {
             display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
         }
-        .title-row h3 { font-size: 16px; color: var(--text-main); font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 140px; }
+        .title-row h3 { font-size: 16px; color: var(--text-main); font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 120px; }
         
+        /* 刷新定位图标 */
+        .refresh-location {
+            font-size: 12px; cursor: pointer; color: var(--primary-color);
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 2px; border-radius: 4px; background: #e0f2fe;
+        }
+        .refresh-location.spinning { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
         .weather-right .desc { font-size: 13px; color: var(--text-sub); line-height: 1.3; }
 
         /* 一周预报 */
@@ -228,7 +237,7 @@
         @media (max-width: 360px) {
             .weather-icon { font-size: 36px; }
             .weather-temp { font-size: 32px; }
-            .title-row h3 { font-size: 14px; max-width: 100px; }
+            .title-row h3 { font-size: 14px; max-width: 90px; }
             .lunar-area .lunar-date { font-size: 16px; }
             .countdown-number { font-size: 28px; }
             .calendar-header h2 { font-size: 16px; }
@@ -254,6 +263,8 @@
             <div class="weather-right">
                 <div class="title-row">
                     <h3 id="city-name">正在获取...</h3>
+                    <!-- 手动刷新定位按钮 -->
+                    <span class="refresh-location" id="refresh-btn" title="重新定位" onclick="forceRefreshLocation(event)">🔄</span>
                     <span class="detail-hint">详情 ›</span>
                 </div>
                 <div class="desc" id="weather-desc">天气获取中...</div>
@@ -399,8 +410,34 @@
     /* ================= 1. 定位与天气数据获取 ================= */
     let weatherData = null; 
     let currentCity = "未知位置";
+    
+    // 缓存配置
+    const CACHE_KEY_LAT = 'weather_lat';
+    const CACHE_KEY_LON = 'weather_lon';
+    const CACHE_KEY_CITY = 'weather_city';
+    const CACHE_KEY_TIME = 'weather_time';
+    const CACHE_EXPIRY = 2 * 60 * 60 * 1000; // 2小时缓存过期 (毫秒)
 
-    function initLocationAndWeather() {
+    // 页面加载初始化
+    function initLocationAndWeather(isForce = false) {
+        // 如果不是强制刷新，优先读取缓存
+        if (!isForce) {
+            const cachedLat = localStorage.getItem(CACHE_KEY_LAT);
+            const cachedLon = localStorage.getItem(CACHE_KEY_LON);
+            const cachedCity = localStorage.getItem(CACHE_KEY_CITY);
+            const cacheTime = localStorage.getItem(CACHE_KEY_TIME);
+
+            const now = new Date().getTime();
+            if (cachedLat && cachedLon && cachedCity && cacheTime && (now - cacheTime < CACHE_EXPIRY)) {
+                // 缓存有效，直接渲染
+                currentCity = cachedCity;
+                document.getElementById('city-name').innerText = currentCity;
+                fetchWeather(cachedLat, cachedLon);
+                return;
+            }
+        }
+
+        // 没有缓存或缓存过期，或者强制刷新，走真实定位
         let defaultLat = 34.46;
         let defaultLon = 115.31;
 
@@ -412,6 +449,7 @@
 
         let locationResolved = false;
         
+        // 5秒超时保底
         const timeoutId = setTimeout(() => {
             if (!locationResolved) {
                 locationResolved = true;
@@ -441,6 +479,12 @@
                     currentCity = "当前位置";
                 }
 
+                // 将成功获取的位置写入缓存
+                localStorage.setItem(CACHE_KEY_LAT, lat);
+                localStorage.setItem(CACHE_KEY_LON, lon);
+                localStorage.setItem(CACHE_KEY_CITY, currentCity);
+                localStorage.setItem(CACHE_KEY_TIME, new Date().getTime());
+
                 fetchWeather(lat, lon);
             },
             (error) => {
@@ -454,6 +498,24 @@
             },
             { timeout: 5000, maximumAge: 600000, enableHighAccuracy: false }
         );
+    }
+
+    // 手动点击刷新定位
+    function forceRefreshLocation(event) {
+        if (event) event.stopPropagation(); // 阻止触发卡片点击弹窗
+        
+        const btn = document.getElementById('refresh-btn');
+        btn.classList.add('spinning');
+        document.getElementById('city-name').innerText = "定位中...";
+        
+        // 清除旧缓存
+        localStorage.removeItem(CACHE_KEY_TIME);
+        
+        // 强制重新定位
+        initLocationAndWeather(true);
+        
+        // 动画在5秒后停止（保底时间）
+        setTimeout(() => { btn.classList.remove('spinning'); }, 5000);
     }
 
     function getWeatherInfo(code) {
@@ -471,6 +533,9 @@
     }
 
     async function fetchWeather(lat, lon) {
+        // 停止旋转动画
+        document.getElementById('refresh-btn').classList.remove('spinning');
+        
         try {
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,dew_point_2m,is_day,weather_code,pressure_msl,wind_speed_10m,wind_gusts_10m,visibility&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto&forecast_days=7`;
             
@@ -824,7 +889,7 @@
 
     // 初始化
     window.onload = () => {
-        initLocationAndWeather();
+        initLocationAndWeather(false);
         updateCountdown();
         
         // 锁定到 2026年10月用于演示（如果你想跟随系统真实时间，请删掉下面两行）
