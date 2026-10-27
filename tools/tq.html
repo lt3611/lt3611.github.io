@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>定位天气 & 日历看板</title>
+    <title>天气日历</title>
     
-    <!-- ====== PWA & 主屏幕图标适配 ====== -->
-    <link rel="icon" type="image/png" href="https://api.iconify.design/noto/cloud.png?color=%233b82f6&width=192" />
-    <link rel="apple-touch-icon" href="https://api.iconify.design/noto/cloud.png?color=%233b82f6&width=192" />
-    <link rel="manifest" href="./manifest.json">
-    <!-- =================================== -->
+    <!-- ====== 图标适配 ====== -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%234facfe'/><stop offset='100%' stop-color='%233b82f6'/></linearGradient></defs><rect width='512' height='512' rx='120' fill='url(%23g)'/><circle cx='340' cy='180' r='65' fill='%23fbbf24'/><path d='M140,310 a60,60 0 0,1 60,-60 a70,70 0 0,1 130,-15 a75,75 0 0,1 80,75 a50,50 0 0,1 0,100 l-270,0 a50,50 0 0,1 0,-100 z' fill='%23ffffff' opacity='0.9'/><rect x='170' y='340' width='172' height='120' rx='20' fill='%23ffffff' opacity='0.95'/><rect x='170' y='340' width='172' height='40' rx='20' fill='%233b82f6' opacity='0.15'/></svg>">
+    <!-- ======================================================== -->
 
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.js"></script>
     <style>
@@ -33,19 +31,12 @@
 
         .container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; }
 
-        /* 通用卡片点击反馈 */
         .clickable { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
         .clickable:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
 
-        /* 详情小标签 */
         .detail-hint {
-            font-size: 10px;
-            color: #6b7280;
-            background: #f3f4f6;
-            padding: 2px 6px;
-            border-radius: 6px;
-            white-space: nowrap;
-            font-weight: normal;
+            font-size: 10px; color: #6b7280; background: #f3f4f6;
+            padding: 2px 6px; border-radius: 6px; white-space: nowrap; font-weight: normal;
         }
 
         /* ================= 1. 天气卡片 ================= */
@@ -68,9 +59,7 @@
         
         .weather-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; overflow: hidden; }
         
-        .title-row {
-            display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
-        }
+        .title-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
         .title-row h3 { font-size: 16px; color: var(--text-main); font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 120px; }
         
         /* 刷新定位图标 */
@@ -108,10 +97,7 @@
         .lunar-area .lunar-date { font-size: 18px; font-weight: bold; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; }
         .lunar-area .ganzhi-date { font-size: 11px; color: var(--text-sub); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 
-        .countdown-area { 
-            text-align: right; padding-left: 12px; border-left: 1px dashed var(--border-color); 
-            flex-shrink: 0; 
-        }
+        .countdown-area { text-align: right; padding-left: 12px; border-left: 1px dashed var(--border-color); flex-shrink: 0; }
         .countdown-label { font-size: 12px; color: var(--text-sub); margin-bottom: 2px; }
         .countdown-val { display: flex; align-items: baseline; justify-content: flex-end; color: var(--primary-color); }
         .countdown-number { font-size: 32px; font-weight: 800; line-height: 1; font-family: "DIN Alternate", "Helvetica Neue", sans-serif; }
@@ -161,38 +147,28 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
             display: flex; justify-content: center; align-items: center;
-            z-index: 9999; opacity: 0; visibility: hidden; transition: all 0.3s;
-            padding: 20px;
+            z-index: 9999; opacity: 0; visibility: hidden; transition: all 0.3s; padding: 20px;
         }
         .modal.show { opacity: 1; visibility: visible; }
-
         .modal-content {
             background: #ffffff; width: 100%; max-width: 380px;
             border-radius: 24px; padding: 24px; position: relative;
-            transform: translateY(20px); transition: transform 0.3s;
-            max-height: 85vh; overflow-y: auto;
+            transform: translateY(20px); transition: transform 0.3s; max-height: 85vh; overflow-y: auto;
         }
         .modal.show .modal-content { transform: translateY(0); }
-
         .modal-close {
             position: absolute; top: 16px; right: 16px;
             width: 28px; height: 28px; background: #f1f5f9; border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            color: #64748b; font-size: 18px; cursor: pointer; border: none;
-            z-index: 10;
+            color: #64748b; font-size: 18px; cursor: pointer; border: none; z-index: 10;
         }
-
         .modal-header { text-align: center; margin-bottom: 20px; }
         .modal-header h2 { font-size: 20px; color: var(--text-main); margin-bottom: 6px; }
         .modal-header p { font-size: 13px; color: var(--text-sub); }
-
         .detail-section { margin-bottom: 20px; }
         .detail-section h4 { font-size: 14px; color: var(--text-main); margin-bottom: 12px; font-weight: 600; border-left: 3px solid var(--primary-color); padding-left: 8px; }
 
-        /* 横向滚动 */
-        .hourly-forecast {
-            display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none;
-        }
+        .hourly-forecast { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
         .hourly-forecast::-webkit-scrollbar { display: none; }
         .hourly-item {
             flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
@@ -203,34 +179,21 @@
         .hourly-temp { font-size: 14px; font-weight: bold; color: var(--text-main); }
         .hourly-rain { font-size: 10px; color: #3b82f6; }
 
-        /* 网格 */
         .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .detail-box {
-            background: #f8fafc; padding: 12px; border-radius: 12px;
-            display: flex; flex-direction: column; gap: 4px;
-        }
+        .detail-box { background: #f8fafc; padding: 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; }
         .detail-box .label { font-size: 12px; color: var(--text-sub); }
         .detail-box .value { font-size: 15px; font-weight: bold; color: var(--text-main); }
 
-        /* ================== 历史事件列表专用 ================== */
         .history-list { list-style: none; }
-        .history-list li {
-            padding: 12px 0; border-bottom: 1px dashed var(--border-color);
-            display: flex; flex-direction: column; gap: 6px;
-        }
+        .history-list li { padding: 12px 0; border-bottom: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 6px; }
         .history-list li:last-child { border-bottom: none; }
-        .history-year {
-            font-size: 14px; font-weight: bold; color: #f59e0b;
-            font-family: "DIN Alternate", monospace;
-        }
+        .history-year { font-size: 14px; font-weight: bold; color: #f59e0b; font-family: "DIN Alternate", monospace; }
         .history-event { font-size: 14px; color: var(--text-main); line-height: 1.5; }
 
-        /* ================== 倒计时详情专用 ================== */
         .big-countdown { text-align: center; margin: 30px 0; }
         .big-countdown .num { font-size: 64px; font-weight: 800; color: var(--primary-color); line-height: 1; font-family: "DIN Alternate"; }
         .big-countdown .unit { font-size: 16px; color: var(--text-sub); }
         .big-countdown .date { font-size: 14px; color: var(--text-sub); margin-top: 10px; }
-        
         .progress-container { background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 10px; }
         .progress-bar { background: var(--primary-color); height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
 
@@ -263,7 +226,6 @@
             <div class="weather-right">
                 <div class="title-row">
                     <h3 id="city-name">正在获取...</h3>
-                    <!-- 手动刷新定位按钮 -->
                     <span class="refresh-location" id="refresh-btn" title="重新定位" onclick="forceRefreshLocation(event)">🔄</span>
                     <span class="detail-hint">详情 ›</span>
                 </div>
@@ -323,39 +285,19 @@
             <h2 id="modal-weather-title">天气详情</h2>
             <p id="modal-update-time">更新中...</p>
         </div>
-
         <div class="detail-section">
             <h4>未来 12 小时预报</h4>
             <div class="hourly-forecast" id="hourly-container"></div>
         </div>
-
         <div class="detail-section">
             <h4>详细气象指标</h4>
             <div class="detail-grid">
-                <div class="detail-box">
-                    <div class="label">体感温度</div>
-                    <div class="value" id="modal-feels">-- °C</div>
-                </div>
-                <div class="detail-box">
-                    <div class="label">露点温度</div>
-                    <div class="value" id="modal-dew">-- °C</div>
-                </div>
-                <div class="detail-box">
-                    <div class="label">最大阵风</div>
-                    <div class="value" id="modal-gust">-- km/h</div>
-                </div>
-                <div class="detail-box">
-                    <div class="label">能见度</div>
-                    <div class="value" id="modal-visibility">-- km</div>
-                </div>
-                <div class="detail-box">
-                    <div class="label">日出 / 日落</div>
-                    <div class="value" id="modal-sun">-- / --</div>
-                </div>
-                <div class="detail-box">
-                    <div class="label">气压 / 湿度</div>
-                    <div class="value" id="modal-pressure">-- / --</div>
-                </div>
+                <div class="detail-box"><div class="label">体感温度</div><div class="value" id="modal-feels">-- °C</div></div>
+                <div class="detail-box"><div class="label">露点温度</div><div class="value" id="modal-dew">-- °C</div></div>
+                <div class="detail-box"><div class="label">最大阵风</div><div class="value" id="modal-gust">-- km/h</div></div>
+                <div class="detail-box"><div class="label">能见度</div><div class="value" id="modal-visibility">-- km</div></div>
+                <div class="detail-box"><div class="label">日出 / 日落</div><div class="value" id="modal-sun">-- / --</div></div>
+                <div class="detail-box"><div class="label">气压 / 湿度</div><div class="value" id="modal-pressure">-- / --</div></div>
             </div>
         </div>
     </div>
@@ -369,28 +311,19 @@
             <h2>节日倒计时</h2>
             <p>今天：<span id="countdown-today"></span></p>
         </div>
-
         <div class="big-countdown">
             <div class="num" id="modal-countdown-days">--</div>
             <div class="unit">距离 2027 年春节</div>
             <div class="date">2027年02月06日</div>
         </div>
-
         <div class="detail-section">
             <h4>今年进度</h4>
-            <div class="progress-container">
-                <div class="progress-bar" id="year-progress-bar"></div>
-            </div>
+            <div class="progress-container"><div class="progress-bar" id="year-progress-bar"></div></div>
             <div style="display:flex; justify-content:space-between; font-size:12px; color:#6b7280;">
-                <span id="year-passed">已过 0 天</span>
-                <span id="year-remain">剩 0 天</span>
+                <span id="year-passed">已过 0 天</span><span id="year-remain">剩 0 天</span>
             </div>
         </div>
-
-        <div class="detail-section">
-            <h4>其他节日</h4>
-            <div class="detail-grid" id="other-festivals"></div>
-        </div>
+        <div class="detail-section"><h4>其他节日</h4><div class="detail-grid" id="other-festivals"></div></div>
     </div>
 </div>
 
@@ -411,16 +344,26 @@
     let weatherData = null; 
     let currentCity = "未知位置";
     
-    // 缓存配置
     const CACHE_KEY_LAT = 'weather_lat';
     const CACHE_KEY_LON = 'weather_lon';
     const CACHE_KEY_CITY = 'weather_city';
     const CACHE_KEY_TIME = 'weather_time';
-    const CACHE_EXPIRY = 2 * 60 * 60 * 1000; // 2小时缓存过期 (毫秒)
+    const CACHE_EXPIRY = 2 * 60 * 60 * 1000; // 2小时缓存
 
-    // 页面加载初始化
+    // 核心：带超时控制的 Fetch
+    async function fetchWithTimeout(resource, options = {}) {
+        const { timeout = 8000 } = options;
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+        const response = await fetch(resource, {
+            ...options,
+            signal: controller.signal  
+        });
+        clearTimeout(id);
+        return response;
+    }
+
     function initLocationAndWeather(isForce = false) {
-        // 如果不是强制刷新，优先读取缓存
         if (!isForce) {
             const cachedLat = localStorage.getItem(CACHE_KEY_LAT);
             const cachedLon = localStorage.getItem(CACHE_KEY_LON);
@@ -429,7 +372,6 @@
 
             const now = new Date().getTime();
             if (cachedLat && cachedLon && cachedCity && cacheTime && (now - cacheTime < CACHE_EXPIRY)) {
-                // 缓存有效，直接渲染
                 currentCity = cachedCity;
                 document.getElementById('city-name').innerText = currentCity;
                 fetchWeather(cachedLat, cachedLon);
@@ -437,7 +379,6 @@
             }
         }
 
-        // 没有缓存或缓存过期，或者强制刷新，走真实定位
         let defaultLat = 34.46;
         let defaultLon = 115.31;
 
@@ -449,15 +390,15 @@
 
         let locationResolved = false;
         
-        // 5秒超时保底
+        // 硬性降级：3秒拿不到位置，直接强制使用默认坐标加载天气！
         const timeoutId = setTimeout(() => {
             if (!locationResolved) {
                 locationResolved = true;
-                console.warn('定位超时，降级使用默认位置');
+                console.warn('定位超时，强制降级使用默认位置');
                 document.getElementById('city-name').innerText = "宁陵县(定位超时)";
                 fetchWeather(defaultLat, defaultLon);
             }
-        }, 5000);
+        }, 3000);
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -468,24 +409,26 @@
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
                 
+                // 定位成功，立即发起天气请求
+                fetchWeather(lat, lon);
+                
+                // 异步获取城市名，带 4 秒超时，就算失败也不影响天气展示
                 try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=zh`);
+                    const res = await fetchWithTimeout(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=zh`, { timeout: 4000 });
                     const geoData = await res.json();
                     currentCity = geoData.address.city || geoData.address.county || geoData.address.state || "当前位置";
                     document.getElementById('city-name').innerText = currentCity;
+                    localStorage.setItem(CACHE_KEY_CITY, currentCity);
                 } catch (e) {
-                    console.warn('逆地理编码失败', e);
-                    document.getElementById('city-name').innerText = "当前位置";
+                    console.warn('地名解析失败或超时', e);
                     currentCity = "当前位置";
+                    document.getElementById('city-name').innerText = "当前位置";
+                    localStorage.setItem(CACHE_KEY_CITY, "当前位置");
                 }
 
-                // 将成功获取的位置写入缓存
                 localStorage.setItem(CACHE_KEY_LAT, lat);
                 localStorage.setItem(CACHE_KEY_LON, lon);
-                localStorage.setItem(CACHE_KEY_CITY, currentCity);
                 localStorage.setItem(CACHE_KEY_TIME, new Date().getTime());
-
-                fetchWeather(lat, lon);
             },
             (error) => {
                 if (locationResolved) return;
@@ -496,26 +439,29 @@
                 document.getElementById('city-name').innerText = "宁陵县(默认)";
                 fetchWeather(defaultLat, defaultLon);
             },
-            { timeout: 5000, maximumAge: 600000, enableHighAccuracy: false }
+            { timeout: 3000, maximumAge: 600000, enableHighAccuracy: false }
         );
     }
 
-    // 手动点击刷新定位
     function forceRefreshLocation(event) {
-        if (event) event.stopPropagation(); // 阻止触发卡片点击弹窗
+        if (event) event.stopPropagation(); 
         
         const btn = document.getElementById('refresh-btn');
         btn.classList.add('spinning');
-        document.getElementById('city-name').innerText = "定位中...";
+        document.getElementById('city-name').innerText = "正在重新定位...";
+        document.getElementById('temp').innerText = '--';
+        document.getElementById('weather-desc').innerText = "天气获取中...";
         
-        // 清除旧缓存
         localStorage.removeItem(CACHE_KEY_TIME);
-        
-        // 强制重新定位
         initLocationAndWeather(true);
         
-        // 动画在5秒后停止（保底时间）
-        setTimeout(() => { btn.classList.remove('spinning'); }, 5000);
+        setTimeout(() => { 
+            btn.classList.remove('spinning'); 
+            if(document.getElementById('city-name').innerText === "正在重新定位...") {
+                document.getElementById('city-name').innerText = "定位超时";
+                document.getElementById('weather-desc').innerText = "点击重试";
+            }
+        }, 5000);
     }
 
     function getWeatherInfo(code) {
@@ -533,13 +479,13 @@
     }
 
     async function fetchWeather(lat, lon) {
-        // 停止旋转动画
         document.getElementById('refresh-btn').classList.remove('spinning');
         
         try {
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,dew_point_2m,is_day,weather_code,pressure_msl,wind_speed_10m,wind_gusts_10m,visibility&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto&forecast_days=7`;
             
-            const response = await fetch(url);
+            // 天气请求加上 8 秒超时，防止一直卡住
+            const response = await fetchWithTimeout(url, { timeout: 8000 });
             const data = await response.json();
 
             if (data && data.current && data.daily && data.hourly) {
@@ -576,9 +522,9 @@
                 throw new Error("Invalid data format");
             }
         } catch (error) {
-            console.error('天气请求异常:', error);
-            document.getElementById('weather-desc').innerHTML = '获取失败<br>点击重试';
-            document.getElementById('weather-forecast').innerHTML = `<div style="width:100%; text-align:center; font-size:12px; color:#999;">加载失败，请检查网络</div>`;
+            console.error('天气请求异常或超时:', error);
+            document.getElementById('weather-desc').innerHTML = '获取失败<br>请检查网络';
+            document.getElementById('weather-forecast').innerHTML = `<div style="width:100%; text-align:center; font-size:12px; color:#999;">网络请求超时</div>`;
         }
     }
 
@@ -892,7 +838,7 @@
         initLocationAndWeather(false);
         updateCountdown();
         
-        // 锁定到 2026年10月用于演示（如果你想跟随系统真实时间，请删掉下面两行）
+        // 锁定到 2026年10月用于演示
         currentDate = new Date(2026, 9, 1);
         selectedDate = new Date(2026, 9, 28);
 
