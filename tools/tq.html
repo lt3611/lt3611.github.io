@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>定位天气 & 日历看板</title>
+    
+    <!-- ====== PWA & 主屏幕图标适配 ====== -->
+    <link rel="icon" type="image/png" href="https://api.iconify.design/noto/cloud.png?color=%233b82f6&width=192" />
+    <link rel="apple-touch-icon" href="https://api.iconify.design/noto/cloud.png?color=%233b82f6&width=192" />
+    <link rel="manifest" href="./manifest.json">
+    <!-- =================================== -->
+
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.js"></script>
     <style>
         :root {
@@ -101,7 +108,6 @@
         .countdown-number { font-size: 32px; font-weight: 800; line-height: 1; font-family: "DIN Alternate", "Helvetica Neue", sans-serif; }
         .countdown-unit { font-size: 13px; margin-left: 2px; font-weight: bold; }
         
-        /* 修复：目标日期与详情按钮紧凑排列 */
         .countdown-target-date { 
             font-size: 11px; color: var(--text-sub); margin-top: 6px; 
             display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
@@ -394,9 +400,7 @@
     let weatherData = null; 
     let currentCity = "未知位置";
 
-    // 获取当前定位并初始化天气（含超时与保底机制）
     function initLocationAndWeather() {
-        // 默认坐标（宁陵县）
         let defaultLat = 34.46;
         let defaultLon = 115.31;
 
@@ -408,7 +412,6 @@
 
         let locationResolved = false;
         
-        // 5秒超时保底机制
         const timeoutId = setTimeout(() => {
             if (!locationResolved) {
                 locationResolved = true;
@@ -427,11 +430,9 @@
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
                 
-                // 逆地理编码获取城市名 (使用更稳定的 Nominatim 接口)
                 try {
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=zh`);
                     const geoData = await res.json();
-                    // 尝试提取城市、区县、省份
                     currentCity = geoData.address.city || geoData.address.county || geoData.address.state || "当前位置";
                     document.getElementById('city-name').innerText = currentCity;
                 } catch (e) {
@@ -826,7 +827,7 @@
         initLocationAndWeather();
         updateCountdown();
         
-        // 演示用锁定日期
+        // 锁定到 2026年10月用于演示（如果你想跟随系统真实时间，请删掉下面两行）
         currentDate = new Date(2026, 9, 1);
         selectedDate = new Date(2026, 9, 28);
 
