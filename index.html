@@ -30,153 +30,102 @@
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    max-width: 500px; /* 控制卡片宽度，刚好容纳 3 列 */
+    max-width: 500px;
     width: 100%;
   }
 
-  .title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #1f2a4a;
-    text-align: center;
-  }
-
+  .title { font-size: 24px; font-weight: 600; color: #1f2a4a; text-align: center; }
   .title span {
     background: linear-gradient(135deg, #3b5bdb, #8b5cf6);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
   }
 
-  .sub {
-    font-size: 14px;
-    color: #4b587c;
-    text-align: center;
-    margin-top: -10px;
-  }
+  .sub { font-size: 14px; color: #4b587c; text-align: center; margin-top: -10px; }
 
-  /* ===== 主页按钮 ===== */
   .home-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    padding: 15px 20px;
-    border-radius: 60px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 15px 20px; border-radius: 60px;
     background: linear-gradient(135deg, #3b5bdb, #8b5cf6);
-    color: #fff;
-    font-weight: 600;
-    font-size: 16px;
-    letter-spacing: 0.01em;
-    text-decoration: none;
-    white-space: nowrap;
+    color: #fff; font-weight: 600; font-size: 16px;
+    text-decoration: none; white-space: nowrap;
     box-shadow: 0 10px 20px -8px rgba(59, 91, 219, 0.5),
                 0 4px 10px rgba(59, 91, 219, 0.15),
                 inset 0 1px 1px rgba(255, 255, 255, 0.25);
-    transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease;
+    transition: transform 0.15s ease, filter 0.25s ease;
     -webkit-tap-highlight-color: transparent;
     margin-bottom: 4px;
   }
-
   .home-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
   .home-btn:active { transform: translateY(1px); }
-
   .home-btn svg {
     width: 18px; height: 18px; flex-shrink: 0;
     fill: none; stroke: currentColor; stroke-width: 2;
     stroke-linecap: round; stroke-linejoin: round;
   }
 
-  /* ===== 三列网格容器 ===== */
   .grid-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 严格 3 列 */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px 10px;
     width: 100%;
     margin-top: 4px;
   }
 
-  /* ===== 按钮统一基础样式 ===== */
   .action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    height: 46px;
-    border-radius: 60px;
-    color: #fff;
-    font-weight: 500;
-    font-size: 13px;
-    letter-spacing: 0.01em;
-    white-space: nowrap;
-    text-decoration: none;
-    cursor: pointer;
-    border: none;
-    outline: none;
-    font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    height: 46px; border-radius: 60px;
+    color: #fff; font-weight: 500; font-size: 13px;
+    white-space: nowrap; text-decoration: none; cursor: pointer;
+    border: none; outline: none; font-family: inherit;
     transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease, background 0.25s ease;
     -webkit-tap-highlight-color: transparent;
-    padding: 0 4px;
+    padding: 0 4px; min-width: 0;
+  }
+  .action-btn span {
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
 
-  /* 左中列（跳转网址）按钮样式 - 紫蓝渐变 */
   .link-btn {
     background: linear-gradient(135deg, #4b6df0, #8b5cf6);
     box-shadow: 0 6px 16px -6px rgba(59, 91, 219, 0.5),
                 inset 0 1px 1px rgba(255, 255, 255, 0.2);
   }
-
   .link-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
   .link-btn:active { transform: translateY(1px); }
 
-  /* 右列（复制链接）按钮样式 - 深色 */
   .copy-btn {
     background: #1a2b4c;
     box-shadow: 0 6px 16px -6px rgba(26, 43, 76, 0.4),
                 inset 0 1px 1px rgba(255, 255, 255, 0.2);
   }
-
   .copy-btn:hover { background: #233a62; transform: translateY(-1px); }
   .copy-btn:active { transform: translateY(1px); background: #16233d; }
+  .copy-btn:disabled { opacity: 0.75; cursor: default; transform: none; }
 
-  /* 图标统一尺寸 */
   .action-btn svg {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    width: 14px; height: 14px; flex-shrink: 0;
+    fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
   }
 
-  /* 复制成功状态 */
   .copy-btn.copied {
     background: #2b6e4f;
     box-shadow: 0 6px 16px -6px rgba(43, 110, 79, 0.5);
   }
   .copy-btn.copied:hover { background: #2f7a58; }
 
-  /* Toast */
   .toast-message {
     position: fixed;
-    bottom: 30px;
+    bottom: calc(30px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%) translateY(16px);
-    background: #1e293b;
-    color: #f1f5f9;
-    padding: 12px 28px;
-    border-radius: 60px;
-    font-size: 14px;
-    font-weight: 500;
+    background: #1e293b; color: #f1f5f9;
+    padding: 12px 28px; border-radius: 60px;
+    font-size: 14px; font-weight: 500;
     box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.4);
-    opacity: 0;
-    transition: opacity 0.2s ease, transform 0.25s ease;
-    pointer-events: none;
-    z-index: 9999;
-    white-space: nowrap;
+    opacity: 0; transition: opacity 0.2s ease, transform 0.25s ease;
+    pointer-events: none; z-index: 9999; white-space: nowrap;
+    max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
   }
   .toast-message.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -185,6 +134,9 @@
     .action-btn { height: 42px; font-size: 12px; }
     .action-btn svg { width: 12px; height: 12px; }
   }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -192,9 +144,8 @@
 <div class="card">
   <div class="title"><span>自用导航</span> 链接集合</div>
 
-  <!-- 主页按钮 -->
-  <a class="home-btn" id="homeBtn" href="#" target="_blank" rel="noopener">
-    <svg viewBox="0 0 24 24">
+  <a class="home-btn" id="homeBtn" href="#" target="_blank" rel="noopener noreferrer">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M3 9.5L12 3l9 6.5"/>
       <path d="M5 10v10h14V10"/>
       <path d="M9 20v-6h6v6"/>
@@ -202,108 +153,117 @@
     <span>主页</span>
   </a>
 
-  <p class="sub">左中列点击跳转，右列点击复制</p>
+  <p class="sub">左中列点击跳转（新标签页打开），右列点击复制</p>
 
-  <!-- 3列网格容器 -->
   <div class="grid-container" id="gridContainer"></div>
 </div>
 
-<div class="toast-message" id="toast">✅ 链接已复制</div>
+<div class="toast-message" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function () {
   'use strict';
 
   // ==========================================
-  // ⬇️ 数据配置区（每一行代表页面上的三个按钮） ⬇️
+  // ⬇️ 数据配置区
   // ==========================================
-  
-  const HOME_URL = 'http://lt3611.ccwu.cc/';
+  const HOME_URL = 'https://lt3611.ccwu.cc/';
 
-  // 数组的每一项，会自动渲染成：左边紫蓝 + 中间紫蓝 + 右边深色
   const rowData = [
-    // 第一排
     {
-      leftText: '自家电视', 
-      middleText: '网络电视', 
-      rightText: '常用接口',
+      leftText: '自家电视', middleText: '网络电视', rightText: '常用接口',
       leftUrl: 'http://192.168.50.98',
       middleUrl: 'http://192.168.50.98:56789',
-      rightUrl: 'http://lt3611.ccwu.cc/tools/tv.txt'
+      rightUrl: 'https://lt3611.ccwu.cc/tools/tv.txt'
     },
-    // 第二排
     {
-      leftText: '路由查看', 
-      middleText: '路由', 
-      rightText: '电视导航',
+      leftText: '路由查看', middleText: '路由', rightText: '电视导航',
       leftUrl: 'http://192.168.50.1:9990/ui/zashboard/#/setup?hostname=192.168.50.1&port=9990&secret=clash',
       middleUrl: 'http://192.168.50.1',
-      rightUrl: 'http://lt3611.ccwu.cc/tools/tv3.txt'
+      rightUrl: 'https://lt3611.ccwu.cc/tools/tv3.txt'
     },
-    // 第三排
     {
-      leftText: '52破解', 
-      middleText: '隐藏', 
-      rightText: '学习导航',
+      leftText: '52破解', middleText: '隐藏', rightText: '学习导航',
       leftUrl: 'https://www.52pojie.cn/forum.php?mod=forumdisplay&fid=16&filter=typeid&typeid=232',
-      middleUrl: 'http://lt3611.ccwu.cc',
-      rightUrl: 'http://lt3611.ccwu.cc/tools/tv1.txt'
+      middleUrl: 'https://lt3611.ccwu.cc',
+      rightUrl: 'https://lt3611.ccwu.cc/tools/tv1.txt'
     },
-    // 第四排 (如果您需要加，就照着格式往下写)
     {
-      leftText: 'A3转A4', 
-      middleText: '开始4', 
-      rightText: '调试导航',
-      leftUrl: 'http://lt3611.ccwu.cc/tools/pdf.html',
-      middleUrl: 'http://lt3611.ccwu.cc',
-      rightUrl: 'http://lt3611.ccwu.cc/tools/tv2.txt'
+      leftText: 'A3转A4', middleText: '开始4', rightText: '调试导航',
+      leftUrl: 'https://lt3611.ccwu.cc/tools/pdf.html',
+      middleUrl: 'https://lt3611.ccwu.cc',
+      rightUrl: 'https://lt3611.ccwu.cc/tools/tv2.txt'
     }
   ];
 
   // ==========================================
-  // ⬇️ 以下是自动生成和交互逻辑，通常不需要修改 ⬇️
+  // ⬇️ 生成与交互逻辑
   // ==========================================
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
 
-  const homeBtn = document.getElementById('homeBtn');
-  if (homeBtn) homeBtn.href = HOME_URL;
+  // ★ 强制新标签页打开的核心函数
+  function openInNewTab(url) {
+    if (!url || url === '#') return;
+    var win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (win) {
+      try { win.opener = null; } catch (e) {}
+    }
+  }
 
-  const gridContainer = document.getElementById('gridContainer');
-  
-  // 网址图标 SVG
-  const linkSvg = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>`;
-  
-  // 复制图标 SVG
-  const copySvg = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+  var homeBtn = document.getElementById('homeBtn');
+  if (homeBtn) {
+    if (HOME_URL && HOME_URL !== '#') {
+      homeBtn.href = HOME_URL;
+      homeBtn.addEventListener('click', function (e) {
+        // 允许 Ctrl/Cmd/Shift/中键 走浏览器默认
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        openInNewTab(HOME_URL);
+      });
+    } else {
+      homeBtn.removeAttribute('target');
+    }
+  }
 
-  // 循环生成 HTML
-  let htmlContent = '';
-  rowData.forEach((item) => {
-    // 1. 左侧跳转按钮
+  var gridContainer = document.getElementById('gridContainer');
+
+  var linkSvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>`;
+  var copySvg = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+
+  var htmlContent = '';
+  rowData.forEach(function (item) {
     htmlContent += `
-      <a class="action-btn link-btn" href="${item.leftUrl}" target="_blank" rel="noopener">
-        ${linkSvg}
-        <span>${item.leftText}</span>
+      <a class="action-btn link-btn" href="${esc(item.leftUrl)}" target="_blank" rel="noopener noreferrer"
+         title="${esc(item.leftText)}">
+        ${linkSvg}<span>${esc(item.leftText)}</span>
       </a>
-    `;
-    // 2. 中间跳转按钮
-    htmlContent += `
-      <a class="action-btn link-btn" href="${item.middleUrl}" target="_blank" rel="noopener">
-        ${linkSvg}
-        <span>${item.middleText}</span>
+      <a class="action-btn link-btn" href="${esc(item.middleUrl)}" target="_blank" rel="noopener noreferrer"
+         title="${esc(item.middleText)}">
+        ${linkSvg}<span>${esc(item.middleText)}</span>
       </a>
-    `;
-    // 3. 右侧复制按钮
-    htmlContent += `
-      <button class="action-btn copy-btn" data-copy="${item.rightUrl}">
-        ${copySvg}
-        <span class="btn-text">${item.rightText}</span>
+      <button type="button" class="action-btn copy-btn"
+              data-copy="${esc(item.rightUrl)}"
+              aria-label="复制 ${esc(item.rightText)} 的链接">
+        ${copySvg}<span class="btn-text">${esc(item.rightText)}</span>
       </button>
     `;
   });
-
   gridContainer.innerHTML = htmlContent;
 
-  // ===== 复制逻辑 =====
+  // ★ 所有跳转按钮：JS 强制新页打开
+  gridContainer.querySelectorAll('a.link-btn').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+      e.preventDefault();
+      openInNewTab(a.getAttribute('href'));
+    });
+  });
+
+  // ===== 复制逻辑（不变） =====
   var toastEl = document.getElementById('toast');
   var copyBtns = document.querySelectorAll('.copy-btn');
   var toastTimer = null;
@@ -338,7 +298,7 @@
   }
 
   function copyText(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
+    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
       return navigator.clipboard.writeText(text).then(function () {
         return true;
       }).catch(function () {
@@ -352,41 +312,32 @@
     var btnText = btn.querySelector('.btn-text');
     var defaultText = btnText.textContent;
     var restoreTimer = null;
-    var failTimer = null;
 
     btn.addEventListener('click', function () {
       var textToCopy = btn.getAttribute('data-copy') || '';
-
       btn.disabled = true;
-      btn.style.opacity = '0.8';
 
       copyText(textToCopy).then(function (success) {
         if (success) {
           btn.classList.add('copied');
           btnText.textContent = '已复制!';
           showToast('✅ ' + defaultText + '已复制', 2000);
-
-          if (restoreTimer) clearTimeout(restoreTimer);
-          restoreTimer = setTimeout(function () {
-            btnText.textContent = defaultText;
-            btn.classList.remove('copied');
-            restoreTimer = null;
-          }, 2000);
         } else {
-          showToast('❌ 复制失败，请手动复制', 2000);
           btnText.textContent = '复制失败';
-          if (failTimer) clearTimeout(failTimer);
-          failTimer = setTimeout(function () {
-            btnText.textContent = defaultText;
-            failTimer = null;
-          }, 2000);
+          showToast('❌ 复制失败，请手动复制', 2000);
         }
+
+        if (restoreTimer) clearTimeout(restoreTimer);
+        restoreTimer = setTimeout(function () {
+          btnText.textContent = defaultText;
+          btn.classList.remove('copied');
+          restoreTimer = null;
+        }, 2000);
       }).catch(function () {
-        showToast('❌ 复制失败，请稍后重试', 2000);
         btnText.textContent = defaultText;
+        showToast('❌ 复制失败，请稍后重试', 2000);
       }).finally(function () {
         btn.disabled = false;
-        btn.style.opacity = '1';
       });
     });
   });
