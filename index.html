@@ -224,26 +224,26 @@
   const rowData = [
     // 第一排
     {
-      leftText: '自家电视', 
-      middleText: '网络电视', 
+      leftText: '节点采集', 
+      middleText: '路由', 
       rightText: '常用接口',
-      leftUrl: 'https://192.168.50.98',
-      middleUrl: 'https://192.168.50.98:56789',
+      leftUrl: 'https://bestcf.pages.dev/',
+      middleUrl: 'https://192.168.50.1',
       rightUrl: 'https://lt3611.ccwu.cc/tools/tv.txt'
     },
     // 第二排
     {
-      leftText: '路由查看', 
-      middleText: '路由', 
+      leftText: 'Cloudflare', 
+      middleText: '路由查看', 
       rightText: '电视导航',
-      leftUrl: 'https://192.168.50.1:9990/ui/zashboard/#/setup?hostname=192.168.50.1&port=9990&secret=clash',
-      middleUrl: 'https://192.168.50.1',
+      leftUrl: 'https://www.cloudflare.com/',
+      middleUrl: 'https://192.168.50.1:9990/ui/zashboard/#/setup?hostname=192.168.50.1&port=9990&secret=clash',
       rightUrl: 'https://lt3611.ccwu.cc/tools/tv3.txt'
     },
     // 第三排
     {
-      leftText: '52破解', 
-      middleText: '隐藏', 
+      leftText: '52pojie', 
+      middleText: '电视', 
       rightText: '学习导航',
       leftUrl: 'https://www.52pojie.cn/forum.php?mod=forumdisplay&fid=16&filter=typeid&typeid=232',
       middleUrl: 'https://lt3611.ccwu.cc',
@@ -355,6 +355,47 @@
     var failTimer = null;
 
     btn.addEventListener('click', function () {
+      var textToCopy = btn.getAttribute('data-copy') || '';
+
+      btn.disabled = true;
+      btn.style.opacity = '0.8';
+
+      copyText(textToCopy).then(function (success) {
+        if (success) {
+          btn.classList.add('copied');
+          btnText.textContent = '已复制!';
+          showToast('✅ ' + defaultText + '已复制', 2000);
+
+          if (restoreTimer) clearTimeout(restoreTimer);
+          restoreTimer = setTimeout(function () {
+            btnText.textContent = defaultText;
+            btn.classList.remove('copied');
+            restoreTimer = null;
+          }, 2000);
+        } else {
+          showToast('❌ 复制失败，请手动复制', 2000);
+          btnText.textContent = '复制失败';
+          if (failTimer) clearTimeout(failTimer);
+          failTimer = setTimeout(function () {
+            btnText.textContent = defaultText;
+            failTimer = null;
+          }, 2000);
+        }
+      }).catch(function () {
+        showToast('❌ 复制失败，请稍后重试', 2000);
+        btnText.textContent = defaultText;
+      }).finally(function () {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
+ () {
       var textToCopy = btn.getAttribute('data-copy') || '';
 
       btn.disabled = true;
