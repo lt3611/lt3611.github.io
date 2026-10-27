@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>宁陵县天气 & 倒计时日历</title>
     <!-- 引入农历计算库 -->
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.js"></script>
@@ -30,7 +30,7 @@
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
-            padding: 20px 15px;
+            padding: 12px 10px; /* 缩小页面边距 */
         }
 
         .container {
@@ -38,14 +38,14 @@
             max-width: 420px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px; /* 缩小卡片间距 */
         }
 
-        /* 天气卡片 */
+        /* ================= 1. 天气卡片 ================= */
         .weather-card {
             background: linear-gradient(135deg, #ffffff 0%, #f3f8ff 100%);
-            border-radius: 20px;
-            padding: 20px 25px;
+            border-radius: 16px;
+            padding: 16px 20px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
             display: flex;
             justify-content: space-between;
@@ -56,92 +56,105 @@
         .weather-left {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
 
         .weather-icon {
-            font-size: 52px;
+            font-size: 44px; /* 稍微缩小图标 */
             line-height: 1;
         }
 
         .weather-temp {
-            font-size: 48px;
+            font-size: 38px; /* 稍微缩小温度 */
             font-weight: bold;
             color: var(--text-main);
             line-height: 1;
             font-family: "DIN Alternate", "Helvetica Neue", sans-serif;
+            white-space: nowrap;
         }
 
         .weather-temp span {
-            font-size: 20px;
+            font-size: 18px;
             vertical-align: top;
         }
 
         .weather-right {
             text-align: right;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
         }
 
         .weather-right h3 {
-            font-size: 18px;
+            font-size: 16px;
             color: var(--text-main);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             font-weight: 600;
+            white-space: nowrap; /* 强制不换行 */
+            text-overflow: ellipsis;
+            overflow: hidden;
         }
 
         .weather-right .desc {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-sub);
-            line-height: 1.4;
+            line-height: 1.3;
         }
 
-        /* 倒计时与阴历卡片 */
+        /* ================= 2. 倒计时与阴历卡片 ================= */
         .summary-card {
             background: var(--card-bg);
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 16px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             display: flex;
             justify-content: space-between;
             align-items: center;
             border: 1px solid var(--border-color);
+            gap: 10px;
         }
 
         .lunar-area {
             text-align: left;
             flex: 1;
+            overflow: hidden;
         }
 
         .lunar-area .solar-date {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-sub);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
+            white-space: nowrap;
         }
 
         .lunar-area .lunar-date {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             color: var(--text-main);
-            margin-bottom: 6px;
-            letter-spacing: 1px;
+            margin-bottom: 4px;
+            white-space: nowrap;
         }
 
         .lunar-area .ganzhi-date {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-sub);
-            letter-spacing: 0.5px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
         }
 
         .countdown-area {
             text-align: right;
-            padding-left: 15px;
+            padding-left: 12px;
             border-left: 1px dashed var(--border-color);
-            min-width: 110px;
+            flex-shrink: 0; /* 防止倒计时被挤压 */
         }
 
         .countdown-label {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-sub);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .countdown-val {
@@ -152,23 +165,23 @@
         }
 
         .countdown-number {
-            font-size: 34px;
+            font-size: 32px;
             font-weight: 800;
             line-height: 1;
             font-family: "DIN Alternate", "Helvetica Neue", sans-serif;
         }
 
         .countdown-unit {
-            font-size: 14px;
-            margin-left: 4px;
+            font-size: 13px;
+            margin-left: 2px;
             font-weight: bold;
         }
 
-        /* 日历卡片 */
+        /* ================= 3. 日历卡片 ================= */
         .calendar-card {
             background: var(--card-bg);
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 16px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             border: 1px solid var(--border-color);
             position: relative;
@@ -178,24 +191,31 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .calendar-header h2 {
-            font-size: 20px;
+            font-size: 18px;
             color: var(--text-main);
             font-weight: 600;
+            white-space: nowrap; /* 防止年月换行 */
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
         }
 
         .btn-group button {
             background: none;
             border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 4px 10px;
+            border-radius: 6px;
             cursor: pointer;
             color: var(--text-main);
-            font-size: 14px;
+            font-size: 12px; /* 缩小按钮字体 */
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .btn-group button:hover {
@@ -206,15 +226,15 @@
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             text-align: center;
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-sub);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .days {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            row-gap: 5px;
+            row-gap: 4px;
         }
 
         .day-cell {
@@ -222,8 +242,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 52px;
-            border-radius: 10px;
+            height: 46px; /* 缩小单元格高度 */
+            border-radius: 8px;
             cursor: pointer;
             transition: background 0.2s;
             border: 1.5px solid transparent;
@@ -235,16 +255,17 @@
         }
 
         .day-cell .solar {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 500;
             color: var(--text-main);
         }
 
         .day-cell .lunar {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--text-sub);
-            margin-top: 2px;
+            margin-top: 1px;
             transform: scale(0.95);
+            white-space: nowrap;
         }
 
         .day-cell.other-month .solar,
@@ -278,19 +299,19 @@
             color: #fff;
         }
 
-        /* ================= 历史上的今天 气泡提示样式 ================= */
+        /* ================= 历史气泡 ================= */
         .history-popover {
             position: absolute;
             z-index: 100;
             background-color: #1e293b;
             color: #ffffff;
-            padding: 14px 16px;
-            border-radius: 12px;
-            font-size: 13px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 12px;
             line-height: 1.5;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
             width: max-content;
-            max-width: 260px; /* 限制最大宽度，防止过宽 */
+            max-width: 240px; /* 缩小最大宽度适应小屏 */
             word-break: break-word;
             opacity: 0;
             visibility: hidden;
@@ -306,19 +327,17 @@
             pointer-events: auto;
         }
 
-        /* 气泡小三角 (通过 CSS 变量控制横向位置) */
         .history-popover::after {
             content: '';
             position: absolute;
             top: 100%;
-            left: var(--arrow-left, 50%); /* 默认居中，由JS动态覆盖 */
+            left: var(--arrow-left, 50%);
             margin-left: -6px;
             border-width: 6px;
             border-style: solid;
             border-color: #1e293b transparent transparent transparent;
         }
 
-        /* 如果在顶部第一行则气泡放在下方 */
         .history-popover.bottom-arrow::after {
             top: auto;
             bottom: 100%;
@@ -328,11 +347,10 @@
         .history-popover .popover-title {
             color: #93c5fd;
             font-weight: bold;
-            margin-bottom: 8px;
-            font-size: 12px;
-            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            font-size: 11px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 6px;
+            padding-bottom: 4px;
         }
 
         .history-popover .popover-list {
@@ -343,12 +361,12 @@
 
         .history-popover .popover-list li {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: flex-start;
         }
 
         .history-popover .popover-list li:not(:last-child) {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .history-popover .popover-year {
@@ -358,11 +376,23 @@
             font-family: "DIN Alternate", monospace;
         }
 
+        /* 极小屏幕适配 (小于 360px) */
+        @media (max-width: 360px) {
+            .weather-icon { font-size: 36px; }
+            .weather-temp { font-size: 32px; }
+            .weather-right h3 { font-size: 14px; }
+            .lunar-area .lunar-date { font-size: 16px; }
+            .countdown-number { font-size: 28px; }
+            .calendar-header h2 { font-size: 16px; }
+            .btn-group button { padding: 3px 6px; font-size: 11px; }
+            .day-cell { height: 42px; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- 天气模块 -->
     <div class="weather-card">
         <div class="weather-left">
             <div class="weather-icon" id="weather-icon">⛅</div>
@@ -372,15 +402,16 @@
         </div>
         <div class="weather-right">
             <h3>商丘 · 宁陵县</h3>
-            <div class="desc" id="weather-desc">天气获取中...</div>
+            <div class="desc" id="weather-desc">网络超时<br>请稍后刷新</div>
         </div>
     </div>
 
+    <!-- 倒计时与阴历模块 -->
     <div class="summary-card">
         <div class="lunar-area">
-            <div class="solar-date" id="detail-solar">公历日期</div>
-            <div class="lunar-date" id="detail-lunar">农历日期</div>
-            <div class="ganzhi-date" id="detail-ganzhi">干支纪年</div>
+            <div class="solar-date" id="detail-solar">2026年10月28日 星期三</div>
+            <div class="lunar-date" id="detail-lunar">农历 九月十九</div>
+            <div class="ganzhi-date" id="detail-ganzhi">丙午 [马] 年 戊戌月 乙亥日</div>
         </div>
         <div class="countdown-area">
             <div class="countdown-label">距离新年</div>
@@ -391,6 +422,7 @@
         </div>
     </div>
 
+    <!-- 日历模块 -->
     <div class="calendar-card" id="calendar-card">
         <div class="calendar-header">
             <h2 id="year-month">2026年10月</h2>
@@ -430,15 +462,23 @@
         document.getElementById('countdown-days').innerText = diffDays;
     }
 
-    /* ================= 2. 天气获取 ================= */
+    /* ================= 2. 天气获取 (带超时处理) ================= */
     async function fetchWeather() {
+        // 5秒超时机制
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
         try {
-            const response = await fetch('https://api.vvhan.com/api/weather?city=宁陵县');
+            const response = await fetch('https://api.vvhan.com/api/weather?city=宁陵县', {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
             const data = await response.json();
             if(data.success && data.info) {
                 const info = data.info;
                 document.getElementById('temp').innerText = info.tem;
-                document.getElementById('weather-desc').innerHTML = `${info.weather}<br>${info.wind} ${info.winp}`;
+                document.getElementById('weather-desc').innerHTML = `${info.weather} ${info.wind}<br>${info.winp}`;
                 
                 let icon = "🌤️";
                 if (info.weather.includes("晴")) icon = "☀️";
@@ -456,139 +496,46 @@
 
     function showWeatherFallback() {
         document.getElementById('temp').innerText = '--';
-        document.getElementById('weather-desc').innerHTML = '网络超时<br>请稍后刷新';
+        document.getElementById('weather-desc').innerHTML = '获取超时<br>请点击刷新';
         document.getElementById('weather-icon').innerText = '⛅';
     }
 
-    /* ================= 3. 历史事件本地数据库 ================= */
+    /* ================= 3. 历史事件数据 ================= */
     const HISTORY_DATA = {
-        1: [
-            { year: '1949年', event: '中华人民共和国中央人民政府成立，开国大典举行。' },
-            { year: '1890年', event: '美国国会正式通过设立优胜美地国家公园。' }
-        ],
-        2: [
-            { year: '1949年', event: '“中国保卫世界和平大会”在北京开幕。' },
-            { year: '1869年', event: '印度民族运动领袖甘地诞生。' }
-        ],
-        3: [
-            { year: '1949年', event: '刚刚成立的新中国与苏联正式建立外交关系。' },
-            { year: '1927年', event: '毛泽东在宁冈古城主持召开前委扩大会议。' }
-        ],
-        4: [
-            { year: '1957年', event: '苏联成功发射人类第一颗人造地球卫星。' },
-            { year: '1947年', event: '人类首次突破音障。' }
-        ],
-        5: [
-            { year: '1954年', event: '中国与挪威王国建立外交关系。' },
-            { year: '1984年', event: '美国“挑战者”号航天飞机发射升空。' }
-        ],
-        6: [
-            { year: '1976年', event: '中共中央政治局采取断然措施，粉碎“四人帮”。' },
-            { year: '1973年', event: '第四次中东战争爆发。' }
-        ],
-        7: [
-            { year: '1949年', event: '德意志民主共和国（东德）成立。' },
-            { year: '2001年', event: '美国为首的联军对阿富汗采取军事行动。' }
-        ],
-        8: [
-            { year: '1950年', event: '毛泽东签署组成中国人民志愿军的命令，抗美援朝战争拉开帷幕。' },
-            { year: '1955年', event: '科学家钱学森冲破重重阻力回到祖国。' }
-        ],
-        9: [
-            { year: '1936年', event: '红一方面军与红四方面军在甘肃会宁会师。' },
-            { year: '1937年', event: '中日淞沪会战激烈进行中。' }
-        ],
-        10: [
-            { year: '1911年', event: '武昌起义爆发，辛亥革命开始。' },
-            { year: '1945年', event: '国共双方代表签署《双十协定》。' }
-        ],
-        11: [
-            { year: '1911年', event: '湖北军政府成立。' },
-            { year: '1889年', event: '英国物理学家焦耳逝世。' }
-        ],
-        12: [
-            { year: '1952年', event: '邱少云在抗美援朝战争中壮烈牺牲。' },
-            { year: '1492年', event: '哥伦布发现美洲大陆。' }
-        ],
-        13: [
-            { year: '1949年', event: '中国少年儿童队（少先队前身）成立。' },
-            { year: '1986年', event: '英国女王伊丽莎白二世首次访问中国。' }
-        ],
-        14: [
-            { year: '2021年', event: '中国首颗太阳探测卫星“羲和号”发射成功。' },
-            { year: '1950年', event: '政务院作出《关于治理淮河的决定》。' }
-        ],
-        15: [
-            { year: '2003年', event: '航天员杨利伟乘坐神舟五号载人飞船进入太空。' },
-            { year: '1957年', event: '武汉长江大桥正式通车。' }
-        ],
-        16: [
-            { year: '1964年', event: '中国第一颗原子弹爆炸成功。' },
-            { year: '2003年', event: '杨利伟在内蒙古安全着陆。' }
-        ],
-        17: [
-            { year: '1967年', event: '清朝末代皇帝溥仪逝世。' },
-            { year: '1945年', event: '毛泽东在延安干部会议上作关于重庆谈判的报告。' }
-        ],
-        18: [
-            { year: '1860年', event: '英法联军大肆抢劫并纵火焚烧圆明园。' },
-            { year: '2017年', event: '中国共产党第十九次全国代表大会开幕。' }
-        ],
-        19: [
-            { year: '1950年', event: '中国人民志愿军首批部队跨过鸭绿江，抗美援朝战争开始。' },
-            { year: '1936年', event: '鲁迅因病在上海逝世。' }
-        ],
-        20: [
-            { year: '1952年', event: '黄继光在抗美援朝上甘岭战役中英勇牺牲。' },
-            { year: '1962年', event: '中国边防部队奉命对印度军队进行自卫反击作战。' }
-        ],
-        21: [
-            { year: '1949年', event: '中央人民政府政务院成立。' },
-            { year: '1600年', event: '德川家康领导的东军在关原之战中获胜。' }
-        ],
-        22: [
-            { year: '1949年', event: '最高人民法院、最高人民检察署成立。' },
-            { year: '1935年', event: '中共中央政治局在陕北吴起镇召开会议。' }
-        ],
-        23: [
-            { year: '2018年', event: '世界上最长的跨海大桥——港珠澳大桥开通。' },
-            { year: '1856年', event: '英国挑起第二次鸦片战争。' }
-        ],
-        24: [
-            { year: '2007年', event: '中国第一颗绕月探测卫星嫦娥一号发射成功。' },
-            { year: '1938年', event: '“中山舰”被日本飞机炸沉于长江水域。' }
-        ],
-        25: [
-            { year: '1950年', event: '中国人民志愿军打响了入朝后的第一仗。' },
-            { year: '1971年', event: '中国恢复在联合国的合法席位。' }
-        ],
-        26: [
-            { year: '1937年', event: '“八百壮士”在谢晋元指挥下死守四行仓库。' },
-            { year: '2023年', event: '长征二号F火箭成功发射神舟十七号载人飞船。' }
-        ],
-        27: [
-            { year: '1966年', event: '中国首次发射导弹核武器试验成功。' },
-            { year: '1927年', event: '毛泽东率领秋收起义部队到达井冈山。' }
-        ],
-        28: [
-            { year: '1955年', event: '微软公司创始人比尔·盖茨出生。' },
-            { year: '1892年', event: '法国人埃米尔·雷诺首次公开放映“影戏”，成为现代动画的前身。' }
-        ],
-        29: [
-            { year: '1889年', event: '中国共产主义运动的先驱李大钊诞生。' },
-            { year: '1991年', event: '谢军摘取女子国际象棋世界冠军。' }
-        ],
-        30: [
-            { year: '1989年', event: '“希望工程”建立。' },
-            { year: '1946年', event: '“毛泽东号”机车正式命名。' }
-        ],
-        31: [
-            { year: '1517年', event: '马丁·路德张贴《九十五条论纲》，标志着宗教改革的开端。' },
-            { year: '1984年', event: '邓小平会见缅甸总统吴山友。' }
-        ]
+        1: [{ year: '1949年', event: '中华人民共和国中央人民政府成立，开国大典举行。' }, { year: '1890年', event: '美国国会正式通过设立优胜美地国家公园。' }],
+        2: [{ year: '1949年', event: '“中国保卫世界和平大会”在北京开幕。' }, { year: '1869年', event: '印度民族运动领袖甘地诞生。' }],
+        3: [{ year: '1949年', event: '刚刚成立的新中国与苏联正式建立外交关系。' }, { year: '1927年', event: '毛泽东在宁冈古城主持召开前委扩大会议。' }],
+        4: [{ year: '1957年', event: '苏联成功发射人类第一颗人造地球卫星。' }, { year: '1947年', event: '人类首次突破音障。' }],
+        5: [{ year: '1954年', event: '中国与挪威王国建立外交关系。' }, { year: '1984年', event: '美国“挑战者”号航天飞机发射升空。' }],
+        6: [{ year: '1976年', event: '中共中央政治局采取断然措施，粉碎“四人帮”。' }, { year: '1973年', event: '第四次中东战争爆发。' }],
+        7: [{ year: '1949年', event: '德意志民主共和国（东德）成立。' }, { year: '2001年', event: '美国为首的联军对阿富汗采取军事行动。' }],
+        8: [{ year: '1950年', event: '毛泽东签署组成中国人民志愿军的命令，抗美援朝战争拉开帷幕。' }, { year: '1955年', event: '科学家钱学森冲破重重阻力回到祖国。' }],
+        9: [{ year: '1936年', event: '红一方面军与红四方面军在甘肃会宁会师。' }, { year: '1937年', event: '中日淞沪会战激烈进行中。' }],
+        10: [{ year: '1911年', event: '武昌起义爆发，辛亥革命开始。' }, { year: '1945年', event: '国共双方代表签署《双十协定》。' }],
+        11: [{ year: '1911年', event: '湖北军政府成立。' }, { year: '1889年', event: '英国物理学家焦耳逝世。' }],
+        12: [{ year: '1952年', event: '邱少云在抗美援朝战争中壮烈牺牲。' }, { year: '1492年', event: '哥伦布发现美洲大陆。' }],
+        13: [{ year: '1949年', event: '中国少年儿童队（少先队前身）成立。' }, { year: '1986年', event: '英国女王伊丽莎白二世首次访问中国。' }],
+        14: [{ year: '2021年', event: '中国首颗太阳探测卫星“羲和号”发射成功。' }, { year: '1950年', event: '政务院作出《关于治理淮河的决定》。' }],
+        15: [{ year: '2003年', event: '航天员杨利伟乘坐神舟五号载人飞船进入太空。' }, { year: '1957年', event: '武汉长江大桥正式通车。' }],
+        16: [{ year: '1964年', event: '中国第一颗原子弹爆炸成功。' }, { year: '2003年', event: '杨利伟在内蒙古安全着陆。' }],
+        17: [{ year: '1967年', event: '清朝末代皇帝溥仪逝世。' }, { year: '1945年', event: '毛泽东在延安干部会议上作关于重庆谈判的报告。' }],
+        18: [{ year: '1860年', event: '英法联军大肆抢劫并纵火焚烧圆明园。' }, { year: '2017年', event: '中国共产党第十九次全国代表大会开幕。' }],
+        19: [{ year: '1950年', event: '中国人民志愿军首批部队跨过鸭绿江，抗美援朝战争开始。' }, { year: '1936年', event: '鲁迅因病在上海逝世。' }],
+        20: [{ year: '1952年', event: '黄继光在抗美援朝上甘岭战役中英勇牺牲。' }, { year: '1962年', event: '中国边防部队奉命对印度军队进行自卫反击作战。' }],
+        21: [{ year: '1949年', event: '中央人民政府政务院成立。' }, { year: '1600年', event: '德川家康领导的东军在关原之战中获胜。' }],
+        22: [{ year: '1949年', event: '最高人民法院、最高人民检察署成立。' }, { year: '1935年', event: '中共中央政治局在陕北吴起镇召开会议。' }],
+        23: [{ year: '2018年', event: '世界上最长的跨海大桥——港珠澳大桥开通。' }, { year: '1856年', event: '英国挑起第二次鸦片战争。' }],
+        24: [{ year: '2007年', event: '中国第一颗绕月探测卫星嫦娥一号发射成功。' }, { year: '1938年', event: '“中山舰”被日本飞机炸沉于长江水域。' }],
+        25: [{ year: '1950年', event: '中国人民志愿军打响了入朝后的第一仗。' }, { year: '1971年', event: '中国恢复在联合国的合法席位。' }],
+        26: [{ year: '1937年', event: '“八百壮士”在谢晋元指挥下死守四行仓库。' }, { year: '2023年', event: '长征二号F火箭成功发射神舟十七号载人飞船。' }],
+        27: [{ year: '1966年', event: '中国首次发射导弹核武器试验成功。' }, { year: '1927年', event: '毛泽东率领秋收起义部队到达井冈山。' }],
+        28: [{ year: '1955年', event: '微软公司创始人比尔·盖茨出生。' }, { year: '1892年', event: '法国人埃米尔·雷诺首次公开放映“影戏”，成为现代动画的前身。' }],
+        29: [{ year: '1889年', event: '中国共产主义运动的先驱李大钊诞生。' }, { year: '1991年', event: '谢军摘取女子国际象棋世界冠军。' }],
+        30: [{ year: '1989年', event: '“希望工程”建立。' }, { year: '1946年', event: '“毛泽东号”机车正式命名。' }],
+        31: [{ year: '1517年', event: '马丁·路德张贴《九十五条论纲》，标志着宗教改革的开端。' }, { year: '1984年', event: '邓小平会见缅甸总统吴山友。' }]
     };
 
-    /* ================= 4. 日历渲染与交互 ================= */
+    /* ================= 4. 日历渲染 ================= */
     let currentDate = new Date(); 
     let selectedDate = new Date(); 
     let activeCell = null; 
@@ -600,8 +547,7 @@
 
         const daysContainer = document.getElementById('calendar-days');
         daysContainer.innerHTML = ''; 
-
-        hidePopover(); // 重新渲染时隐藏气泡
+        hidePopover(); 
 
         const firstDay = new Date(year, month, 1).getDay();
         const startOffset = firstDay === 0 ? 6 : firstDay - 1; 
@@ -614,20 +560,17 @@
                    dateObj.getDate() === selectedDate.getDate();
         };
 
-        // 上个月
         for (let i = startOffset - 1; i >= 0; i--) {
             const dateNum = daysInPrevMonth - i;
             const dateObj = new Date(year, month - 1, dateNum);
             daysContainer.appendChild(createDayCell(dateObj, dateNum, true, isSelected(dateObj)));
         }
 
-        // 当月
         for (let i = 1; i <= daysInMonth; i++) {
             const dateObj = new Date(year, month, i);
             daysContainer.appendChild(createDayCell(dateObj, i, false, isSelected(dateObj)));
         }
 
-        // 下个月
         const totalCells = startOffset + daysInMonth;
         const nextMonthCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
         const extraCells = totalCells + nextMonthCells < 42 ? 7 : 0; 
@@ -685,12 +628,11 @@
         return cell;
     }
 
-    /* ================= 5. 气泡控制逻辑 (智能防溢出) ================= */
+    /* ================= 5. 气泡控制 ================= */
     function showPopoverForDate(dateObj, cellElement = null) {
         const month = dateObj.getMonth() + 1;
         const day = dateObj.getDate();
         
-        // 只处理10月份的数据
         if (month !== 10) {
             hidePopover();
             return;
@@ -727,7 +669,6 @@
             list.appendChild(li);
         });
 
-        // 显示气泡以获取准确宽度
         popover.classList.add('show');
         
         const cardRect = document.getElementById('calendar-card').getBoundingClientRect();
@@ -735,55 +676,39 @@
         
         const popWidth = popover.offsetWidth;
         const cardWidth = cardRect.width;
-        const margin = 15; // 距离卡片边缘的安全距离
+        const margin = 10;
 
-        // 1. 计算水平位置 (防止左右溢出)
         const cellCenterX = cellRect.left - cardRect.left + cellRect.width / 2;
         let left = cellCenterX - popWidth / 2;
 
-        // 左侧边界限制
-        if (left < margin) {
-            left = margin;
-        }
-        // 右侧边界限制
-        if (left + popWidth > cardWidth - margin) {
-            left = cardWidth - margin - popWidth;
-        }
+        if (left < margin) left = margin;
+        if (left + popWidth > cardWidth - margin) left = cardWidth - margin - popWidth;
 
-        // 2. 计算小箭头位置 (确保箭头精准指向日期格子)
         let arrowLeft = cellCenterX - left;
-        // 限制箭头不要超出气泡的圆角范围
-        if (arrowLeft < 15) arrowLeft = 15;
-        if (arrowLeft > popWidth - 15) arrowLeft = popWidth - 15;
+        if (arrowLeft < 12) arrowLeft = 12;
+        if (arrowLeft > popWidth - 12) arrowLeft = popWidth - 12;
 
         popover.style.left = `${left}px`;
-        // 通过 CSS 变量动态设置小三角的位置
         popover.style.setProperty('--arrow-left', `${arrowLeft}px`);
 
-        // 3. 计算垂直位置 (防止上下溢出)
-        let top = cellRect.top - cardRect.top - popover.offsetHeight - 10;
+        let top = cellRect.top - cardRect.top - popover.offsetHeight - 8;
         let isBottom = false;
 
         if (top < 10) {
-            // 顶部空间不足，将气泡放到格子下方
-            top = cellRect.top - cardRect.top + cellRect.height + 10;
+            top = cellRect.top - cardRect.top + cellRect.height + 8;
             isBottom = true;
         }
 
         popover.style.top = `${top}px`;
 
-        if (isBottom) {
-            popover.classList.add('bottom-arrow');
-        } else {
-            popover.classList.remove('bottom-arrow');
-        }
+        if (isBottom) popover.classList.add('bottom-arrow');
+        else popover.classList.remove('bottom-arrow');
         
         activeCell = cellElement;
     }
 
     function hidePopover() {
-        const popover = document.getElementById('history-popover');
-        popover.classList.remove('show');
+        document.getElementById('history-popover').classList.remove('show');
         activeCell = null;
     }
 
@@ -841,7 +766,7 @@
         fetchWeather();
         updateCountdown();
         
-        // 指定打开时显示的日期
+        // 演示用，锁定到指定日期
         currentDate = new Date(2026, 9, 1);
         selectedDate = new Date(2026, 9, 28);
 
@@ -856,4 +781,4 @@
 
 </script>
 </body>
-  </html>
+</html>
