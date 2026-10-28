@@ -3,7 +3,7 @@ name: Build Android APK with Capacitor
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # 允许手动点击运行
+  workflow_dispatch:
 
 jobs:
   build:
@@ -18,19 +18,17 @@ jobs:
       with:
         node-version: '18'
 
+    # 👇 关键修复 1：升级到 JDK 21
     - name: Setup Java JDK
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
-        java-version: '17'
+        java-version: '21'
 
     - name: Prepare www directory
       run: |
         mkdir -p www
-        # 将仓库根目录下的所有 html, css, js, 图片等复制到 www 文件夹
-        # 如果你的代码在其他文件夹（比如 dist），请把 . 改成那个文件夹名
         cp -r ./* www/ 2>/dev/null || true
-        # 清理不需要打包进 App 的文件，避免冲突
         rm -rf www/node_modules www/.git www/.github www/android www/ios
 
     - name: Install dependencies & Setup Capacitor
@@ -42,23 +40,25 @@ jobs:
     - name: Add Android Platform
       run: npx cap add android
 
-    # 👇 关键修复：必须执行 sync，否则会报找不到 capacitor.settings.gradle
     - name: Sync Capacitor Android
       run: npx cap sync android
 
-    # 自动注入网络权限和明文传输权限
+    # 👇 关键修复 2：强制升级 Gradle 到 8.4，避开 8.2.1 的缓存 Bug
+    - name: Upgrade Gradle Wrapper
+      run: |
+        cd android
+        chmod +x gradlew
+        ./gradlew wrapper --gradle-version 8.4 --distribution-type bin
+
     - name: Inject Permissions (INTERNET & Cleartext)
       run: |
         MANIFEST="android/app/src/main/AndroidManifest.xml"
-        # 注入 INTERNET 权限
         sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET" />\n    <application|g' $MANIFEST
-        # 允许 HTTP 明文请求
         sed -i 's|<application|<application android:usesCleartextTraffic="true"|g' $MANIFEST
 
     - name: Build Android APK
       run: |
         cd android
-        chmod +x gradlew
         ./gradlew assembleDebug
 
     - name: Upload APK Artifact
