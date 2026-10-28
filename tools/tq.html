@@ -3,12 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>天气日历</title>
-    
-    <!-- ====== 图标适配 ====== -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%234facfe'/><stop offset='100%' stop-color='%233b82f6'/></linearGradient></defs><rect width='512' height='512' rx='120' fill='url(%23g)'/><circle cx='340' cy='180' r='65' fill='%23fbbf24'/><path d='M140,310 a60,60 0 0,1 60,-60 a70,70 0 0,1 130,-15 a75,75 0 0,1 80,75 a50,50 0 0,1 0,100 l-270,0 a50,50 0 0,1 0,-100 z' fill='%23ffffff' opacity='0.9'/><rect x='170' y='340' width='172' height='120' rx='20' fill='%23ffffff' opacity='0.95'/><rect x='170' y='340' width='172' height='40' rx='20' fill='%233b82f6' opacity='0.15'/></svg>">
-    <!-- ======================================================== -->
-
+    <title>定位天气 & 日历看板</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%234facfe'/><stop offset='100%' stop-color='%233b82f6'/></linearGradient></defs><rect width='512' height='512' rx='120' fill='url(%23g)'/><circle cx='340' cy='180' r='65' fill='%23fbbf24'/><path d='M140,310 a60,60 0 0,1 60,-60 a70,70 0 0,1 130,-15 a75,75 0 0,1 80,75 a50,50 0 0,1 0,100 l-270,0 a50,50 0 0,1 0,-100 z' fill='%23ffffff' opacity='0.9'/><rect x='170' y='340' width='172' height='120' rx='20' fill='%23ffffff' opacity='0.95'/></svg>">
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.6.12/lunar.js"></script>
     <style>
         :root {
@@ -20,13 +16,23 @@
             --weekend-color: #ef4444;
             --border-color: #e5e7eb;
         }
+        [data-theme="dark"] {
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --text-main: #f3f4f6;
+            --text-sub: #9ca3af;
+            --primary-color: #60a5fa;
+            --weekend-color: #f87171;
+            --border-color: #374151;
+        }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
 
         body {
             background-color: var(--bg-color);
             display: flex; justify-content: center; align-items: flex-start;
-            min-height: 100vh; padding: 12px 10px;
+            min-height: 100vh; padding: 16px 10px 24px;
+            transition: background 0.3s;
         }
 
         .container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; }
@@ -38,15 +44,17 @@
             font-size: 10px; color: #6b7280; background: #f3f4f6;
             padding: 2px 6px; border-radius: 6px; white-space: nowrap; font-weight: normal;
         }
+        [data-theme="dark"] .detail-hint { background: #374151; color: #d1d5db; }
 
         /* ================= 1. 天气卡片 ================= */
         .weather-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f3f8ff 100%);
+            background: linear-gradient(135deg, var(--card-bg) 0%, #f3f8ff 100%);
             border-radius: 16px; padding: 16px 20px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
             border: 1px solid var(--border-color);
             display: flex; flex-direction: column; gap: 14px;
         }
+        [data-theme="dark"] .weather-card { background: linear-gradient(135deg, #1f2937 0%, #1e293b 100%); }
 
         .weather-main { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         .weather-left { display: flex; align-items: center; gap: 12px; }
@@ -56,24 +64,49 @@
             line-height: 1; font-family: "DIN Alternate", "Helvetica Neue", sans-serif; white-space: nowrap;
         }
         .weather-temp span { font-size: 18px; vertical-align: top; }
-        
-        .weather-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; overflow: hidden; }
-        
-        .title-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-        .title-row h3 { font-size: 16px; color: var(--text-main); font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 120px; }
-        
-        /* 刷新定位图标 */
+
+        .weather-right {
+            text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center;
+            overflow: hidden; flex: 1; min-width: 0;
+        }
+
+        .title-row {
+            display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+            margin-bottom: 4px; width: 100%;
+        }
+        .title-row h3 {
+            font-size: 15px; color: var(--text-sub); font-weight: 600; white-space: nowrap;
+            text-overflow: ellipsis; overflow: hidden; max-width: 180px;
+            cursor: pointer;
+            text-decoration: underline dotted;
+            text-underline-offset: 3px;
+        }
+
+        .desc-main {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .desc-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        .desc-sub { font-size: 12px; color: var(--text-sub); font-weight: 500; }
+
         .refresh-location {
             font-size: 12px; cursor: pointer; color: var(--primary-color);
             display: inline-flex; align-items: center; justify-content: center;
             padding: 2px; border-radius: 4px; background: #e0f2fe;
         }
+        [data-theme="dark"] .refresh-location { background: #1e3a5f; }
         .refresh-location.spinning { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        .weather-right .desc { font-size: 13px; color: var(--text-sub); line-height: 1.3; }
-
-        /* 一周预报 */
         .weather-forecast {
             display: flex; justify-content: space-between; align-items: center;
             width: 100%; padding-top: 12px; border-top: 1px dashed var(--border-color);
@@ -102,9 +135,9 @@
         .countdown-val { display: flex; align-items: baseline; justify-content: flex-end; color: var(--primary-color); }
         .countdown-number { font-size: 32px; font-weight: 800; line-height: 1; font-family: "DIN Alternate", "Helvetica Neue", sans-serif; }
         .countdown-unit { font-size: 13px; margin-left: 2px; font-weight: bold; }
-        
-        .countdown-target-date { 
-            font-size: 11px; color: var(--text-sub); margin-top: 6px; 
+
+        .countdown-target-date {
+            font-size: 11px; color: var(--text-sub); margin-top: 6px;
             display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
         }
 
@@ -122,7 +155,7 @@
             padding: 4px 10px; border-radius: 6px; cursor: pointer;
             color: var(--text-main); font-size: 12px; transition: all 0.2s; white-space: nowrap;
         }
-        .btn-group button:hover { background: #f9fafb; }
+        .btn-group button:hover { background: rgba(100,116,139,0.1); }
 
         .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; color: var(--text-sub); margin-bottom: 8px; }
         .days { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 4px; }
@@ -131,10 +164,10 @@
             height: 46px; border-radius: 8px; cursor: pointer; transition: background 0.2s;
             border: 1.5px solid transparent; position: relative;
         }
-        .day-cell:hover { background-color: #f3f4f6; }
+        .day-cell:hover { background-color: rgba(100,116,139,0.1); }
         .day-cell .solar { font-size: 15px; font-weight: 500; color: var(--text-main); }
         .day-cell .lunar { font-size: 9px; color: var(--text-sub); margin-top: 1px; transform: scale(0.95); white-space: nowrap; }
-        .day-cell.other-month .solar, .day-cell.other-month .lunar { color: #d1d5db; }
+        .day-cell.other-month .solar, .day-cell.other-month .lunar { color: #6b7280; opacity: 0.5; }
         .day-cell.weekend .solar { color: var(--weekend-color); }
         .day-cell.today .solar, .day-cell.today .lunar { color: var(--primary-color); font-weight: bold; }
         .day-cell.selected { background-color: var(--primary-color); box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
@@ -142,7 +175,7 @@
         .day-cell .lunar.festival { color: var(--weekend-color); }
         .day-cell.selected .lunar.festival { color: #fff; }
 
-        /* ================== 通用弹窗样式 ================== */
+        /* ================== 弹窗 ================== */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
@@ -151,7 +184,7 @@
         }
         .modal.show { opacity: 1; visibility: visible; }
         .modal-content {
-            background: #ffffff; width: 100%; max-width: 380px;
+            background: var(--card-bg); width: 100%; max-width: 380px;
             border-radius: 24px; padding: 24px; position: relative;
             transform: translateY(20px); transition: transform 0.3s; max-height: 85vh; overflow-y: auto;
         }
@@ -162,6 +195,7 @@
             display: flex; justify-content: center; align-items: center;
             color: #64748b; font-size: 18px; cursor: pointer; border: none; z-index: 10;
         }
+        [data-theme="dark"] .modal-close { background: #374151; color: #cbd5e1; }
         .modal-header { text-align: center; margin-bottom: 20px; }
         .modal-header h2 { font-size: 20px; color: var(--text-main); margin-bottom: 6px; }
         .modal-header p { font-size: 13px; color: var(--text-sub); }
@@ -174,13 +208,15 @@
             flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
             background: #f8fafc; padding: 10px 14px; border-radius: 12px; gap: 6px;
         }
+        [data-theme="dark"] .hourly-item { background: #374151; }
         .hourly-time { font-size: 11px; color: var(--text-sub); }
         .hourly-icon { font-size: 20px; }
         .hourly-temp { font-size: 14px; font-weight: bold; color: var(--text-main); }
-        .hourly-rain { font-size: 10px; color: #3b82f6; }
+        .hourly-rain { font-size: 10px; color: var(--primary-color); }
 
         .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .detail-box { background: #f8fafc; padding: 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; }
+        [data-theme="dark"] .detail-box { background: #374151; }
         .detail-box .label { font-size: 12px; color: var(--text-sub); }
         .detail-box .value { font-size: 15px; font-weight: bold; color: var(--text-main); }
 
@@ -195,12 +231,14 @@
         .big-countdown .unit { font-size: 16px; color: var(--text-sub); }
         .big-countdown .date { font-size: 14px; color: var(--text-sub); margin-top: 10px; }
         .progress-container { background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 10px; }
+        [data-theme="dark"] .progress-container { background: #374151; }
         .progress-bar { background: var(--primary-color); height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
 
         @media (max-width: 360px) {
             .weather-icon { font-size: 36px; }
             .weather-temp { font-size: 32px; }
-            .title-row h3 { font-size: 14px; max-width: 90px; }
+            .title-row h3 { font-size: 14px; max-width: 140px; }
+            .desc-main { font-size: 20px; }
             .lunar-area .lunar-date { font-size: 16px; }
             .countdown-number { font-size: 28px; }
             .calendar-header h2 { font-size: 16px; }
@@ -225,14 +263,17 @@
             </div>
             <div class="weather-right">
                 <div class="title-row">
-                    <h3 id="city-name">正在获取...</h3>
+                    <h3 id="city-name" title="点击切换城市">正在获取...</h3>
+                </div>
+                <div class="desc-main" id="weather-main-desc">--</div>
+                <div class="desc-footer">
                     <span class="refresh-location" id="refresh-btn" title="重新定位" onclick="forceRefreshLocation(event)">🔄</span>
                     <span class="detail-hint">详情 ›</span>
+                    <span class="desc-sub" id="weather-sub-desc">获取中...</span>
                 </div>
-                <div class="desc" id="weather-desc">天气获取中...</div>
             </div>
         </div>
-        
+
         <div class="weather-forecast" id="weather-forecast">
             <div style="width:100%; text-align:center; font-size:12px; color:#999;">加载预报中...</div>
         </div>
@@ -241,9 +282,9 @@
     <!-- 倒计时与阴历模块 -->
     <div class="summary-card clickable" onclick="openCountdownModal()">
         <div class="lunar-area">
-            <div class="solar-date" id="detail-solar">2026年10月28日 星期三</div>
-            <div class="lunar-date" id="detail-lunar">农历 九月十九</div>
-            <div class="ganzhi-date" id="detail-ganzhi">丙午 [马] 年 戊戌月 乙亥日</div>
+            <div class="solar-date" id="detail-solar">--</div>
+            <div class="lunar-date" id="detail-lunar">--</div>
+            <div class="ganzhi-date" id="detail-ganzhi">--</div>
         </div>
         <div class="countdown-area">
             <div class="countdown-label">距离春节</div>
@@ -252,7 +293,7 @@
                 <span class="countdown-unit">天</span>
             </div>
             <div class="countdown-target-date">
-                <span>2027年2月6日</span>
+                <span id="spring-date-text">--</span>
                 <span class="detail-hint">详情 ›</span>
             </div>
         </div>
@@ -261,7 +302,7 @@
     <!-- 日历模块 -->
     <div class="calendar-card">
         <div class="calendar-header">
-            <h2 id="year-month">2026年10月</h2>
+            <h2 id="year-month">--</h2>
             <div class="btn-group">
                 <button onclick="changeMonth(-1)">上月</button>
                 <button onclick="goToToday()">今天</button>
@@ -313,13 +354,13 @@
         </div>
         <div class="big-countdown">
             <div class="num" id="modal-countdown-days">--</div>
-            <div class="unit">距离 2027 年春节</div>
-            <div class="date">2027年02月06日</div>
+            <div class="unit">距离春节</div>
+            <div class="date" id="modal-spring-date">--</div>
         </div>
         <div class="detail-section">
             <h4>今年进度</h4>
             <div class="progress-container"><div class="progress-bar" id="year-progress-bar"></div></div>
-            <div style="display:flex; justify-content:space-between; font-size:12px; color:#6b7280;">
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-sub);">
                 <span id="year-passed">已过 0 天</span><span id="year-remain">剩 0 天</span>
             </div>
         </div>
@@ -340,138 +381,190 @@
 </div>
 
 <script>
-    /* ================= 1. 定位与天气数据获取 ================= */
-    let weatherData = null; 
+    /* ================= 主题：根据时间自动切换 ================= */
+    // 规则：06:00 - 18:00 浅色，其余时间深色
+    function getTimeBasedTheme() {
+        const hour = new Date().getHours();
+        return (hour >= 6 && hour < 18) ? 'light' : 'dark';
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+    }
+
+    function initTheme() {
+        applyTheme(getTimeBasedTheme());
+    }
+
+    // 每分钟检查一次，跨过 6:00 / 18:00 时自动换肤
+    setInterval(() => {
+        const t = getTimeBasedTheme();
+        if (t !== document.documentElement.getAttribute('data-theme')) applyTheme(t);
+    }, 60 * 1000);
+
+    initTheme();
+
+    /* ================= 1. 定位与天气 ================= */
+    let weatherData = null;
     let currentCity = "未知位置";
-    
-    const CACHE_KEY_LAT = 'weather_lat';
-    const CACHE_KEY_LON = 'weather_lon';
+
+    const CACHE_KEY_LAT  = 'weather_lat';
+    const CACHE_KEY_LON  = 'weather_lon';
     const CACHE_KEY_CITY = 'weather_city';
     const CACHE_KEY_TIME = 'weather_time';
-    const CACHE_EXPIRY = 2 * 60 * 60 * 1000; // 2小时缓存
+    const CACHE_EXPIRY   = 2 * 60 * 60 * 1000;
 
-    // 核心：带超时控制的 Fetch
     async function fetchWithTimeout(resource, options = {}) {
         const { timeout = 8000 } = options;
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeout);
-        const response = await fetch(resource, {
-            ...options,
-            signal: controller.signal  
-        });
-        clearTimeout(id);
-        return response;
+        try {
+            const response = await fetch(resource, { ...options, signal: controller.signal });
+            return response;
+        } finally {
+            clearTimeout(id);
+        }
+    }
+
+    /* 点击城市名手动切换 */
+    document.getElementById('city-name').addEventListener('click', async function (e) {
+        e.stopPropagation();
+        const input = prompt("输入城市名称切换位置（留空 = 恢复自动定位）：", currentCity);
+        if (input === null) return;
+
+        if (input.trim() === '') {
+            [CACHE_KEY_LAT, CACHE_KEY_LON, CACHE_KEY_CITY, CACHE_KEY_TIME].forEach(k => localStorage.removeItem(k));
+            initLocationAndWeather(true);
+            return;
+        }
+        try {
+            const geoRes = await fetchWithTimeout(
+                `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(input)}&count=1&language=zh&format=json`,
+                { timeout: 5000 }
+            );
+            const geoJson = await geoRes.json();
+            if (!geoJson.results || !geoJson.results.length) { alert("找不到这个城市"); return; }
+            const r = geoJson.results[0];
+            currentCity = r.name + (r.admin1 ? `,${r.admin1}` : '');
+            document.getElementById('city-name').innerText = currentCity;
+            localStorage.setItem(CACHE_KEY_LAT,  r.latitude);
+            localStorage.setItem(CACHE_KEY_LON,  r.longitude);
+            localStorage.setItem(CACHE_KEY_CITY, currentCity);
+            localStorage.setItem(CACHE_KEY_TIME, Date.now());
+            fetchWeather(r.latitude, r.longitude);
+        } catch (err) {
+            alert("城市搜索失败，请检查网络");
+        }
+    });
+
+    async function reverseGeocode(lat, lon) {
+        try {
+            const res = await fetchWithTimeout(
+                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh`,
+                { timeout: 4000 }
+            );
+            const data = await res.json();
+            return data.city || data.locality || data.principalSubdivision || '当前位置';
+        } catch (e) {
+            return '当前位置';
+        }
     }
 
     function initLocationAndWeather(isForce = false) {
         if (!isForce) {
-            const cachedLat = localStorage.getItem(CACHE_KEY_LAT);
-            const cachedLon = localStorage.getItem(CACHE_KEY_LON);
-            const cachedCity = localStorage.getItem(CACHE_KEY_CITY);
-            const cacheTime = localStorage.getItem(CACHE_KEY_TIME);
-
-            const now = new Date().getTime();
-            if (cachedLat && cachedLon && cachedCity && cacheTime && (now - cacheTime < CACHE_EXPIRY)) {
-                currentCity = cachedCity;
+            const lat = localStorage.getItem(CACHE_KEY_LAT);
+            const lon = localStorage.getItem(CACHE_KEY_LON);
+            const city = localStorage.getItem(CACHE_KEY_CITY);
+            const t = localStorage.getItem(CACHE_KEY_TIME);
+            if (lat && lon && city && t && (Date.now() - t < CACHE_EXPIRY)) {
+                currentCity = city;
                 document.getElementById('city-name').innerText = currentCity;
-                fetchWeather(cachedLat, cachedLon);
+                fetchWeather(lat, lon);
                 return;
             }
         }
 
-        let defaultLat = 34.46;
-        let defaultLon = 115.31;
+        const DEF_LAT = 34.46, DEF_LON = 115.31;
 
         if (!navigator.geolocation) {
-            document.getElementById('city-name').innerText = "宁陵县(不支持定位)";
-            fetchWeather(defaultLat, defaultLon);
+            document.getElementById('city-name').innerText = "宁陵县";
+            fetchWeather(DEF_LAT, DEF_LON);
             return;
         }
 
-        let locationResolved = false;
-        
-        // 硬性降级：3秒拿不到位置，直接强制使用默认坐标加载天气！
+        let resolved = false;
         const timeoutId = setTimeout(() => {
-            if (!locationResolved) {
-                locationResolved = true;
-                console.warn('定位超时，强制降级使用默认位置');
-                document.getElementById('city-name').innerText = "宁陵县(定位超时)";
-                fetchWeather(defaultLat, defaultLon);
-            }
+            if (resolved) return;
+            resolved = true;
+            document.getElementById('city-name').innerText = "宁陵县";
+            fetchWeather(DEF_LAT, DEF_LON);
         }, 3000);
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
-                if (locationResolved) return;
-                locationResolved = true;
+                if (resolved) return;
+                resolved = true;
                 clearTimeout(timeoutId);
-                
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-                
-                // 定位成功，立即发起天气请求
+                const { latitude: lat, longitude: lon } = position.coords;
+
                 fetchWeather(lat, lon);
-                
-                // 异步获取城市名，带 4 秒超时，就算失败也不影响天气展示
-                try {
-                    const res = await fetchWithTimeout(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=zh`, { timeout: 4000 });
-                    const geoData = await res.json();
-                    currentCity = geoData.address.city || geoData.address.county || geoData.address.state || "当前位置";
-                    document.getElementById('city-name').innerText = currentCity;
-                    localStorage.setItem(CACHE_KEY_CITY, currentCity);
-                } catch (e) {
-                    console.warn('地名解析失败或超时', e);
-                    currentCity = "当前位置";
-                    document.getElementById('city-name').innerText = "当前位置";
-                    localStorage.setItem(CACHE_KEY_CITY, "当前位置");
+
+                const name = await reverseGeocode(lat, lon);
+                currentCity = name;
+                if (document.getElementById('city-name').innerText === '正在重新定位...' || document.getElementById('city-name').innerText === '正在获取...') {
+                    document.getElementById('city-name').innerText = name;
                 }
 
-                localStorage.setItem(CACHE_KEY_LAT, lat);
-                localStorage.setItem(CACHE_KEY_LON, lon);
-                localStorage.setItem(CACHE_KEY_TIME, new Date().getTime());
+                localStorage.setItem(CACHE_KEY_LAT,  lat);
+                localStorage.setItem(CACHE_KEY_LON,  lon);
+                localStorage.setItem(CACHE_KEY_CITY, name);
+                localStorage.setItem(CACHE_KEY_TIME, Date.now());
             },
-            (error) => {
-                if (locationResolved) return;
-                locationResolved = true;
+            () => {
+                if (resolved) return;
+                resolved = true;
                 clearTimeout(timeoutId);
-                
-                console.warn("定位失败或被拒绝", error);
-                document.getElementById('city-name').innerText = "宁陵县(默认)";
-                fetchWeather(defaultLat, defaultLon);
+                document.getElementById('city-name').innerText = "宁陵县";
+                fetchWeather(DEF_LAT, DEF_LON);
             },
             { timeout: 3000, maximumAge: 600000, enableHighAccuracy: false }
         );
     }
 
     function forceRefreshLocation(event) {
-        if (event) event.stopPropagation(); 
-        
+        if (event) event.stopPropagation();
         const btn = document.getElementById('refresh-btn');
         btn.classList.add('spinning');
+        weatherData = null;
         document.getElementById('city-name').innerText = "正在重新定位...";
         document.getElementById('temp').innerText = '--';
-        document.getElementById('weather-desc').innerText = "天气获取中...";
-        
+        document.getElementById('weather-main-desc').innerText = '--';
+        document.getElementById('weather-sub-desc').innerText = '天气获取中...';
+
         localStorage.removeItem(CACHE_KEY_TIME);
         initLocationAndWeather(true);
-        
-        setTimeout(() => { 
-            btn.classList.remove('spinning'); 
-            if(document.getElementById('city-name').innerText === "正在重新定位...") {
-                document.getElementById('city-name').innerText = "定位超时";
-                document.getElementById('weather-desc').innerText = "点击重试";
+
+        setTimeout(() => {
+            btn.classList.remove('spinning');
+            const nameEl = document.getElementById('city-name');
+            if (nameEl.innerText === '正在重新定位...') {
+                nameEl.innerText = weatherData ? '当前位置' : '定位超时';
+                if (!weatherData) {
+                    document.getElementById('weather-main-desc').innerText = '失败';
+                    document.getElementById('weather-sub-desc').innerText = '点击重试';
+                }
             }
         }, 5000);
     }
 
     function getWeatherInfo(code) {
-        if (code === 0) return { desc: "晴", icon: "☀️" };
+        if (code === 0) return { desc: "晴",     icon: "☀️" };
         if ([1, 2].includes(code)) return { desc: "多云", icon: "🌤️" };
-        if (code === 3) return { desc: "阴", icon: "☁️" };
+        if (code === 3) return { desc: "阴",     icon: "☁️" };
         if ([45, 48].includes(code)) return { desc: "雾", icon: "🌫️" };
         if (code >= 51 && code <= 57) return { desc: "毛毛雨", icon: "🌦️" };
-        if (code >= 61 && code <= 67) return { desc: "雨", icon: "🌧️" };
-        if (code >= 71 && code <= 77) return { desc: "雪", icon: "❄️" };
+        if (code >= 61 && code <= 67) return { desc: "雨",   icon: "🌧️" };
+        if (code >= 71 && code <= 77) return { desc: "雪",   icon: "❄️" };
         if (code >= 80 && code <= 82) return { desc: "阵雨", icon: "🌧️" };
         if (code >= 85 && code <= 86) return { desc: "阵雪", icon: "❄️" };
         if (code >= 95) return { desc: "雷暴", icon: "⛈️" };
@@ -480,170 +573,192 @@
 
     async function fetchWeather(lat, lon) {
         document.getElementById('refresh-btn').classList.remove('spinning');
-        
         try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,dew_point_2m,is_day,weather_code,pressure_msl,wind_speed_10m,wind_gusts_10m,visibility&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto&forecast_days=7`;
-            
-            // 天气请求加上 8 秒超时，防止一直卡住
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+                `&current=temperature_2m,relative_humidity_2m,apparent_temperature,dew_point_2m,is_day,weather_code,pressure_msl,wind_speed_10m,wind_gusts_10m,visibility` +
+                `&hourly=temperature_2m,weather_code,precipitation_probability` +
+                `&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset` +
+                `&timezone=auto&forecast_days=7`;
+
             const response = await fetchWithTimeout(url, { timeout: 8000 });
             const data = await response.json();
 
-            if (data && data.current && data.daily && data.hourly) {
-                weatherData = data; 
-                
-                const current = data.current;
-                const currentInfo = getWeatherInfo(current.weather_code);
+            if (!data?.current || !data?.daily || !data?.hourly) throw new Error("Invalid data");
 
-                document.getElementById('temp').innerText = Math.round(current.temperature_2m);
-                document.getElementById('weather-icon').innerText = currentInfo.icon;
-                document.getElementById('weather-desc').innerHTML = `${currentInfo.desc}<br>湿度 ${current.relative_humidity_2m}%`;
+            weatherData = data;
+            const cur = data.current;
+            const info = getWeatherInfo(cur.weather_code);
 
-                const daily = data.daily;
-                const container = document.getElementById('weather-forecast');
-                container.innerHTML = '';
-                const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            document.getElementById('temp').innerText = Math.round(cur.temperature_2m);
+            document.getElementById('weather-icon').innerText = info.icon;
+            document.getElementById('weather-main-desc').innerText = info.desc;
+            document.getElementById('weather-sub-desc').innerText = `湿度 ${cur.relative_humidity_2m}%`;
 
-                for (let i = 0; i < daily.time.length; i++) {
-                    const date = new Date(daily.time[i]);
-                    const dayText = i === 0 ? '今天' : weekDays[date.getDay()];
-                    const info = getWeatherInfo(daily.weather_code[i]);
-                    const max = Math.round(daily.temperature_2m_max[i]);
-                    const min = Math.round(daily.temperature_2m_min[i]);
-
-                    container.innerHTML += `
-                        <div class="forecast-item">
-                            <div class="f-day">${dayText}</div>
-                            <div class="f-icon">${info.icon}</div>
-                            <div class="f-temp">${max}°<span class="f-min">/${min}°</span></div>
-                        </div>
-                    `;
-                }
-            } else {
-                throw new Error("Invalid data format");
+            const daily = data.daily;
+            const container = document.getElementById('weather-forecast');
+            const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            container.innerHTML = '';
+            for (let i = 0; i < daily.time.length; i++) {
+                const d = new Date(daily.time[i]);
+                const dayText = i === 0 ? '今天' : weekDays[d.getDay()];
+                const wInfo = getWeatherInfo(daily.weather_code[i]);
+                const max = Math.round(daily.temperature_2m_max[i]);
+                const min = Math.round(daily.temperature_2m_min[i]);
+                container.innerHTML += `
+                    <div class="forecast-item">
+                        <div class="f-day">${dayText}</div>
+                        <div class="f-icon">${wInfo.icon}</div>
+                        <div class="f-temp">${max}°<span class="f-min">/${min}°</span></div>
+                    </div>`;
             }
         } catch (error) {
-            console.error('天气请求异常或超时:', error);
-            document.getElementById('weather-desc').innerHTML = '获取失败<br>请检查网络';
-            document.getElementById('weather-forecast').innerHTML = `<div style="width:100%; text-align:center; font-size:12px; color:#999;">网络请求超时</div>`;
+            console.error('天气请求异常:', error);
+            document.getElementById('weather-main-desc').innerText = '获取失败';
+            document.getElementById('weather-sub-desc').innerText = '请检查网络';
+            document.getElementById('weather-forecast').innerHTML =
+                `<div style="width:100%; text-align:center; font-size:12px; color:#999;">网络请求超时</div>`;
         }
     }
 
     function openWeatherModal() {
-        if (!weatherData) return alert("天气数据尚未加载完成或获取失败");
+        if (!weatherData) { alert("天气数据尚未加载完成或获取失败"); return; }
         document.getElementById('weather-modal').classList.add('show');
         document.getElementById('modal-weather-title').innerText = `${currentCity} 天气详情`;
-        
+
         const now = new Date();
-        document.getElementById('modal-update-time').innerText = `更新于 ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        document.getElementById('modal-update-time').innerText =
+            `更新于 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+        const localHourKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:00`;
 
         const hourlyContainer = document.getElementById('hourly-container');
         hourlyContainer.innerHTML = '';
-        const currentHourStr = now.toISOString().slice(0, 13) + ":00";
-        let startIndex = weatherData.hourly.time.findIndex(t => t.startsWith(currentHourStr));
-        if (startIndex === -1) startIndex = 0;
+        let startIndex = weatherData.hourly.time.indexOf(localHourKey);
+        if (startIndex === -1) {
+            startIndex = weatherData.hourly.time.findIndex(t => t >= localHourKey);
+            if (startIndex === -1) startIndex = 0;
+        }
 
         for (let i = startIndex; i < startIndex + 12; i++) {
             if (!weatherData.hourly.time[i]) break;
-            const time = new Date(weatherData.hourly.time[i]);
-            const hourText = `${time.getHours().toString().padStart(2, '0')}:00`;
+            const t = new Date(weatherData.hourly.time[i]);
+            const hourText = `${String(t.getHours()).padStart(2, '0')}:00`;
             const temp = Math.round(weatherData.hourly.temperature_2m[i]);
-            const info = getWeatherInfo(weatherData.hourly.weather_code[i]);
+            const wInfo = getWeatherInfo(weatherData.hourly.weather_code[i]);
             const pop = weatherData.hourly.precipitation_probability[i] || 0;
-
             hourlyContainer.innerHTML += `
                 <div class="hourly-item">
                     <div class="hourly-time">${hourText}</div>
-                    <div class="hourly-icon">${info.icon}</div>
+                    <div class="hourly-icon">${wInfo.icon}</div>
                     <div class="hourly-temp">${temp}°</div>
                     <div class="hourly-rain">💧${pop}%</div>
-                </div>
-            `;
+                </div>`;
         }
 
         const cur = weatherData.current;
         const day = weatherData.daily;
-        
-        document.getElementById('modal-feels').innerText = `${Math.round(cur.apparent_temperature)} °C`;
-        document.getElementById('modal-dew').innerText = `${Math.round(cur.dew_point_2m)} °C`;
-        document.getElementById('modal-gust').innerText = `${Math.round(cur.wind_gusts_10m)} km/h`;
+
+        document.getElementById('modal-feels').innerText      = `${Math.round(cur.apparent_temperature)} °C`;
+        document.getElementById('modal-dew').innerText        = `${Math.round(cur.dew_point_2m)} °C`;
+        document.getElementById('modal-gust').innerText       = `${Math.round(cur.wind_gusts_10m)} km/h`;
         document.getElementById('modal-visibility').innerText = `${(cur.visibility / 1000).toFixed(1)} km`;
-        
-        document.getElementById('modal-sun').innerText = `${day.sunrise[0].split('T')[1]} / ${day.sunset[0].split('T')[1]}`;
-        document.getElementById('modal-pressure').innerText = `${Math.round(cur.pressure_msl)} hPa / ${cur.relative_humidity_2m}%`;
+        document.getElementById('modal-sun').innerText        = `${day.sunrise[0].split('T')[1]} / ${day.sunset[0].split('T')[1]}`;
+        document.getElementById('modal-pressure').innerText   = `${Math.round(cur.pressure_msl)} hPa / ${cur.relative_humidity_2m}%`;
     }
 
-    /* ================= 2. 倒计时及节日计算 ================= */
+    /* ================= 2. 动态节日 & 倒计时 ================= */
+    function solarToDate(solar) {
+        return new Date(solar.getYear(), solar.getMonth() - 1, solar.getDay());
+    }
+    function getSpringFestivalDate(year) {
+        return solarToDate(Lunar.fromYmd(year, 1, 1).getSolar());
+    }
+    function getQingMingDate(year) {
+        for (let d = 3; d <= 6; d++) {
+            const lunar = Solar.fromYmd(year, 4, d).getLunar();
+            if (lunar.getJieQi() === '清明') return new Date(year, 3, d);
+        }
+        return new Date(year, 3, 4);
+    }
+    function getDuanWuDate(year) {
+        return solarToDate(Lunar.fromYmd(year, 5, 5).getSolar());
+    }
+    function getZhongQiuDate(year) {
+        return solarToDate(Lunar.fromYmd(year, 8, 15).getSolar());
+    }
+
     function updateCountdown() {
         const now = new Date();
-        const targetDate = new Date('2027-02-06T00:00:00'); 
-        const diffTime = targetDate - now;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        document.getElementById('countdown-days').innerText = diffDays > 0 ? diffDays : 0;
-        document.getElementById('modal-countdown-days').innerText = diffDays > 0 ? diffDays : 0;
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        let springYear = today.getFullYear();
+        let springDate = getSpringFestivalDate(springYear);
+        if (springDate < today) {
+            springYear += 1;
+            springDate = getSpringFestivalDate(springYear);
+        }
+        const springDiff = Math.max(Math.round((springDate - today) / 86400000), 0);
+        const springStr = `${springDate.getFullYear()}年${springDate.getMonth()+1}月${springDate.getDate()}日`;
+        document.getElementById('countdown-days').innerText        = springDiff;
+        document.getElementById('modal-countdown-days').innerText  = springDiff;
+        document.getElementById('spring-date-text').innerText      = springStr;
+        document.getElementById('modal-spring-date').innerText     = springStr;
 
         const startOfYear = new Date(now.getFullYear(), 0, 1);
-        const endOfYear = new Date(now.getFullYear(), 11, 31);
-        const totalDays = Math.ceil((endOfYear - startOfYear) / (1000 * 60 * 60 * 24));
-        const passedDays = Math.ceil((now - startOfYear) / (1000 * 60 * 60 * 24));
-        const remainDays = totalDays - passedDays;
-        const percent = (passedDays / totalDays) * 100;
+        const endOfYear   = new Date(now.getFullYear() + 1, 0, 1);
+        const totalDays   = Math.round((endOfYear - startOfYear) / 86400000);
+        const passedDays  = Math.ceil((now - startOfYear) / 86400000);
+        const remainDays  = Math.max(totalDays - passedDays, 0);
+        const percent     = (passedDays / totalDays) * 100;
 
         document.getElementById('year-progress-bar').style.width = `${percent}%`;
         document.getElementById('year-passed').innerText = `已过 ${passedDays} 天`;
         document.getElementById('year-remain').innerText = `剩 ${remainDays} 天`;
-
-        document.getElementById('countdown-today').innerText = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+        document.getElementById('countdown-today').innerText =
+            `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
     }
 
     function openCountdownModal() {
         document.getElementById('countdown-modal').classList.add('show');
-        
         const now = new Date();
-        const thisYear = now.getFullYear();
-        const nextYear = thisYear + 1;
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const y = today.getFullYear();
 
         const festivals = [
-            { name: '元旦', date: new Date(nextYear, 0, 1) },
-            { name: '清明节', date: new Date(nextYear, 3, 4) },
-            { name: '劳动节', date: new Date(nextYear, 4, 1) },
-            { name: '端午节', date: new Date(nextYear, 5, 9) },
-            { name: '中秋节', date: new Date(nextYear, 8, 15) },
-            { name: '国庆节', date: new Date(nextYear, 9, 1) }
+            { name: '元旦',   get: yr => new Date(yr, 0, 1) },
+            { name: '春节',   get: getSpringFestivalDate },
+            { name: '清明节', get: getQingMingDate },
+            { name: '劳动节', get: yr => new Date(yr, 4, 1) },
+            { name: '端午节', get: getDuanWuDate },
+            { name: '中秋节', get: getZhongQiuDate },
+            { name: '国庆节', get: yr => new Date(yr, 9, 1) }
         ];
 
         let html = '';
         festivals.forEach(f => {
-            let target = f.date;
-            if (f.date.getFullYear() === nextYear) {
-                const thisYearDate = new Date(thisYear, f.date.getMonth(), f.date.getDate());
-                if (thisYearDate > now) target = thisYearDate;
-            }
-            
-            const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
-            if (diff >= 0) {
-                html += `
-                    <div class="detail-box">
-                        <div class="label">距离${f.name}</div>
-                        <div class="value">${diff} <span style="font-size:12px;font-weight:normal;color:#6b7280;">天</span></div>
-                    </div>
-                `;
-            }
+            let d = f.get(y);
+            if (d < today) d = f.get(y + 1);
+            const diff = Math.max(Math.round((d - today) / 86400000), 0);
+            html += `
+                <div class="detail-box">
+                    <div class="label">距离${f.name}</div>
+                    <div class="value">${diff} <span style="font-size:12px;font-weight:normal;color:var(--text-sub);">天</span></div>
+                </div>`;
         });
         document.getElementById('other-festivals').innerHTML = html;
     }
 
-    /* ================= 3. 日历与历史事件 ================= */
+    /* ================= 3. 日历 & 历史事件 ================= */
     const HISTORY_DATA = {
-        1: [{ year: '1949年', event: '中华人民共和国中央人民政府成立，开国大典举行。' }, { year: '1890年', event: '美国国会正式通过设立优胜美地国家公园。' }],
-        2: [{ year: '1949年', event: '“中国保卫世界和平大会”在北京开幕。' }, { year: '1869年', event: '印度民族运动领袖甘地诞生。' }],
-        3: [{ year: '1949年', event: '刚刚成立的新中国与苏联正式建立外交关系。' }, { year: '1927年', event: '毛泽东在宁冈古城主持召开前委扩大会议。' }],
-        4: [{ year: '1957年', event: '苏联成功发射人类第一颗人造地球卫星。' }, { year: '1947年', event: '人类首次突破音障。' }],
-        5: [{ year: '1954年', event: '中国与挪威王国建立外交关系。' }, { year: '1984年', event: '美国“挑战者”号航天飞机发射升空。' }],
-        6: [{ year: '1976年', event: '中共中央政治局采取断然措施，粉碎“四人帮”。' }, { year: '1973年', event: '第四次中东战争爆发。' }],
-        7: [{ year: '1949年', event: '德意志民主共和国（东德）成立。' }, { year: '2001年', event: '美国为首的联军对阿富汗采取军事行动。' }],
-        8: [{ year: '1950年', event: '毛泽东签署组成中国人民志愿军的命令，抗美援朝战争拉开帷幕。' }, { year: '1955年', event: '科学家钱学森冲破重重阻力回到祖国。' }],
-        9: [{ year: '1936年', event: '红一方面军与红四方面军在甘肃会宁会师。' }, { year: '1937年', event: '中日淞沪会战激烈进行中。' }],
+        1:  [{ year: '1949年', event: '中华人民共和国中央人民政府成立，开国大典举行。' }, { year: '1890年', event: '美国国会正式通过设立优胜美地国家公园。' }],
+        2:  [{ year: '1949年', event: '“中国保卫世界和平大会”在北京开幕。' }, { year: '1869年', event: '印度民族运动领袖甘地诞生。' }],
+        3:  [{ year: '1949年', event: '刚刚成立的新中国与苏联正式建立外交关系。' }, { year: '1927年', event: '毛泽东在宁冈古城主持召开前委扩大会议。' }],
+        4:  [{ year: '1957年', event: '苏联成功发射人类第一颗人造地球卫星。' }, { year: '1947年', event: '人类首次突破音障。' }],
+        5:  [{ year: '1954年', event: '中国与挪威王国建立外交关系。' }, { year: '1984年', event: '美国“挑战者”号航天飞机发射升空。' }],
+        6:  [{ year: '1976年', event: '中共中央政治局采取断然措施，粉碎“四人帮”。' }, { year: '1973年', event: '第四次中东战争爆发。' }],
+        7:  [{ year: '1949年', event: '德意志民主共和国（东德）成立。' }, { year: '2001年', event: '美国为首的联军对阿富汗采取军事行动。' }],
+        8:  [{ year: '1950年', event: '毛泽东签署组成中国人民志愿军的命令，抗美援朝战争拉开帷幕。' }, { year: '1955年', event: '科学家钱学森冲破重重阻力回到祖国。' }],
+        9:  [{ year: '1936年', event: '红一方面军与红四方面军在甘肃会宁会师。' }, { year: '1937年', event: '中日淞沪会战激烈进行中。' }],
         10: [{ year: '1911年', event: '武昌起义爆发，辛亥革命开始。' }, { year: '1945年', event: '国共双方代表签署《双十协定》。' }],
         11: [{ year: '1911年', event: '湖北军政府成立。' }, { year: '1889年', event: '英国物理学家焦耳逝世。' }],
         12: [{ year: '1952年', event: '邱少云在抗美援朝战争中壮烈牺牲。' }, { year: '1492年', event: '哥伦布发现美洲大陆。' }],
@@ -668,69 +783,68 @@
         31: [{ year: '1517年', event: '马丁·路德张贴《九十五条论纲》，标志着宗教改革的开端。' }, { year: '1984年', event: '邓小平会见缅甸总统吴山友。' }]
     };
 
-    let currentDate = new Date(); 
-    let selectedDate = new Date(); 
+    let currentDate = new Date();
+    let selectedDate = new Date();
 
     function renderCalendar() {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth(); 
+        const year  = currentDate.getFullYear();
+        const month = currentDate.getMonth();
         document.getElementById('year-month').innerText = `${year}年${month + 1}月`;
 
         const daysContainer = document.getElementById('calendar-days');
-        daysContainer.innerHTML = ''; 
+        daysContainer.innerHTML = '';
 
         const firstDay = new Date(year, month, 1).getDay();
-        const startOffset = firstDay === 0 ? 6 : firstDay - 1; 
+        const startOffset = firstDay === 0 ? 6 : firstDay - 1;
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-        const isSelected = (dateObj) => {
-            return dateObj.getFullYear() === selectedDate.getFullYear() &&
-                   dateObj.getMonth() === selectedDate.getMonth() &&
-                   dateObj.getDate() === selectedDate.getDate();
-        };
+        const isSelected = d =>
+            d.getFullYear() === selectedDate.getFullYear() &&
+            d.getMonth()    === selectedDate.getMonth() &&
+            d.getDate()     === selectedDate.getDate();
 
         for (let i = startOffset - 1; i >= 0; i--) {
-            const dateNum = daysInPrevMonth - i;
-            const dateObj = new Date(year, month - 1, dateNum);
-            daysContainer.appendChild(createDayCell(dateObj, dateNum, true, isSelected(dateObj)));
+            const d = new Date(year, month - 1, daysInPrevMonth - i);
+            daysContainer.appendChild(createDayCell(d, daysInPrevMonth - i, true, isSelected(d)));
         }
-
         for (let i = 1; i <= daysInMonth; i++) {
-            const dateObj = new Date(year, month, i);
-            daysContainer.appendChild(createDayCell(dateObj, i, false, isSelected(dateObj)));
+            const d = new Date(year, month, i);
+            daysContainer.appendChild(createDayCell(d, i, false, isSelected(d)));
         }
-
         const totalCells = startOffset + daysInMonth;
-        const nextMonthCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-        const extraCells = totalCells + nextMonthCells < 42 ? 7 : 0; 
-        
+        const remain = totalCells % 7;
+        const nextMonthCells = remain === 0 ? 0 : 7 - remain;
+        const extraCells = totalCells + nextMonthCells < 42 ? 7 : 0;
         for (let i = 1; i <= nextMonthCells + extraCells; i++) {
-            const dateObj = new Date(year, month + 1, i);
-            daysContainer.appendChild(createDayCell(dateObj, i, true, isSelected(dateObj)));
+            const d = new Date(year, month + 1, i);
+            daysContainer.appendChild(createDayCell(d, i, true, isSelected(d)));
         }
     }
 
     function createDayCell(dateObj, dateNum, isOtherMonth, isSelected) {
         const cell = document.createElement('div');
         cell.className = 'day-cell';
-        
         if (isOtherMonth) cell.classList.add('other-month');
-        if (isSelected) cell.classList.add('selected');
+        if (isSelected)   cell.classList.add('selected');
 
-        const dayOfWeek = dateObj.getDay();
-        if (dayOfWeek === 0 || dayOfWeek === 6) cell.classList.add('weekend');
+        const dow = dateObj.getDay();
+        if (dow === 0 || dow === 6) cell.classList.add('weekend');
 
-        let lunarText = '';
-        let isFestival = false;
+        const today = new Date();
+        if (dateObj.getFullYear() === today.getFullYear() &&
+            dateObj.getMonth()    === today.getMonth() &&
+            dateObj.getDate()     === today.getDate()) {
+            cell.classList.add('today');
+        }
+
+        let lunarText = '', isFestival = false;
         try {
             const lunar = Lunar.fromDate(dateObj);
             if (lunar.getFestivals().length > 0) {
-                lunarText = lunar.getFestivals()[0];
-                isFestival = true;
+                lunarText = lunar.getFestivals()[0]; isFestival = true;
             } else if (lunar.getJieQi()) {
-                lunarText = lunar.getJieQi();
-                isFestival = true;
+                lunarText = lunar.getJieQi(); isFestival = true;
             } else {
                 lunarText = lunar.getDayInChinese();
             }
@@ -746,7 +860,8 @@
             selectedDate = dateObj;
             if (isOtherMonth) {
                 currentDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
-                renderCalendar(); 
+                renderCalendar();
+                updateDetailBox(dateObj);
                 setTimeout(() => openHistoryModal(dateObj), 50);
                 return;
             }
@@ -759,51 +874,41 @@
     }
 
     function updateDetailBox(dateObj) {
-        document.getElementById('detail-solar').innerText = 
+        document.getElementById('detail-solar').innerText =
             `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日 星期${['日','一','二','三','四','五','六'][dateObj.getDay()]}`;
 
         try {
             const lunar = Lunar.fromDate(dateObj);
-            const lunarMonth = lunar.getMonthInChinese();
-            const lunarDay = lunar.getDayInChinese();
-            document.getElementById('detail-lunar').innerText = `农历 ${lunarMonth}月${lunarDay}`;
-            
-            const ganZhiYear = lunar.getYearInGanZhi();
-            const zodiac = lunar.getYearShengXiao();
-            const ganZhiMonth = lunar.getMonthInGanZhi();
-            const ganZhiDay = lunar.getDayInGanZhi();
-            document.getElementById('detail-ganzhi').innerText = 
-                `${ganZhiYear} [${zodiac}] 年 ${ganZhiMonth}月 ${ganZhiDay}日`;
+            document.getElementById('detail-lunar').innerText =
+                `农历 ${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+            document.getElementById('detail-ganzhi').innerText =
+                `${lunar.getYearInGanZhi()} [${lunar.getYearShengXiao()}] 年 ${lunar.getMonthInGanZhi()}月 ${lunar.getDayInGanZhi()}日`;
         } catch (e) {}
     }
 
     function openHistoryModal(dateObj) {
         const month = dateObj.getMonth() + 1;
-        const day = dateObj.getDate();
-        
+        const day   = dateObj.getDate();
+
         document.getElementById('history-modal').classList.add('show');
         document.getElementById('history-modal-date').innerText = `历史上的今天 · ${month}月${day}日`;
-        
+
         try {
             const lunar = Lunar.fromDate(dateObj);
-            document.getElementById('history-modal-lunar').innerText = `农历 ${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+            document.getElementById('history-modal-lunar').innerText =
+                `农历 ${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
         } catch (e) {
             document.getElementById('history-modal-lunar').innerText = '';
         }
 
         const list = document.getElementById('history-modal-list');
-        list.innerHTML = '';
-        
         const events = HISTORY_DATA[day];
-        if (events && events.length > 0) {
-            events.forEach(item => {
-                list.innerHTML += `
-                    <li>
-                        <div class="history-year">${item.year}</div>
-                        <div class="history-event">${item.event}</div>
-                    </li>
-                `;
-            });
+        if (events && events.length) {
+            list.innerHTML = events.map(item => `
+                <li>
+                    <div class="history-year">${item.year}</div>
+                    <div class="history-event">${item.event}</div>
+                </li>`).join('');
         } else {
             list.innerHTML = `<div style="text-align:center; color:#999; font-size:14px; padding:20px 0;">暂未收录该日期的重大历史事件</div>`;
         }
@@ -812,6 +917,7 @@
     /* ================= 4. 通用交互 ================= */
     function changeMonth(offset) {
         currentDate.setMonth(currentDate.getMonth() + offset);
+        if (currentDate.getDate() !== 1) currentDate.setDate(1);
         renderCalendar();
     }
 
@@ -820,31 +926,30 @@
         selectedDate = new Date();
         renderCalendar();
         updateDetailBox(selectedDate);
-        openHistoryModal(selectedDate);
     }
 
     function closeModal(modalId) {
         document.getElementById(modalId).classList.remove('show');
     }
-
     document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', function(e) {
+        modal.addEventListener('click', function (e) {
             if (e.target === this) closeModal(this.id);
         });
     });
 
-    // 初始化
-    window.onload = () => {
+    // 初始
+    window.addEventListener('load', () => {
         initLocationAndWeather(false);
-        updateCountdown();
-        
-        // 锁定到 2026年10月用于演示
-        currentDate = new Date(2026, 9, 1);
-        selectedDate = new Date(2026, 9, 28);
+
+        currentDate = new Date();
+        selectedDate = new Date();
 
         renderCalendar();
-        updateDetailBox(selectedDate); 
-    };
+        updateDetailBox(selectedDate);
+        updateCountdown();
+
+        setInterval(updateCountdown, 60 * 1000);
+    });
 </script>
 </body>
 </html>
