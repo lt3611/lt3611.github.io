@@ -24,25 +24,35 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
+    - name: Prepare www directory
+      run: |
+        mkdir -p www
+        # 将仓库根目录下的所有 html, css, js, 图片等复制到 www 文件夹
+        # 如果你的代码在其他文件夹（比如 dist），请把 . 改成那个文件夹名
+        cp -r ./* www/ 2>/dev/null || true
+        # 清理不需要打包进 App 的文件，避免冲突
+        rm -rf www/node_modules www/.git www/.github www/android www/ios
+
     - name: Install dependencies & Setup Capacitor
       run: |
         npm init -y
         npm install @capacitor/core @capacitor/cli @capacitor/android
         npx cap init "MyApp" "com.example.myapp" --web-dir "www"
-        
-    # ⚠️ 注意：这里假设你的网页代码放在仓库的 www 文件夹下
-    # 如果你的网页在根目录，请用 mkdir www && cp -r *.html *.css *.js www/ 移动到 www 里
 
     - name: Add Android Platform
       run: npx cap add android
 
-    # 这一步非常关键：自动修改 AndroidManifest.xml 注入网络权限和明文传输
+    # 👇 关键修复：必须执行 sync，否则会报找不到 capacitor.settings.gradle
+    - name: Sync Capacitor Android
+      run: npx cap sync android
+
+    # 自动注入网络权限和明文传输权限
     - name: Inject Permissions (INTERNET & Cleartext)
       run: |
         MANIFEST="android/app/src/main/AndroidManifest.xml"
         # 注入 INTERNET 权限
         sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET" />\n    <application|g' $MANIFEST
-        # 允许 HTTP 明文请求 (解决 192.168.x.x 访问失败)
+        # 允许 HTTP 明文请求
         sed -i 's|<application|<application android:usesCleartextTraffic="true"|g' $MANIFEST
 
     - name: Build Android APK
